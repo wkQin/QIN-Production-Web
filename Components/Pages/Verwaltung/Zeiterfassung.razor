@@ -1,0 +1,708 @@
+@page "/verwaltung/zeiterfassung"
+@using QIN_Production_Web.Data.Zeiterfassung
+@using System.Globalization
+@using Microsoft.AspNetCore.Components.Authorization
+
+@inject ZeiterfassungService ZeiterfassungService
+@inject ZeiterfassungMath ZeiterfassungMath
+@inject ZeiterfassungExcelExportService ExcelService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+@attribute [Authorize]
+
+<PageTitle>Zeiterfassung | QIN-FORM Web</PageTitle>
+
+<!-- HEADER -->
+<div class="mb-4 p-4 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+    <div class="row w-100 m-0">
+        <!-- Title & Left side -->
+        <div class="col-md-4 p-0 d-flex flex-column justify-content-center">
+            <h3 class="text-white mb-1"><i class="fa-solid fa-clock text-info me-2"></i>Zeiterfassung</h3>
+            <div class="text-secondary small">Zeiten und Buchungen für: <span class="text-white fw-bold">@SelectedUser?.Benutzer</span></div>
+        </div>
+
+        <!-- Right side (Month Navigation & Export) -->
+        <div class="col-md-8 p-0 d-flex justify-content-end align-items-center flex-wrap gap-2 mt-3 mt-md-0">
+            @if (CanViewOtherUsers)
+            {
+                <button class="btn btn-primary d-flex align-items-center gap-2 me-3" 
+                        style="background-color: #007bff !important; border-color: #0069d9 !important; font-weight: 600; padding: 0.5rem 1.25rem; box-shadow: 0 4px 6px rgba(0,0,0,0.2);" 
+                        @onclick="ExportExcel">
+                    <i class="fas fa-file-excel"></i>
+                    Excel Export (Alle)
+                </button>
+            }
+
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn border text-white" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="PrevMonth">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
+                <select class="form-select" 
+                        style="width: auto; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                        @onchange="OnMonthChanged">
+                    @foreach (var m in CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Where(n => !string.IsNullOrEmpty(n)))
+                    {
+                        <option value="@m" selected="@(m == SelectedMonth)" style="background: #1a222c; color: white;">@m</option>
+                    }
+                </select>
+
+                <select class="form-select" 
+                        style="width: auto; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                        @onchange="OnYearChanged">
+                    @for (int y = 2023; y <= DateTime.Now.Year + 1; y++)
+                    {
+                        <option value="@y" selected="@(y == SelectedYear)" style="background: #1a222c; color: white;">@y</option>
+                    }
+                </select>
+
+                <button class="btn border text-white" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="NextMonth">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+
+                <button class="btn border text-white ms-1 px-4" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="GoToCurrentMonth">
+                    Heute
+                </button>
+            </div>
+        </div>
+        
+        <!-- Manual Section Container (Row 2 equivalent) -->
+        <AuthorizeView Roles="Admin, Verwaltung">
+            <div class="col-12 p-0 mt-3">
+                <div class="p-3 rounded-4" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn text-white fw-bold px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15) !important;" @onclick="ToggleManualPanel">
+                            <i class="fa-solid fa-plus me-1"></i> Manuelle Buchung
+                        </button>
+
+                        @if (CanViewOtherUsers)
+            {
+                <div class="d-flex align-items-center gap-2 me-3">
+                    <span class="text-secondary small">Benutzer:</span>
+                    <select class="form-select" 
+                            style="width: auto; min-width: 180px; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                            @onchange="OnUserChanged">
+                        @foreach (var u in Users)
+                        {
+                            <option value="@u.Benutzer" selected="@(u.Benutzer == SelectedUser?.Benutzer)" style="background: #1a222c; color: white;">@u.Benutzer</option>
+                        }
+                    </select>
+                </div>
+            }
+
+                        <span class="badge fw-bold px-3 py-2 rounded-3" style="background: rgba(33, 150, 243, 0.2); color: #90CAF9; border: 1px solid rgba(33, 150, 243, 0.3);">
+                            Verwaltung
+                        </span>
+                    </div>
+
+                    @if (IsManualPanelOpen)
+                    {
+                        <div class="mt-3 p-3 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+                            <!-- Manual booking layout exactly matching WPF Grouping -->
+                            <div class="row g-3 px-1">
+                                <div class="col-md-auto pe-4">
+                                    <label class="form-label text-secondary small mb-1">Datum</label>
+                                    <input type="date" class="form-control" style="width: 140px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualDate" />
+                                </div>
+                                <div class="col-md-auto pe-4">
+                                    <label class="form-label text-secondary small mb-1">Uhrzeit</label>
+                                    <input type="time" class="form-control text-center" style="width: 100px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualTime" />
+                                </div>
+                                <div class="col-md-auto pe-4">
+                                    <label class="form-label text-secondary small mb-1">Aktion</label>
+                                    <select class="form-select" style="width: 130px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualAction">
+                                        @foreach (var action in ManualActions)
+                                        {
+                                            <option value="@action" style="background:#1a222c; color:white;">@action</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-auto d-flex align-items-end mb-2 pe-4 ms-2">
+                                    <div class="form-check p-0 m-0 d-flex align-items-center">
+                                        <input class="form-check-input bg-warning border-0 m-0 me-2" type="checkbox" id="homeofficeSwitch" @bind="ManualIsHomeOffice" style="width:18px; height:18px;">
+                                        <label class="form-check-label text-white cursor-pointer" for="homeofficeSwitch">Homeoffice</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-auto ms-auto border-start border-secondary ps-4">
+                                    <label class="form-label text-secondary small mb-1">Abwesenheit (alternativ)</label>
+                                    <div class="d-flex gap-2">
+                                        <select class="form-select" style="width: 140px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="SelectedAbsenceType">
+                                            @foreach (var type in AbsenceTypes)
+                                            {
+                                                <option value="@type" style="background:#1a222c; color:white;">@type</option>
+                                            }
+                                        </select>
+                                        <button class="btn text-white fw-bold px-4" style="background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4);" @onclick="SaveAbsence" disabled="@(!CanSaveAbsence)">Setzen</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-3 mt-1 px-1">
+                                <div class="col">
+                                    <label class="form-label text-secondary small mb-1">Bemerkung</label>
+                                    <input type="text" class="form-control" style="background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualNote" />
+                                </div>
+                                <div class="col-auto d-flex align-items-end">
+                                    <button class="btn fw-bold px-4 rounded-3 text-white" style="height: 38px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);" @onclick="AddManualBooking">
+                                        Buchung Speichern
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </AuthorizeView>
+    </div>
+</div>
+
+<style>
+    .zf-row {
+        display: grid;
+        grid-template-columns: 46px 160px 140px 140px 1fr 140px 120px;
+        align-items: center;
+        min-height: 54px;
+    }
+    .zf-expanded-content {
+        margin-left: 46px; 
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+    .zf-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 12px;
+        transition: background 0.2s;
+        margin-bottom: 12px;
+    }
+    .zf-card:hover {
+        background: rgba(255,255,255,0.05);
+    }
+    .zf-btn-toggle {
+        width: 26px; height: 26px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+        color: white; cursor: pointer;
+    }
+    .zf-btn-toggle:hover {
+        background: rgba(255,255,255,0.2);
+    }
+    .zf-booking-row {
+        display: grid;
+        grid-template-columns: 80px 90px 200px 1fr auto auto;
+        align-items: center;
+        background: rgba(255,255,255,0.02);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+    }
+</style>
+
+<!-- SUMMARY CARDS -->
+<div class="row g-3 mb-4">
+    <div class="col-xl-3 col-lg-6">
+        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="text-secondary small">Arbeitszeit (Monat)</div>
+            <div class="fs-4 fw-bold text-white mt-1">@SummaryTotalWorked</div>
+            <div class="text-secondary small mt-1">@SollText</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="text-secondary small">Fehlzeiten</div>
+            <div class="fs-4 fw-bold text-white mt-1">@SummaryMissingDays</div>
+            <div class="text-secondary small mt-1">Tage ohne vollständige Buchung</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="text-secondary small">Manuell erfasst</div>
+            <div class="fs-4 fw-bold text-white mt-1">@SummaryManualCount</div>
+            <div class="text-secondary small mt-1">Einträge über Verwaltung</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-6">
+        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="text-secondary small">Überstunden (tgl.)</div>
+            <div class="fs-4 fw-bold text-white mt-1">@SummaryDailyOvertime</div>
+            <div class="text-secondary small mt-1">Täglich berechnet</div>
+        </div>
+    </div>
+</div>
+
+<!-- DATA GRID (Cards Layout matching WPF) -->
+<div class="p-4 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+    
+    <!-- Shared Column Headers -->
+    <div class="zf-row text-secondary px-3 pb-2 mb-2 border-bottom border-dark small fw-bold">
+        <div></div>
+        <div>Tag</div>
+        <div>Kommen</div>
+        <div>Gehen</div>
+        <div>Status / Notiz</div>
+        <div class="text-end">Arbeitszeit (HH:mm)</div>
+        <div class="text-end pe-3">Überstd. (tgl.)</div>
+    </div>
+
+    <!-- Scrollable Items Area -->
+    <div id="zeiterfassung-scroll-container" style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px;">
+        @foreach (var day in Days)
+        {
+            @if (day.IsWeekStart)
+            {
+                <div class="d-inline-block px-3 py-1 mb-2 mt-3 rounded-pill fw-bold" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); font-size: 0.85rem;">
+                    KW @day.WeekHeaderText
+                </div>
+            }
+
+            <div class="zf-card">
+                <!-- Outer Row Header -->
+                <div class="zf-row px-3" style="cursor: pointer;" @onclick="() => day.IsExpanded = !day.IsExpanded">
+                    <div class="d-flex justify-content-center">
+                        @if(day.HasBookings) {
+                            <div class="zf-btn-toggle">
+                                <i class="fa-solid fa-chevron-@(day.IsExpanded ? "down" : "right") fs-6" style="margin-left: 1px; margin-top: 1px;"></i>
+                            </div>
+                        }
+                    </div>
+                    <div>
+                        <div class="fw-bold text-white fs-6">@day.DateText</div>
+                        <div class="text-secondary" style="font-size: 0.8rem;">@day.WeekdayText</div>
+                    </div>
+                    <div class="text-white fs-6">@day.InTimeText</div>
+                    <div class="text-white fs-6">@day.OutTimeText</div>
+                    <div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            @if (day.ShowMissingBadge) { <span class="badge bg-danger rounded-pill fw-bold">Fehlt</span> }
+                            @if (day.HasManual) { <span class="badge bg-info text-dark rounded-pill fw-bold">@day.ManualBadgeText</span> }
+                            @if (day.IsHoliday) { <span class="badge bg-success rounded-pill fw-bold">@day.HolidayText</span> }
+                            @if (day.IsHomeOffice) { <span class="badge bg-warning text-dark rounded-pill fw-bold">Homeoffice</span> }
+                            @if (day.IsAbsent) { <span class="badge" style="background: #a855f7; color: white;">@day.AbsenceText</span> }
+                            @if (day.HasMultipleBookings) { <span class="badge bg-warning text-dark rounded-pill fw-bold">@day.BookingHint</span> }
+                            <span class="text-secondary small ms-1 text-truncate" style="max-width: 180px;">@day.Note</span>
+                        </div>
+                    </div>
+                    <div class="text-end fw-bold text-white fs-6">@day.WorkedText</div>
+                    <div class="text-end fw-bold text-white fs-6 pe-3">@day.DailyOvertimeText</div>
+                </div>
+
+                <!-- Expanded Content -->
+                @if (day.IsExpanded && day.HasBookings)
+                {
+                    <div class="zf-expanded-content p-3 mt-1 shadow-inner bg-dark rounded-bottom-4">
+                        <div class="text-secondary small mb-2 text-uppercase" style="letter-spacing: 0.5px;">Erfasste Buchungen</div>
+                        <div>
+                            @foreach (var b in day.Bookings)
+                            {
+                                <div class="zf-booking-row">
+                                    <div class="text-white fw-bold fs-6">@b.TimeText</div>
+                                    <div class="text-white">@b.ActionText</div>
+                                    <div class="text-secondary text-truncate">@b.SourceText</div>
+                                    <div class="text-secondary fst-italic text-truncate px-2">@b.Note</div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        @if(b.IsHomeOffice) { <span class="badge bg-warning text-dark">Homeoffice</span> }
+                                        @if(b.IsManual) { <span class="badge bg-info text-dark">Manuell</span> }
+                                    </div>
+                                    
+                                    <AuthorizeView Roles="Admin, Verwaltung">
+                                        <button class="btn btn-sm btn-outline-danger ms-3 px-3 rounded-pill d-flex align-items-center" @onclick="@(async () => await DeleteBookingAsync(b.Id))">
+                                            <i class="fa-solid fa-xmark me-2"></i> Löschen
+                                        </button>
+                                    </AuthorizeView>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string CurrentUserName = "";
+    private bool CanViewOtherUsers = false;
+    private bool CanManualBook = false;
+    private bool _shouldScrollToBottom = false;
+
+    // Pickers
+    private List<string> Months = CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
+    private List<int> Years = Enumerable.Range(DateTime.Now.Year - 4, 9).ToList();
+    private string SelectedMonth = "";
+    private int SelectedYear;
+
+    private List<ZeiterfassungUserItem> Users = new();
+    private ZeiterfassungUserItem? SelectedUser;
+
+    // Summary
+    private string SummaryTotalWorked = "—";
+    private string SummaryMissingDays = "—";
+    private string SummaryManualCount = "—";
+    private string SummaryDailyOvertime = "—";
+    private string SollText = "";
+
+    // Grid Context
+    private List<DayTimeRowVM> Days = new();
+
+    // Manual Form
+    private bool IsManualPanelOpen = false;
+    private DateTime ManualDate = DateTime.Today;
+    private TimeOnly ManualTime = TimeOnly.FromDateTime(DateTime.Now);
+    private BookingAction ManualAction = BookingAction.Kommen;
+    private Array ManualActions = Enum.GetValues(typeof(BookingAction));
+    private bool ManualIsHomeOffice = false;
+    private string ManualNote = "";
+    
+    // Absence Form
+    private List<string> AbsenceTypes = new() { "-", "Krank", "Urlaub", "Frei" };
+    private string SelectedAbsenceType = "-";
+    private bool CanSaveAbsence => CanManualBook && SelectedUser != null && !string.IsNullOrWhiteSpace(SelectedAbsenceType) && SelectedAbsenceType != "-";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        CurrentUserName = user.Identity?.Name ?? "";
+        
+        CanViewOtherUsers = await ZeiterfassungService.LoadCanViewOtherUsersAsync(CurrentUserName);
+        CanManualBook = user.IsInRole("Admin") || user.IsInRole("Verwaltung");
+
+        if (CanViewOtherUsers)
+        {
+            Users = await ZeiterfassungService.LoadUsersFromLoginDatenAsync();
+            SelectedUser = Users.FirstOrDefault(u => u.Benutzer == CurrentUserName) ?? Users.FirstOrDefault();
+        }
+        else
+        {
+            SelectedUser = new ZeiterfassungUserItem { Benutzer = CurrentUserName };
+        }
+
+        var now = DateTime.Now;
+        SelectedMonth = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(now.Month);
+        SelectedYear = now.Year;
+
+        await ReloadDataAsync();
+    }
+
+    private void ToggleManualPanel() => IsManualPanelOpen = !IsManualPanelOpen;
+
+    private async Task OnMonthChanged(ChangeEventArgs e)
+    {
+        SelectedMonth = e.Value?.ToString() ?? "";
+        await ReloadDataAsync();
+    }
+
+    private async Task OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int y))
+        {
+            SelectedYear = y;
+            await ReloadDataAsync();
+        }
+    }
+    
+    private async Task OnUserChanged(ChangeEventArgs e)
+    {
+        var val = e.Value?.ToString();
+        SelectedUser = Users.FirstOrDefault(u => u.Benutzer == val);
+        await ReloadDataAsync();
+    }
+
+    private async Task PrevMonth()
+    {
+        var dt = new DateTime(SelectedYear, MonthFromName(SelectedMonth), 1).AddMonths(-1);
+        SelectedYear = dt.Year;
+        SelectedMonth = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(dt.Month);
+        await ReloadDataAsync();
+    }
+
+    private async Task NextMonth()
+    {
+        var dt = new DateTime(SelectedYear, MonthFromName(SelectedMonth), 1).AddMonths(1);
+        SelectedYear = dt.Year;
+        SelectedMonth = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(dt.Month);
+        await ReloadDataAsync();
+    }
+
+    private async Task GoToCurrentMonth()
+    {
+        var now = DateTime.Now;
+        SelectedYear = now.Year;
+        SelectedMonth = CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(now.Month);
+        await ReloadDataAsync();
+    }
+
+    private async Task ReloadDataAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedMonth) || SelectedUser == null) return;
+
+        int month = MonthFromName(SelectedMonth);
+        var sollSettings = await ZeiterfassungService.LoadWeeklySollForSelectedUserAsync(SelectedUser.Benutzer);
+        var bookings = await ZeiterfassungService.LoadBookingsFromDatabaseAsync(SelectedYear, month, SelectedUser.Benutzer);
+        
+        var repo = new ZeiterfassungCalendarRepository();
+        var holidays = repo.LoadFeiertage(SelectedYear, month);
+        var absences = repo.LoadAbwesenheiten(SelectedYear, month, SelectedUser.Benutzer);
+
+        // Calculate Month
+        var results = ZeiterfassungMath.CalculateMonth(SelectedYear, month, bookings);
+
+        // Calculate Soll
+        int monthlySollMinutes = ComputeMonthlySoll(sollSettings, holidays, absences, SelectedYear, month);
+        SollText = $"Soll: {ToHHmm(monthlySollMinutes)}";
+
+        // Map UI models
+        Days.Clear();
+        foreach (var r in results)
+        {
+            var dayVm = MapDay(r, sollSettings, holidays, absences);
+            Days.Add(dayVm);
+        }
+
+        // QoL 1: Auto-select Action (Kommen/Gehen) based on last booking
+        AutoSelectAction(results);
+
+        // QoL 2: Set flag for auto-scroll
+        _shouldScrollToBottom = true;
+    
+        // Apply Week Headers
+        ApplyWeekHeaders();
+
+        // Summaries
+        int totalWorked = results.Sum(r => r.WorkedMinutes);
+        int missingDays = results.Count(r => r.IsMissing);
+        int manualBookings = results.Sum(r => r.Bookings.Count(b => b.IsManual));
+
+        SummaryTotalWorked = ToHHmm(totalWorked);
+        SummaryMissingDays = missingDays.ToString();
+        SummaryManualCount = manualBookings.ToString();
+
+        int totalDailyOvertime = 0;
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        foreach (var r in results)
+        {
+            if (r.Date <= today && !r.IsMissing && r.Intervals.Count > 0)
+            {
+                int dailySoll = IsWorkingDay(r.Date, sollSettings, holidays, absences) ? (sollSettings.TaglicheArbeitszeit > 0 ? sollSettings.TaglicheArbeitszeit : (sollSettings.ArbeitstageProWoche > 0 ? sollSettings.WochenMinuten / sollSettings.ArbeitstageProWoche : 0)) : 0;
+                totalDailyOvertime += (r.WorkedMinutes - dailySoll);
+            }
+        }
+        SummaryDailyOvertime = $"{(totalDailyOvertime >= 0 ? "+" : "-")}{ToHHmm(Math.Abs(totalDailyOvertime))}";
+    }
+
+    private void AutoSelectAction(IReadOnlyList<DayCalculationResult> results)
+    {
+        // Find the most recent day with bookings in the current view
+        var lastDayWithBookings = results
+            .Where(r => r.Bookings.Count > 0)
+            .OrderByDescending(r => r.Date)
+            .FirstOrDefault();
+
+        if (lastDayWithBookings != null)
+        {
+            var lastBooking = lastDayWithBookings.Bookings.OrderByDescending(b => b.Timestamp).First();
+            ManualAction = lastBooking.Action == BookingAction.Kommen ? BookingAction.Gehen : BookingAction.Kommen;
+        }
+        else
+        {
+            ManualAction = BookingAction.Kommen;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollToBottom)
+        {
+            _shouldScrollToBottom = false;
+            try
+            {
+                await JS.InvokeVoidAsync("scrollToBottom", "zeiterfassung-scroll-container");
+            }
+            catch { /* Catch errors like being disconnected */ }
+        }
+    }
+
+
+
+    private DayTimeRowVM MapDay(DayCalculationResult res, ZeiterfassungSollSettings soll, Dictionary<DateOnly, string> holidays, Dictionary<DateOnly, string> absences)
+    {
+        string inText = "—";
+        string outText = "—";
+        if (res.Intervals.Count > 0)
+        {
+            inText = res.Intervals.First().Start.ToString("HH:mm");
+            outText = res.Intervals.Last().End.ToString("HH:mm");
+        }
+        else if (res.Bookings.Count > 0)
+        {
+            // QoL 3: Show open "Kommen" without expanding
+            var first = res.Bookings.OrderBy(b => b.Timestamp).First();
+            if (first.Action == BookingAction.Kommen)
+            {
+                inText = first.Timestamp.ToString("HH:mm");
+            }
+            else
+            {
+                // Orphan Gehen
+                outText = first.Timestamp.ToString("HH:mm");
+            }
+        }
+
+        int dailySoll = IsWorkingDay(res.Date, soll, holidays, absences) ? (soll.TaglicheArbeitszeit > 0 ? soll.TaglicheArbeitszeit : (soll.ArbeitstageProWoche > 0 ? soll.WochenMinuten / soll.ArbeitstageProWoche : 0)) : 0;
+        string dailyOvertimeText = "";
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        
+        if (res.Date <= today && !res.IsMissing && res.Intervals.Count > 0)
+        {
+            int dailyOvertime = res.WorkedMinutes - dailySoll;
+            dailyOvertimeText = dailyOvertime == 0 ? "±00:00" :
+                                dailyOvertime > 0 ? $"+{ToHHmm(dailyOvertime)}" :
+                                $"-{ToHHmm(Math.Abs(dailyOvertime))}";
+        }
+
+        var vm = new DayTimeRowVM(res.Date.ToDateTime(TimeOnly.MinValue), inText, outText, res.IsMissing, res.ManualType, ToHHmm(res.WorkedMinutes), dailyOvertimeText)
+        {
+            HasBookings = res.Bookings.Count > 0,
+            HasMultipleBookings = res.Bookings.Count > 2 || res.Intervals.Count > 1
+        };
+        vm.BookingHint = vm.HasMultipleBookings ? $"{res.Bookings.Count} Buchungen" : "";
+
+        var notes = new List<string>();
+        foreach (var b in res.Bookings)
+        {
+            vm.Bookings.Add(new BookingVM(
+                id: b.Id,
+                timeText: b.Timestamp.ToString("HH:mm"),
+                actionText: b.Action == BookingAction.Kommen ? "KOMMEN" : "GEHEN",
+                sourceText: b.IsManual ? "Manuell eingetragen" : "Pi-Zeiterfassung",
+                note: b.Note ?? "",
+                isManual: b.IsManual,
+                isHomeOffice: b.IsHomeOffice,
+                canDelete: CanManualBook
+            ));
+            if (!string.IsNullOrWhiteSpace(b.Note)) notes.Add(b.Note);
+        }
+        if (notes.Count > 0) vm.Note = string.Join("; ", notes);
+
+        if (holidays.TryGetValue(res.Date, out var holidayName))
+        {
+            vm.IsHoliday = true;
+            vm.HolidayText = holidayName;
+        }
+
+        if (absences.TryGetValue(res.Date, out var absType))
+        {
+            vm.IsAbsent = true;
+            vm.AbsenceText = absType;
+        }
+
+        if (vm.IsHoliday || vm.IsAbsent)
+            vm.IsMissing = false;
+
+        vm.IsHomeOffice = res.Bookings.Any(b => b.IsHomeOffice);
+        return vm;
+    }
+
+    private void ApplyWeekHeaders()
+    {
+        var cal = CultureInfo.CurrentCulture.Calendar;
+        int? lastWeek = null;
+        foreach (var d in Days)
+        {
+            int week = cal.GetWeekOfYear(d.Date, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
+            bool newWeek = lastWeek == null || week != lastWeek.Value;
+            d.IsWeekStart = newWeek;
+            d.WeekHeaderText = week.ToString();
+            lastWeek = week;
+        }
+        if (Days.Count > 0) Days[0].IsWeekStart = true;
+    }
+
+    private int ComputeMonthlySoll(ZeiterfassungSollSettings soll, Dictionary<DateOnly, string> holidays, Dictionary<DateOnly, string> absences, int year, int month)
+    {
+        if (soll.ArbeitstageProWoche <= 0) soll.ArbeitstageProWoche = 5;
+        decimal dailyTarget = (decimal)soll.WochenMinuten / soll.ArbeitstageProWoche;
+        if (soll.TaglicheArbeitszeit > 0) dailyTarget = soll.TaglicheArbeitszeit;
+
+        int daysInMonth = DateTime.DaysInMonth(year, month);
+        int countedWorkdays = 0;
+
+        for (int d = 1; d <= daysInMonth; d++)
+        {
+            var dt = new DateOnly(year, month, d);
+            if (IsWorkingDay(dt, soll, holidays, absences)) countedWorkdays++;
+        }
+        return (int)Math.Round(countedWorkdays * dailyTarget, MidpointRounding.AwayFromZero);
+    }
+
+    private bool IsWorkingDay(DateOnly dt, ZeiterfassungSollSettings soll, Dictionary<DateOnly, string> holidays, Dictionary<DateOnly, string> absences)
+    {
+        if (dt.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday) return false;
+        if (holidays.TryGetValue(dt, out _)) return false;
+        if (absences.TryGetValue(dt, out _)) return false;
+
+        if (!string.IsNullOrWhiteSpace(soll.NichtArbeitstage))
+        {
+            var nonWorkDays = soll.NichtArbeitstage.Split(new[] { ';', ',', ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(s => s.Trim().ToLower());
+            var dayNameGerman = new CultureInfo("de-DE").DateTimeFormat.GetDayName(dt.DayOfWeek).ToLower();
+            if (nonWorkDays.Contains(dayNameGerman)) return false;
+        }
+        return true;
+    }
+
+    private async Task AddManualBooking()
+    {
+        if (!CanManualBook || SelectedUser == null) return;
+
+        var ts = new DateTime(ManualDate.Year, ManualDate.Month, ManualDate.Day, ManualTime.Hour, ManualTime.Minute, 0);
+
+        await ZeiterfassungService.InsertManualBookingAsync(CurrentUserName, ts, ManualAction, ManualIsHomeOffice, ManualNote);
+
+        ManualNote = "";
+        ManualIsHomeOffice = false;
+        await ReloadDataAsync();
+    }
+
+    private async Task DeleteBookingAsync(int id)
+    {
+        if (!CanManualBook) return;
+        await ZeiterfassungService.DeleteBookingAsync(id);
+        await ReloadDataAsync();
+    }
+
+    private async Task SaveAbsence()
+    {
+        if (!CanSaveAbsence || SelectedUser == null) return;
+        var day = DateOnly.FromDateTime(ManualDate);
+        await ZeiterfassungService.UpsertAbsenceAsync(SelectedUser.Benutzer, day, SelectedAbsenceType);
+        await ReloadDataAsync();
+    }
+
+    private async Task ExportExcel()
+    {
+        int month = MonthFromName(SelectedMonth);
+        var bytes = ExcelService.ExportMonthForAllUsersAsBytes(SelectedYear, month);
+        var fileName = $"Zeiterfassung_{SelectedYear}_{month:00}.xlsx";
+
+        // trigger JS download
+        using var streamRef = new DotNetStreamReference(stream: new MemoryStream(bytes));
+        await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
+    }
+
+    private static int MonthFromName(string monthName) => DateTime.ParseExact(monthName, "MMMM", CultureInfo.CurrentCulture).Month;
+    private static string ToHHmm(int minutes) => minutes <= 0 ? "—" : $"{minutes / 60:00}:{minutes % 60:00}";
+    private static bool TryParseHHmm(string text, out TimeSpan time)
+    {
+        time = default;
+        if (string.IsNullOrWhiteSpace(text)) return false;
+        var parts = text.Trim().Split(':');
+        if (parts.Length != 2) return false;
+        if (!int.TryParse(parts[0], out int h)) return false;
+        if (!int.TryParse(parts[1], out int m)) return false;
+        if (h < 0 || m < 0 || m >= 60) return false;
+        time = TimeSpan.FromMinutes(h * 60 + m);
+        return true;
+    }
+}

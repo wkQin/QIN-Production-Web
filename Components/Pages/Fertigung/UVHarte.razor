@@ -1,0 +1,279 @@
+@page "/fertigung/uv-haerten"
+@using QIN_Production_Web.Data
+@inject IJSRuntime JS
+
+<PageTitle>UV-Härten Produktion</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <h2>UV-Härten Produktion</h2>
+    <p class="text-secondary">Aufträge erfassen · Chargen · Freigabe</p>
+</div>
+
+<div class="card bg-dark border-secondary mb-4 p-3 d-flex flex-row justify-content-between align-items-center" style="background-color: var(--panel-color) !important;">
+    <div>
+        <span class="text-muted me-3">FA-Nr ändern:</span>
+        <select class="form-select d-inline-block w-auto dark-input" value="@SelectedFaNr" @onchange="OnFaNrChanged">
+            <option value="">FA-Nr auswählen...</option>
+            @foreach(var fa in FaNrs) { <option value="@fa">@fa</option> }
+        </select>
+    </div>
+    <div>
+        <button class="btn btn-outline-secondary me-3">Freigabe Liste</button>
+        <button class="btn @(IsFreigegeben ? "btn-success" : "btn-danger") fw-bold">Freigegeben: @(IsFreigegeben ? "Ja" : "Nein")</button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Auftragsdaten Input -->
+    <div class="col-md-5">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4>Auftragsdaten</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Datum</label>
+                        <input type="date" class="form-control dark-input" @bind="NeuesDatum" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Startzeit</label>
+                        <input type="time" class="form-control dark-input" @bind="NeueStartzeit" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Endzeit</label>
+                        <input type="time" class="form-control dark-input" @bind="NeueEndzeit" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Pausenzeit (min)</label>
+                        <input type="number" class="form-control dark-input" @bind="NeuePausen" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Ausfallzeit (min)</label>
+                        <input type="number" class="form-control dark-input" @bind="NeuerAusfall" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-secondary">Bemerkung</label>
+                    <input type="text" class="form-control dark-input" @bind="NeueBemerkung" />
+                </div>
+
+                <button class="btn btn-primary w-100 py-2" @onclick="AddAuftrag"><i class="fa-solid fa-plus me-2"></i>Eintrag hinzufügen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Artikel & Chargen -->
+    <div class="col-md-7">
+        <div class="row g-4">
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header-flex">
+                        <h4>Artikel Informationen</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex mb-2">
+                            <span class="text-secondary" style="width: 100px;">Material:</span>
+                            <strong class="text-white">@Material</strong>
+                        </div>
+                        <div class="d-flex mb-3">
+                            <span class="text-secondary" style="width: 100px;">Nummer:</span>
+                            <strong class="text-white">@Nummer</strong>
+                        </div>
+                        <hr class="border-secondary mb-3" />
+                        <h6 class="text-accent mb-2">Anweisung:</h6>
+                        <p class="text-light mb-0" style="white-space: pre-wrap;">@Anweisung</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-12">
+                <div class="content-card">
+                    <div class="card-header-flex">
+                        <h4>Chargenverwaltung</h4>
+                    </div>
+                    <div class="table-responsive" style="max-height: 250px; overflow-y:auto;">
+                        <table class="table table-dark table-hover custom-table mb-0">
+                            <thead style="position: sticky; top:0; background: var(--panel-color); z-index: 1;">
+                                <tr>
+                                    <th>Charge</th>
+                                    <th>Menge</th>
+                                    <th>Ausschuss</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if(Chargen.Count == 0) {
+                                    <tr><td colspan="3" class="text-muted text-center py-3">Keine Chargen vorhanden</td></tr>
+                                }
+                                @foreach(var c in Chargen)
+                                {
+                                    <tr>
+                                        <td class="align-middle">@c.Charge</td>
+                                        <td><input type="number" class="form-control form-control-sm dark-input" @bind="c.Menge" /></td>
+                                        <td><input type="number" class="form-control form-control-sm dark-input text-danger" @bind="c.Ausschuss" /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content-card mb-4">
+    <div class="card-header-flex">
+        <h4>Auftragsliste</h4>
+    </div>
+    <div class="table-responsive" style="max-height: 300px; overflow-y:auto;">
+        <table class="table table-dark table-hover custom-table mb-0">
+            <thead style="position: sticky; top:0; background: var(--panel-color); z-index: 1;">
+                <tr>
+                    <th>Datum</th>
+                    <th>Beginn</th>
+                    <th>Ende</th>
+                    <th>Pausen</th>
+                    <th>Ausfall</th>
+                    <th>Bemerkung</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if(Auftraege.Count == 0) {
+                    <tr><td colspan="7" class="text-muted text-center py-3">Keine Aufträge vorhanden</td></tr>
+                }
+                @foreach(var a in Auftraege)
+                {
+                    <tr>
+                        <td>@a.Datum.ToString("dd.MM.yyyy")</td>
+                        <td>@a.Beginnzeit.ToString(@"hh\:mm")</td>
+                        <td>@a.Endzeit.ToString(@"hh\:mm")</td>
+                        <td>@a.Pausenzeit</td>
+                        <td>@a.Ausfallzeit</td>
+                        <td>@a.Bemerkung</td>
+                        <td>
+                            @if(a.IsNew) {
+                                <button class="btn btn-sm btn-link text-danger" @onclick="() => Auftraege.Remove(a)"><i class="fa-solid fa-times"></i></button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary p-3 mt-4" style="background-color: var(--panel-color) !important;">
+    <div class="d-flex justify-content-end align-items-center">
+        <div class="form-check form-switch me-4">
+            <input class="form-check-input" type="checkbox" role="switch" id="absendenCheck" @bind="Abgesendet" style="transform: scale(1.3);">
+            <label class="form-check-label text-secondary ms-2" for="absendenCheck" style="margin-top:2px;">Auftrag als fertig markieren</label>
+        </div>
+        <button class="btn btn-primary px-5 py-2 fw-bold" @onclick="SaveAll"><i class="fa-solid fa-save me-2"></i>Speichern & Abschließen</button>
+    </div>
+</div>
+
+@code {
+    private List<string> FaNrs = new();
+    private string SelectedFaNr = "";
+    private bool IsFreigegeben = false;
+
+    // Artikel Info
+    private string Material = "Unbekannt";
+    private string Nummer = "Unbekannt";
+    private string Anweisung = "Arbeitsanweisung und UV Datenblatt beachten.";
+
+    // Collections
+    private List<UVCharge> Chargen = new();
+    private List<UVAuftrag> Auftraege = new();
+
+    // New Auftrag Form
+    private DateTime? NeuesDatum = DateTime.Today;
+    private TimeOnly? NeueStartzeit = new TimeOnly(6,0);
+    private TimeOnly? NeueEndzeit = new TimeOnly(14,0);
+    private int NeuePausen = 0;
+    private int NeuerAusfall = 0;
+    private string NeueBemerkung = "";
+
+    // Save state
+    private bool Abgesendet = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FaNrs = await UVHarteService.GetOpenFANrsAsync();
+    }
+
+    private async Task OnFaNrChanged(ChangeEventArgs e)
+    {
+        SelectedFaNr = e.Value?.ToString() ?? "";
+        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+
+        var data = await UVHarteService.GetDataForFaAsync(SelectedFaNr);
+        Chargen = data.Chargen;
+        Material = data.Material;
+        Nummer = data.Nummer;
+        Anweisung = data.Anweisung;
+        Auftraege = data.Auftraege;
+
+        IsFreigegeben = await UVHarteService.CheckFreigabeAsync(SelectedFaNr);
+    }
+
+    private void AddAuftrag()
+    {
+        if (NeuesDatum == null || NeueStartzeit == null || NeueEndzeit == null) return;
+
+        Auftraege.Add(new UVAuftrag {
+            Datum = NeuesDatum.Value,
+            Beginnzeit = NeueStartzeit.Value,
+            Endzeit = NeueEndzeit.Value,
+            Pausenzeit = NeuePausen,
+            Ausfallzeit = NeuerAusfall,
+            Bemerkung = NeueBemerkung,
+            IsNew = true
+        });
+
+        // Reset
+        NeuePausen = 0;
+        NeuerAusfall = 0;
+        NeueBemerkung = "";
+        StateHasChanged();
+    }
+
+    private async Task SaveAll()
+    {
+        if(string.IsNullOrEmpty(SelectedFaNr)) return;
+
+        bool success = await UVHarteService.SaveDataAsync(SelectedFaNr, Abgesendet, Auftraege, Chargen);
+        if (success)
+        {
+            await JS.InvokeVoidAsync("alert", "Daten erfolgreich gespeichert.");
+            if (Abgesendet)
+            {
+                // Reload list without this FA Nr because it is finished
+                FaNrs = await UVHarteService.GetOpenFANrsAsync();
+                SelectedFaNr = "";
+                Auftraege.Clear();
+                Chargen.Clear();
+                Material = "Unbekannt";
+                Nummer = "Unbekannt";
+                Anweisung = "Arbeitsanweisung und UV Datenblatt beachten.";
+            }
+            else
+            {
+               await OnFaNrChanged(new ChangeEventArgs { Value = SelectedFaNr }); // Reload
+            }
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Fehler beim Speichern!");
+        }
+    }
+}

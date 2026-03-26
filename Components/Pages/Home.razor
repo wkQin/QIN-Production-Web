@@ -1,0 +1,200 @@
+@page "/"
+
+<PageTitle>Dashboard - QIN Production Web</PageTitle>
+
+<div class="dashboard-header mb-5">
+    <h2>Willkommen zurück, <strong>Max</strong>!</h2>
+    <p class="text-secondary">Hier ist die Live-Übersicht deiner heutigen Produktion.</p>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Stat Cards -->
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-blue"><i class="fa-solid fa-boxes-stacked"></i></div>
+            <div class="stat-details">
+                <span class="stat-title">Offene Aufträge</span>
+                <h3 class="stat-value">24</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-green"><i class="fa-solid fa-check-circle"></i></div>
+            <div class="stat-details">
+                <span class="stat-title">Erledigt Heute</span>
+                <h3 class="stat-value">18</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="stat-details">
+                <span class="stat-title">Ausschuss (Stk)</span>
+                <h3 class="stat-value">12</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card">
+            <div class="stat-icon bg-purple"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <div class="stat-details">
+                <span class="stat-title">Ø Zykluszeit</span>
+                <h3 class="stat-value">4.2s</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="content-card">
+            <div class="card-header-flex">
+                <h4>Aktuelle Produktion</h4>
+                <button class="btn btn-sm btn-outline-primary shadow-sm" style="border-radius: 8px;">
+                    <i class="fa-solid fa-eye me-2"></i>Details
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <p>Livedaten werden geladen...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="content-card">
+            <div class="card-header-flex">
+                <h4>Ankündigungen</h4>
+            </div>
+            <div class="card-body">
+                <div class="notification-item">
+                    <div class="notif-dot bg-blue"></div>
+                    <div class="notif-content">
+                        <strong>Neues Release v3.0</strong>
+                        <span>Web-Version ist nun im Testbetrieb.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-header h2 {
+        font-size: 2.2rem;
+        margin-bottom: 8px;
+    }
+    .dashboard-header p {
+        font-size: 1.1rem;
+        color: var(--text-secondary);
+    }
+    
+    .stat-card {
+        background: var(--bg-card);
+        border: var(--glass-border);
+        border-radius: 16px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    }
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+    }
+    .bg-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .bg-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .bg-orange { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);}
+    .bg-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3);}
+    
+    .stat-title {
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .stat-value {
+        margin: 0;
+        font-weight: 800;
+        font-size: 1.8rem;
+        color: var(--text-primary);
+        margin-top: 4px;
+        font-family: 'Montserrat', sans-serif;
+    }
+    
+    .content-card {
+        background: var(--bg-card);
+        border: var(--glass-border);
+        border-radius: 16px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+    .card-header-flex {
+        padding: 24px;
+        border-bottom: var(--glass-border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .card-header-flex h4 { 
+        margin: 0; 
+        font-size: 1.25rem; 
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .card-body { padding: 24px; flex: 1;}
+    
+    .empty-state {
+        height: 250px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-secondary);
+        opacity: 0.5;
+    }
+    .empty-state i { font-size: 4rem; margin-bottom: 16px; color: var(--text-secondary); }
+    
+    .notification-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 16px;
+        border-radius: 12px;
+        background: var(--bg-hover);
+        transition: background 0.2s;
+        cursor: pointer;
+    }
+    .notification-item:hover {
+        background: rgba(255,255,255,0.08);
+    }
+    .notif-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; box-shadow: 0 0 10px #60a5fa;}
+    .notif-content strong { display: block; color: var(--text-primary); font-size: 1rem; margin-bottom: 2px;}
+    .notif-content span { color: var(--text-secondary); font-size: 0.85rem; }
+    
+    .btn-outline-primary {
+        color: var(--accent-hover);
+        border-color: var(--accent-hover);
+    }
+    .btn-outline-primary:hover {
+        background-color: var(--accent-hover);
+        color: #fff;
+    }
+</style>

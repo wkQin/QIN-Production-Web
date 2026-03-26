@@ -1,0 +1,215 @@
+@page "/login"
+@using QIN_Production_Web.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@inject LoginService LoginService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment Env
+@rendermode InteractiveServer
+@attribute [AllowAnonymous]
+@layout EmptyLayout
+
+<div class="login-wrapper container-fluid d-flex align-items-center justify-content-center vh-100">
+    <div class="login-card glass-card p-5 text-center shadow-lg">
+        <div class="mb-4">
+            <i class="fa-solid fa-industry" style="font-size: 3rem; color: #3b82f6;"></i>
+            <h2 class="mt-3 fw-bold text-white" style="letter-spacing: 1px;">QIN<span style="color: #3b82f6;">-FORM</span></h2>
+            <p class="text-secondary mb-0">Production Web Access</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger py-2 mb-4" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> @ErrorMessage
+            </div>
+        }
+
+        <div class="mb-4 text-start">
+            <label class="modern-label text-secondary mb-2">Benutzername oder Personalnummer</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-primary"><i class="fa-solid fa-user"></i></span>
+                <input type="text" class="form-control modern-input text-white fw-bold" @bind="Username" @onkeyup="HandleKeyUp" placeholder="Username" autocomplete="username" />
+            </div>
+        </div>
+
+        <div class="mb-5 text-start">
+            <label class="modern-label text-secondary mb-2">Passwort</label>
+            <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-primary"><i class="fa-solid fa-lock"></i></span>
+                <input type="password" class="form-control modern-input text-white fw-bold" @bind="Password" @onkeyup="HandleKeyUp" placeholder="Passwort" autocomplete="current-password" />
+            </div>
+        </div>
+
+        <button class="btn btn-gradient-primary w-100 py-3 fw-bold fs-5 text-white" @onclick="AuthenticateUser" tabindex="0" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Bitte warten...</span>
+            }
+            else
+            {
+                <i class="fa-solid fa-right-to-bracket me-2"></i> <span>Anmelden</span>
+            }
+        </button>
+
+        <button class="btn btn-glass w-100 py-3 fw-bold fs-5 text-info mt-3" @onclick="AuthenticateADUser" tabindex="0">
+            <i class="fa-brands fa-windows me-2"></i> Windows / AD Login
+        </button>
+
+        @if (Env.IsDevelopment())
+        {
+            <div class="mt-4 pt-3 border-top border-secondary">
+                <button class="btn btn-outline-warning w-100 py-2 fw-bold" @onclick="AuthenticateDevUser" tabindex="-1">
+                    <i class="fa-solid fa-code me-2"></i> Developer Auto-Login
+                </button>
+            </div>
+        }
+
+        <div class="mt-4 text-secondary small">
+            &copy; @DateTime.Now.Year QIN Form GmbH & Co. KG
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-wrapper {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .glass-card {
+        background: rgba(30, 41, 59, 0.6);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        width: 100%;
+        max-width: 450px;
+    }
+
+    .modern-input {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: none;
+        padding: 0.8rem 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .modern-input:focus {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: #3b82f6;
+        box-shadow: none;
+        outline: none;
+    }
+
+    .input-group-text {
+        background: rgba(15, 23, 42, 0.7) !important;
+        border-right: none;
+    }
+
+    .input-group:focus-within .input-group-text {
+        border-color: #3b82f6 !important;
+    }
+    
+    .input-group:focus-within .modern-input {
+        border-color: #3b82f6 !important;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        border: none;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-gradient-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    }
+</style>
+
+@code {
+    private string Username { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private bool isLoading = false;
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isLoading)
+        {
+            _ = AuthenticateUser();
+        }
+    }
+
+    private async Task AuthenticateUser()
+    {
+        ErrorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        {
+            ErrorMessage = "Bitte Benutzername und Passwort eingeben.";
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        var userSession = await LoginService.LoginAsync(Username, Password);
+
+        if (userSession != null)
+        {
+            var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(userSession);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = "Benutzername oder Passwort ist falsch!";
+            Password = string.Empty;
+        }
+        
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task AuthenticateADUser()
+    {
+        ErrorMessage = string.Empty;
+
+        // Erkenne den Namen des aktuellen Windows-Nutzers
+        string adUsername = Environment.UserName; 
+
+        var userSession = await LoginService.ADLoginAsync(adUsername);
+
+        if (userSession != null)
+        {
+            var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
+            await customAuthStateProvider.UpdateAuthenticationState(userSession);
+            NavigationManager.NavigateTo("/");
+        }
+        else
+        {
+            ErrorMessage = $"Active Directory User '{adUsername}' konnte nicht im System gefunden werden!";
+        }
+    }
+
+    private async Task AuthenticateDevUser()
+    {
+        ErrorMessage = string.Empty;
+
+        var devSession = new UserSession
+        {
+            Name = "Developer",
+            Rechte = "Admin",
+            Personalnummer = "DEV-999"
+        };
+
+        var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
+        await customAuthStateProvider.UpdateAuthenticationState(devSession);
+        NavigationManager.NavigateTo("/");
+    }
+}

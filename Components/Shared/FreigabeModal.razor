@@ -1,0 +1,263 @@
+@inject UserService UserService
+
+<style>
+    .dark-input {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        color: #fff !important;
+        border-radius: 8px !important;
+        padding: 10px 15px !important;
+        transition: all 0.2s ease-in-out;
+    }
+    .dark-input:focus {
+        border-color: #00f2fe !important;
+        box-shadow: 0 0 10px rgba(0, 242, 254, 0.2) !important;
+        background-color: #222 !important;
+        outline: none;
+    }
+    .dark-input::placeholder {
+        color: #888 !important;
+        opacity: 0.8;
+        font-style: italic;
+    }
+    .input-group-text-dark {
+        background-color: #1a1a1a !important;
+        border: 1px solid #333 !important;
+        color: #666 !important;
+        border-right: none !important;
+    }
+    .freigabe-section {
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+</style>
+
+@if (IsOpen)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1050;" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered @(Mode == ModalMode.List ? "modal-xl" : "modal-md")">
+            <div class="modal-content bg-dark border-secondary text-light shadow-lg" style="border-radius: 15px; overflow: hidden;">
+                <div class="modal-header border-secondary bg-black bg-opacity-25 py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid @(Mode == ModalMode.List ? "fa-list-check" : "fa-shield-halved") me-2 text-info"></i>
+                        @(Mode == ModalMode.List ? $"Freigabe Historie - {FaNr}" : "Produktionsfreigabe erteilen")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
+                </div>
+                
+                <div class="modal-body p-4">
+                    @if (Mode == ModalMode.List)
+                    {
+                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-dark table-hover mb-0">
+                                <thead class="sticky-top bg-dark">
+                                    <tr class="text-secondary text-uppercase small">
+                                        <th>Datum</th>
+                                        <th>Informationen</th>
+                                        <th>Bemerkung</th>
+                                        <th>Rücklage</th>
+                                        <th>Personal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (history.Count == 0)
+                                    {
+                                        <tr><td colspan="5" class="text-center py-5 text-muted">Keine Freigaben für dieses FA gefunden.</td></tr>
+                                    }
+                                    @foreach (var f in history)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap">@f.Datum?.ToString("dd.MM.yyyy HH:mm")</td>
+                                            <td style="min-width: 250px;">@f.Informationen</td>
+                                            <td style="min-width: 250px;">@f.Bemerkung</td>
+                                            <td><span class="badge @(f.Ruecklagemuster == "Ja" ? "bg-success" : "bg-secondary")">@f.Ruecklagemuster</span></td>
+                                            <td>@f.Personalnummer</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="freigabe-section">
+                            <div class="row g-4">
+                                <!-- Info Header -->
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fa-solid fa-hashtag text-info me-2 small"></i>
+                                        <label class="form-label text-light opacity-50 small mb-0">Fertigungsauftrag</label>
+                                    </div>
+                                    <div class="h5 text-info fw-bold ps-4">@FaNr</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fa-solid fa-calendar-day text-secondary me-2 small"></i>
+                                        <label class="form-label text-light opacity-50 small mb-0">Aktuelles Datum</label>
+                                    </div>
+                                    <div class="h5 text-white fw-medium ps-4">@DateTime.Now.ToString("dd.MM.yyyy HH:mm")</div>
+                                </div>
+
+                                <!-- Main Inputs -->
+                                <div class="col-12 mt-4">
+                                    <label class="form-label text-light d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-circle-info text-info"></i>
+                                        Produktions-Details
+                                    </label>
+                                    <textarea class="form-control dark-input" rows="3" 
+                                              @bind="infoText" 
+                                              placeholder="Programmname, Werkzeug-Nr, Aufbau, Schnitt..."></textarea>
+                                    <div class="form-text text-light small mt-1 opacity-75">Zwingend erforderlich für die Dokumentation.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label text-light d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-comment-dots text-secondary"></i>
+                                        Bemerkung
+                                    </label>
+                                    <textarea class="form-control dark-input" rows="2" 
+                                              @bind="bemerkungText" 
+                                              placeholder="Besonderheiten, Abweichungen, Korrekturen..."></textarea>
+                                </div>
+
+                                <!-- Checklist -->
+                                <div class="col-12 py-2">
+                                    <div class="form-check form-switch custom-switch p-3 bg-black bg-opacity-25 rounded border border-secondary border-opacity-25">
+                                        <input class="form-check-input ms-0 me-3" type="checkbox" id="checkR" @bind="ruecklagemuster" style="transform: scale(1.3); cursor: pointer;">
+                                        <label class="form-check-label text-light fw-medium" for="checkR" style="cursor: pointer;">Rücklagemuster wurde entnommen</label>
+                                    </div>
+                                </div>
+
+                                <!-- Auth Section -->
+                                <div class="col-12 mt-4">
+                                    <div class="p-3 border border-info border-opacity-10 rounded shadow-sm bg-info bg-opacity-10">
+                                        <div class="d-flex align-items-center justify-content-center gap-2 mb-3">
+                                            <i class="fa-solid fa-user-lock text-info"></i>
+                                            <span class="text-info small fw-bold text-uppercase" style="letter-spacing: 1px;">Autorisierung (Schichtleitung)</span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="input-group">
+                                                    <span class="input-group-text input-group-text-dark"><i class="fa-solid fa-user small"></i></span>
+                                                    <input type="text" class="form-control dark-input" placeholder="Benutzer / ID" @bind="authUsername" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="input-group">
+                                                    <span class="input-group-text input-group-text-dark"><i class="fa-solid fa-key small"></i></span>
+                                                    <input type="password" class="form-control dark-input" placeholder="Passwort" @bind="authPassword" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(errorMessage))
+                                        {
+                                            <div class="text-danger small mt-3 text-center animate-pulse">
+                                                <i class="fa-solid fa-triangle-exclamation me-1"></i> @errorMessage
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+                <div class="modal-footer border-secondary bg-black bg-opacity-10 py-3">
+                    <button type="button" class="btn btn-outline-secondary px-4" @onclick="Close">@(Mode == ModalMode.List ? "Schließen" : "Abbrechen")</button>
+                    @if (Mode == ModalMode.Create)
+                    {
+                        <button type="button" class="btn btn-success px-5 fw-bold" @onclick="HandleSubmit">
+                            <i class="fa-solid fa-check me-2"></i>Freigeben
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string FaNr { get; set; } = "";
+    [Parameter] public FreigabeTyp Typ { get; set; } = FreigabeTyp.Thermoformung;
+    [Parameter] public ModalMode Mode { get; set; } = ModalMode.List;
+    [Parameter] public EventCallback OnSuccess { get; set; }
+
+    public enum ModalMode { List, Create }
+
+    private List<FreigabeRow> history = new();
+    private string infoText = "";
+    private string bemerkungText = "";
+    private bool ruecklagemuster = false;
+    private string authUsername = "";
+    private string authPassword = "";
+    private string errorMessage = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && Mode == ModalMode.List && !string.IsNullOrEmpty(FaNr))
+        {
+            history = await FreigabeService.GetFreigabenAsync(FaNr, Typ.ToString().ToLower());
+        }
+        else if (IsOpen && Mode == ModalMode.Create)
+        {
+            errorMessage = "";
+            infoText = "";
+            bemerkungText = "";
+            ruecklagemuster = false;
+            authUsername = "";
+            authPassword = "";
+        }
+    }
+
+    private async Task Close()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleSubmit()
+    {
+        errorMessage = "";
+
+        if (string.IsNullOrWhiteSpace(infoText) || string.IsNullOrWhiteSpace(bemerkungText))
+        {
+            errorMessage = "Bitte füllen Sie alle Felder (Informationen & Bemerkung) aus.";
+            return;
+        }
+
+        int pn = await FreigabeService.CheckLoginAsync(authUsername, authPassword);
+        if (pn <= 0)
+        {
+            errorMessage = "Ungültige Logindaten.";
+            return;
+        }
+
+        if (pn.ToString() == UserService.Personalnummer)
+        {
+            errorMessage = "Der gleiche Benutzer darf die Freigabe nicht durchführen.";
+            return;
+        }
+
+        bool hasPerm = await FreigabeService.HasFreigabePermissionAsync(authUsername);
+        if (!hasPerm)
+        {
+            errorMessage = "Dieser Benutzer hat kein Freigaberecht.";
+            return;
+        }
+
+        bool ok = await FreigabeService.InsertFreigabeAsync(FaNr, pn, ruecklagemuster, infoText, bemerkungText, Typ);
+        if (ok)
+        {
+            await OnSuccess.InvokeAsync();
+            await Close();
+        }
+        else
+        {
+            errorMessage = "Datenbankfehler beim Speichern der Freigabe.";
+        }
+    }
+}

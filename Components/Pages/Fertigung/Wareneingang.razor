@@ -1,0 +1,745 @@
+@page "/fertigung/wareneingang"
+@rendermode InteractiveServer
+@using QIN_Production_Web.Data
+@using QIN_Production_Web.Helpers
+@inject IJSRuntime JS
+
+<PageTitle>Wareneingang - Fertigung</PageTitle>
+
+<div class="wareneingang-dashboard pb-5">
+
+    <!-- HEADER & ACTION BAR -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-bold mb-1 text-white" style="font-size: 2rem; letter-spacing: -0.02em;">Wareneingang</h1>
+            <p class="text-secondary mb-0">Produktionsmaterial erfassen · Charger-Verwaltung · Etikettendruck</p>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3 glass-card py-2 px-4" style="height: auto;">
+            <div class="me-3 border-end border-secondary pe-4">
+                <span class="modern-label d-block mb-1 text-secondary">System Status</span>
+                @if(IsEditMode)
+                {
+                    <span class="status-badge status-mittel"><i class="fa-solid fa-pen-to-square me-1"></i>Edit (ID: @SelectedEntry?.ID)</span>
+                }
+                else
+                {
+                    <span class="status-badge status-gut"><i class="fa-solid fa-plus-circle me-1"></i>Neuerfassung</span>
+                }
+            </div>
+            <button class="btn btn-glass px-3 py-2 fw-bold text-white" @onclick="RefreshForm" title="Formular zurücksetzen">
+                <i class="fa-solid fa-rotate-left"></i> Leeren
+            </button>
+            <button class="btn btn-gradient-success px-4 fw-bold text-white" @onclick="SaveEintrag">
+                <i class="fa-solid fa-save me-2"></i> @(IsEditMode ? "Änderungen Speichern" : "Wareneingang Buchen")
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN 3-COLUMN LAYOUT -->
+    <div class="row g-4 mb-4 align-items-stretch">
+        
+        <!-- LEFT: STAMMDATEN -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="glass-card d-flex flex-column h-100">
+                <div class="card-title-modern">
+                    <i class="fa-solid fa-clipboard-list text-primary me-2"></i> Stammdaten
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label class="modern-label">Lieferant</label>
+                        <select class="form-select modern-select fw-bold" value="@SelectedLieferant" @onchange="OnLieferantChanged">
+                            <option value="">Bitte wählen...</option>
+                            @foreach(var l in Lieferanten) { <option value="@l">@l</option> }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="modern-label">Material / Artikel</label>
+                        <select class="form-select modern-select fw-bold" @bind="Material">
+                            <option value="">Bitte wählen...</option>
+                            @foreach(var m in Materialien) { <option value="@m">@m</option> }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-4">
+                        <label class="modern-label">Lieferschein</label>
+                        <input type="text" class="form-control modern-input fw-bold text-white" @bind="Lieferschein" placeholder="LS-123" />
+                    </div>
+                    <div class="col-4">
+                        <label class="modern-label">Position</label>
+                        <input type="text" class="form-control modern-input fw-bold text-white" @bind="Pos" placeholder="z.B. 10" />
+                    </div>
+                    <div class="col-4">
+                        <label class="modern-label">EBE-Nr.</label>
+                        <input type="text" class="form-control modern-input fw-bold text-white" @bind="EBE" placeholder="EBE-99" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <label class="modern-label">Zustand der Ware</label>
+                        <select class="form-select modern-select fw-bold" @bind="Zustand">
+                            <option value="Gut">Gut (Keine Mängel)</option>
+                            <option value="Mittel">Mittel (Leichte Mängel)</option>
+                            <option value="Schlecht">Schlecht (QS-Fall)</option>
+                        </select>
+                    </div>
+                    <div class="col-6 d-flex align-items-end pb-1">
+                        <div class="form-check form-switch px-0 d-flex align-items-center mb-2">
+                            <input class="form-check-input switch-modern m-0 me-3" type="checkbox" role="switch" id="palettentausch" @bind="Palettentausch">
+                            <label class="form-check-label modern-label text-nowrap mb-0" for="palettentausch">Palettentausch</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-auto">
+                    <label class="modern-label">Zusätzliche Bemerkung</label>
+                    <textarea class="form-control modern-input text-white" rows="2" @bind="Bemerkung" placeholder="Optionale Notizen für die QS oder Produktion..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIDDLE: CHARGENERFASSUNG -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="glass-card d-flex flex-column h-100" style="border-top: 4px solid #3b82f6;">
+                <div class="card-title-modern d-flex justify-content-between align-items-center">
+                    <div><i class="fa-solid fa-barcode text-primary me-2"></i> Chargen Erfassung</div>
+                    <div class="badge bg-primary px-3 py-2 fs-6 rounded-pill">Gesamt: @GesamtLaufmeter LM/STK</div>
+                </div>
+
+                <!-- HUGE SCANNER INPUT -->
+                <div class="mb-4">
+                    <label class="modern-label text-center w-100 d-block mb-1">Barcode Scanner bereit</label>
+                    <input id="chargeInput" type="text" class="form-control scanner-focus w-100 mx-auto" 
+                           style="height: 80px;"
+                           placeholder="Charge scannen..." 
+                           @bind="NewCharge" @bind:event="oninput" @onkeyup="HandleKeyUp" autocomplete="off" />
+                </div>
+
+                <div class="row g-2 mb-4">
+                    <div class="col-md-7">
+                        <label class="modern-label">Menge (Laufmeter/Stück)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control modern-input text-warning fw-bold fs-5 text-end pe-3" placeholder="0" @bind="NewMenge" @onkeyup="HandleKeyUp" />
+                            <span class="input-group-text border-0 text-secondary fw-bold px-3" style="background: rgba(15, 23, 42, 0.8);">LM/STK</span>
+                        </div>
+                    </div>
+                    <div class="col-md-5 d-flex align-items-end">
+                        <button class="btn btn-gradient-primary w-100 h-100 fs-5" @onclick="AddCharge" style="min-height: 48px;">
+                            <i class="fa-solid fa-plus me-1"></i> Hinzufügen
+                        </button>
+                    </div>
+                </div>
+
+                <div class="modern-table-container flex-grow-1" style="min-height: 200px; max-height: 350px; overflow-y: auto;">
+                    <table class="modern-table">
+                        <thead style="position: sticky; top:0; z-index:1;">
+                            <tr>
+                                <th style="width: 40px; text-align: center;"><i class="fa-solid fa-bolt"></i></th>
+                                <th>Charge</th>
+                                <th class="text-end">Menge</th>
+                                <th style="width: 50px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if(ChargenList.Count == 0) {
+                                <tr><td colspan="4" class="text-center text-secondary py-5">Keine Chargen erfasst.<br><small>Scannen Sie den ersten Barcode.</small></td></tr>
+                            }
+                            @foreach(var c in ChargenList)
+                            {
+                                <tr class="@(SelectedCharge == c ? "table-active" : "")" @onclick="() => SelectedCharge = c" style="cursor: pointer;">
+                                    <td class="text-center text-primary"><i class="fa-solid @(c.Scanner == 1 ? "fa-barcode" : "fa-keyboard")"></i></td>
+                                    <td class="fw-bold fs-6 text-white pt-3 pb-3">@c.Charge</td>
+                                    <td class="text-end text-warning fw-bold fs-6 pt-3 pb-3">@c.Menge <small class="text-muted">LM/STK</small></td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm text-danger border-0 bg-transparent p-1" @onclick:stopPropagation="true" @onclick="() => RemoveCharge(c)">
+                                            <i class="fa-solid fa-xmark fs-5"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: DRUCKEN / SYSTEM OUTPUT -->
+        <div class="col-xl-4 col-lg-4">
+            <div class="glass-card d-flex flex-column h-100">
+                <div class="card-title-modern">
+                    <i class="fa-solid fa-print text-primary me-2"></i> PalettenCharge   
+                </div>
+
+                <div class="mb-4">
+                    <label class="modern-label">WE-Charge (Palette)</label>
+                    <input type="text" class="form-control modern-input text-center text-info fw-bold fs-5 mb-3 p-3" 
+                           @bind="PalettenCharge" readonly placeholder="Noch nicht generiert..." style="letter-spacing: 2px; font-family: monospace;" />
+                    
+                    <button class="btn btn-glass w-100 mb-2 py-3 fw-bold text-white border-primary" style="background: rgba(59, 130, 246, 0.1);" @onclick="GenerateCharge" disabled="@(!CanGenerateCharge)">
+                        <i class="fa-solid fa-cogs me-2"></i> System Palette generieren
+                    </button>
+                    <button class="btn btn-gradient-primary w-100 py-3 mt-2 fw-bold" disabled="@(!CanPrintCharge)" @onclick="PrintPalettenCharge">
+                        <i class="fa-solid fa-print me-2 fs-5"></i> Palette Drucken
+                    </button>
+                </div>
+
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;" />
+                
+                <div class="mt-auto">
+                    <label class="modern-label text-warning mb-2"><i class="fa-solid fa-tags me-1"></i> Lieferanten-Charge</label>
+                    <p class="text-secondary small mb-3">Wählen Sie links eine Charge aus der Liste, um ein Einzeletikett zu drucken.</p>
+                    <button class="btn btn-glass w-100 py-3 fw-bold text-white" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
+                        <i class="fa-solid fa-print me-2 text-warning"></i> Auswahl Drucken
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOTTOM: LETZTE WARENEINGÄNGE -->
+    <div class="glass-card p-0 overflow-hidden mt-2 mb-4">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: rgba(255,255,255,0.05) !important;">
+            <div>
+                <h4 class="text-white fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Letzte Buchungen (Historie)</h4>
+                <span class="text-secondary small">Klicken Sie auf eine Zeile, um den Eintrag in die Maske oben zu laden.</span>
+            </div>
+            <button class="btn btn-glass btn-sm px-3" @onclick="RefreshHistorie"><i class="fa-solid fa-rotate me-2"></i>Aktualisieren</button>
+        </div>
+        
+        <div class="modern-table-container border-0 rounded-0" style="max-height: 400px; overflow-y: auto;">
+            <table id="historieTable" class="modern-table">
+                <thead style="position: sticky; top:0; z-index: 1;">
+                    <tr>
+                        <th style="padding-left: 1.5rem; cursor: pointer;" @onclick='() => SortTable("ID")'>ID @GetSortIcon("ID")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("Lieferschein")'>Lieferschein @GetSortIcon("Lieferschein")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("Pos")'>Pos @GetSortIcon("Pos")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("EBE")'>EBE-Nr. @GetSortIcon("EBE")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("Material")'>Material / Artikel @GetSortIcon("Material")</th>
+                        <th class="text-end" style="cursor: pointer;" @onclick='() => SortTable("Menge")'>Gebuchte LM/STK @GetSortIcon("Menge")</th>
+                        <th class="text-center" style="padding-right: 1.5rem; cursor: pointer;" @onclick='() => SortTable("Chargen")'>Anzahl Chargen @GetSortIcon("Chargen")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if(WarenList.Count == 0) {
+                        <tr><td colspan="6" class="text-secondary text-center py-5">Keine Historie verfügbar.</td></tr>
+                    }
+                    @foreach(var w in WarenList)
+                    {
+                        <tr class="@(SelectedEntry?.ID == w.ID ? "table-active" : "")" @onclick="() => EditSelected(w)" style="cursor: pointer;">
+                            <td class="fw-bold text-secondary pt-3 pb-3" style="padding-left: 1.5rem;">#@w.ID</td>
+                            <td class="fw-bold text-white py-3">@w.LS_Nr</td>
+                            <td class="text-white py-3">@w.Pos</td>
+                            <td class="text-info fw-bold py-3">@w.EBE_NR</td>
+                            <td class="text-white py-3">@w.Lieferant</td>
+                            <td class="text-secondary py-3" style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Artikel">@w.Artikel</td>
+                            <td class="text-warning fw-bold text-end py-3">@w.Menge LM/STK</td>
+                            <td class="text-center py-3" style="padding-right: 1.5rem;">
+                                <span class="badge bg-secondary px-3 py-2 fs-6 rounded-pill">@w.Chargen</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private string Title = "Neuen Eintrag hinzufügen";
+    
+    // Form
+    private string Lieferschein = "";
+    private string Pos = "";
+    private string EBE = "";
+    private string SelectedLieferant = "";
+    private string Zustand = "Gut";
+    private string Material = "";
+    private string Bemerkung = "";
+    private bool Palettentausch = false;
+    private string PalettenCharge = "";
+    
+    private string NewCharge = "";
+    private string NewMenge = "";
+    private int GesamtLaufmeter = 0;
+    
+    private bool CanGenerateCharge = true;
+    private bool CanPrintCharge = false;
+    private bool IsEditMode = false;
+    
+    private List<string> Lieferanten = new();
+    private List<string> Materialien = new();
+    private List<ChargenEntry> ChargenList = new();
+    private List<WareneingangEntry> WarenList = new();
+    private WareneingangEntry? SelectedEntry;
+    private ChargenEntry? SelectedCharge;
+    
+    private string SortColumn = "ID";
+    private bool IsSortedAscending = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Lieferanten = await WareneingangService.GetLieferantenAsync();
+        WarenList = await WareneingangService.LoadWareneingangAsync();
+        SortWarenList();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("makeTableResizable", "historieTable");
+        }
+    }
+
+    private async Task OnLieferantChanged(ChangeEventArgs e)
+    {
+        SelectedLieferant = e.Value?.ToString() ?? "";
+        Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
+        WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
+        SortWarenList();
+    }
+
+    private void HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            AddCharge();
+        }
+    }
+
+    private async Task AddCharge()
+    {
+        if (string.IsNullOrWhiteSpace(NewMenge) || string.IsNullOrWhiteSpace(NewCharge)) return;
+        
+        // Detect Scanner vs Keyboard (Simplified: real logic checks time difference or length)
+        int isScanner = NewCharge.Length > 10 ? 1 : 0; 
+        
+        ChargenList.Add(new ChargenEntry { Charge = NewCharge.Trim(), Menge = NewMenge.Trim(), Scanner = isScanner, IsNew01 = 1 });
+        UpdateGesamtLaufmeter();
+        
+        NewCharge = ""; NewMenge = "";
+        await JS.InvokeVoidAsync("eval", "document.getElementById('chargeInput').focus()");
+    }
+    
+    private void RemoveCharge(ChargenEntry entry)
+    {
+        ChargenList.Remove(entry);
+        UpdateGesamtLaufmeter();
+        if (SelectedCharge == entry) SelectedCharge = null;
+    }
+    
+    private void UpdateGesamtLaufmeter()
+    {
+        GesamtLaufmeter = ChargenList.Sum(c => int.TryParse(c.Menge, out int m) ? m : 0);
+    }
+
+    private async Task SaveEintrag()
+    {
+        if(string.IsNullOrEmpty(Lieferschein) || string.IsNullOrEmpty(SelectedLieferant)) 
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte Lieferschein und Lieferant angeben.");
+            return;
+        }
+
+        if (Zustand == "Schlecht" && !IsEditMode)
+        {
+            await JS.InvokeVoidAsync("alert", "Wichtig! Zustand ist schlecht, QS wird über automatische Email kontaktiert!");
+            string empfaenger = "selim.koese@qin-form.de, samuel.beiner@qin-form.de, klaus.mauck@qin-form.de, patrick.kolbus@qin-form.de, werner.klein@qin-form.de"; 
+            _ = Task.Run(async () => {
+                await EmailHelper.SendQSEmailAsync(Lieferschein, EBE, SelectedLieferant, Material, Bemerkung, "Blazor User", empfaenger);
+            });
+        }
+
+        bool ok = await WareneingangService.InsertWareneingangAsync(
+            SelectedEntry?.ID.ToString(), SelectedLieferant, Lieferschein, Pos, ChargenList, 
+            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, "100", IsEditMode, EBE, Material, PalettenCharge);
+            
+        if (ok)
+        {
+            await JS.InvokeVoidAsync("alert", "Erfolgreich gespeichert!");
+            WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
+            RefreshForm();
+        }
+    }
+
+    private async Task PrintSelectedCharge()
+    {
+        if (SelectedCharge == null || string.IsNullOrWhiteSpace(SelectedLieferant))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte eine Charge und Lieferant auswählen!");
+            return;
+        }
+        
+        try
+        {
+            var printerHelper = new ZebraPrinterHelper();
+            string eingangsDatum = await WareneingangService.GetEingangsDatumForChargeAsync(SelectedCharge.Charge);
+            bool ok = printerHelper.PrintChargeAndDate(SelectedLieferant, SelectedCharge.Charge, PalettenCharge, eingangsDatum);
+            if (ok)
+                await JS.InvokeVoidAsync("alert", "Etikett erfolgreich gesendet!");
+            else
+                await JS.InvokeVoidAsync("alert", "Drucker Fehler: Kein Drucker verfügbar.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Druckerfehler: " + ex.Message);
+        }
+    }
+
+    private async Task PrintPalettenCharge()
+    {
+        if (string.IsNullOrWhiteSpace(PalettenCharge) || string.IsNullOrWhiteSpace(EBE))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte EBE Nummer eingeben und Palette generieren.");
+            return;
+        }
+
+        try
+        {
+            var printerHelper = new ZebraPrinterHelper();
+            bool ok = printerHelper.PrintPalettenChargeQr(PalettenCharge, EBE);
+            if (ok)
+                await JS.InvokeVoidAsync("alert", "Etikett erfolgreich gesendet!");
+            else
+                await JS.InvokeVoidAsync("alert", "Druck fehlgeschlagen! Kontrolliere den Drucker.");
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Druckerfehler: " + ex.Message);
+        }
+    }
+
+    private async Task EditSelected(WareneingangEntry w)
+    {
+        if (w == null) return;
+        SelectedEntry = w;
+
+        IsEditMode = true;
+        Lieferschein = SelectedEntry.LS_Nr ?? "";
+        Pos = SelectedEntry.Pos ?? "";
+        EBE = SelectedEntry.EBE_NR ?? "";
+        SelectedLieferant = SelectedEntry.Lieferant ?? "";
+        Zustand = SelectedEntry.Zustand ?? "Gut";
+        
+        Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
+        Material = SelectedEntry.Artikel ?? "";
+        
+        ChargenList = await WareneingangService.FindChargenAsync(SelectedEntry.ID);
+        UpdateGesamtLaufmeter();
+        
+        PalettenCharge = await WareneingangService.DoesWEChargeExist(EBE, SelectedEntry.ID.ToString());
+        CanGenerateCharge = string.IsNullOrEmpty(PalettenCharge);
+        CanPrintCharge = !string.IsNullOrEmpty(PalettenCharge);
+    }
+
+    private async Task GenerateCharge()
+    {
+        PalettenCharge = $"PAL{DateTime.Now:ddMMyyyy}{new Random().Next(0, 10000):D4}";
+        if (SelectedEntry != null && SelectedEntry.ID > 0)
+        {
+            await WareneingangService.UpdateWEChargeAsync(SelectedEntry.ID.ToString(), PalettenCharge);
+        }
+        CanGenerateCharge = false;
+        CanPrintCharge = true;
+    }
+
+    private void RefreshForm()
+    {
+        IsEditMode = false;
+        SelectedEntry = null;
+        SelectedCharge = null;
+        Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Bemerkung = "";
+        Palettentausch = false; PalettenCharge = ""; ChargenList.Clear(); GesamtLaufmeter = 0;
+        CanGenerateCharge = true; CanPrintCharge = false;
+    }
+
+    private async Task RefreshHistorie()
+    {
+        WarenList = await WareneingangService.LoadWareneingangAsync();
+        SortWarenList();
+    }
+
+    private void SortTable(string columnName)
+    {
+        if (SortColumn == columnName)
+        {
+            IsSortedAscending = !IsSortedAscending;
+        }
+        else
+        {
+            SortColumn = columnName;
+            IsSortedAscending = true;
+        }
+        SortWarenList();
+    }
+
+    private void SortWarenList()
+    {
+        if (WarenList == null) return;
+        switch (SortColumn)
+        {
+            case "Lieferschein": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.LS_Nr).ToList() : WarenList.OrderByDescending(x => x.LS_Nr).ToList(); break;
+            case "Pos": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Pos).ToList() : WarenList.OrderByDescending(x => x.Pos).ToList(); break;
+            case "EBE": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.EBE_NR).ToList() : WarenList.OrderByDescending(x => x.EBE_NR).ToList(); break;
+            case "Lieferant": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Lieferant).ToList() : WarenList.OrderByDescending(x => x.Lieferant).ToList(); break;
+            case "Material": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Artikel).ToList() : WarenList.OrderByDescending(x => x.Artikel).ToList(); break;
+            case "Menge": WarenList = IsSortedAscending ? WarenList.OrderBy(x => int.TryParse(x.Menge, out int m) ? m : 0).ToList() : WarenList.OrderByDescending(x => int.TryParse(x.Menge, out int m) ? m : 0).ToList(); break;
+            case "Chargen": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Chargen).ToList() : WarenList.OrderByDescending(x => x.Chargen).ToList(); break;
+            default: WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.ID).ToList() : WarenList.OrderByDescending(x => x.ID).ToList(); break;
+        }
+    }
+
+    private RenderFragment GetSortIcon(string column)
+    {
+        if (SortColumn != column) return @<span></span>;
+        if (IsSortedAscending) return @<i class="fa-solid fa-sort-up ms-1 text-primary"></i>;
+        return @<i class="fa-solid fa-sort-down ms-1 text-primary"></i>;
+    }
+}
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@@300;400;500;600;700&display=swap');
+
+    .wareneingang-dashboard {
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+    }
+
+    .glass-card {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        padding: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .glass-card:hover {
+        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title-modern {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-bottom: 0.75rem;
+    }
+
+    .modern-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .modern-input, .modern-select {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f8fafc !important;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .modern-input:focus, .modern-select:focus {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        outline: none;
+        color: #fff;
+    }
+
+    .modern-select option {
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 10px;
+    }
+
+    .scanner-focus {
+        font-size: 1.6rem;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-align: center;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 2px dashed rgba(59, 130, 246, 0.5);
+        color: #93c5fd;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: inset 0 2px 10px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    .scanner-focus:focus {
+        background: rgba(15, 23, 42, 0.8);
+        border: 2px solid #3b82f6;
+        box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
+        color: #fff;
+        transform: scale(1.02);
+    }
+    
+    .scanner-focus::placeholder {
+        color: rgba(147, 197, 253, 0.4);
+        font-size: 1.2rem;
+        letter-spacing: 0;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        border: none;
+        color: white;
+        font-weight: 700;
+        border-radius: 10px;
+        padding: 0.8rem 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-gradient-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .btn-gradient-primary:disabled {
+        opacity: 0.6;
+        background: #334155;
+        box-shadow: none;
+    }
+
+    .btn-gradient-success {
+        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+        border: none;
+        color: white;
+        font-weight: 700;
+        border-radius: 10px;
+        padding: 1rem 2rem;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-gradient-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+    }
+
+    .btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.2s ease;
+    }
+
+    .btn-glass:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #fff;
+    }
+
+    .btn-glass:disabled {
+        opacity: 0.5;
+        background: rgba(0,0,0,0.2);
+    }
+
+    .modern-table-container {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(15, 23, 42, 0.5);
+    }
+    
+    .modern-table {
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .modern-table th {
+        background: rgba(30, 41, 59, 0.9);
+        color: #cbd5e1;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        padding: 1.2rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .modern-table td {
+        padding: 1rem;
+        color: #f8fafc;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        vertical-align: middle;
+        transition: background-color 0.2s ease;
+    }
+    
+    .modern-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .modern-table tr.table-active td {
+        background: rgba(59, 130, 246, 0.15) !important;
+        border-left: 3px solid #3b82f6;
+    }
+
+    .status-badge {
+        padding: 0.5em 1em;
+        border-radius: 30px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+    }
+
+    .status-gut { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
+    .status-mittel { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+    .status-schlecht { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    .switch-modern {
+        width: 3.5rem;
+        height: 1.75rem;
+        cursor: pointer;
+    }
+    .switch-modern:focus {
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    .switch-modern:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(71, 85, 105, 0.6);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(100, 116, 139, 0.8);
+    }
+</style>

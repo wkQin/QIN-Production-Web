@@ -1,0 +1,446 @@
+@page "/fertigung/kiefel"
+@inject IJSRuntime JS
+@inject UserService UserService
+
+<PageTitle>Kiefel & Parco - Thermoformung</PageTitle>
+
+<div class="dashboard-header mb-4">
+    <h2>Kiefel & Parco Produktion</h2>
+    <p class="text-secondary">Auftragsdaten erfassen · Chargen verwalten · Freigaben</p>
+</div>
+
+<div class="card bg-dark border-secondary mb-4 p-3 d-flex flex-row justify-content-between align-items-center" style="background-color: var(--panel-color) !important;">
+    <div><span class="text-white">Aktuelles Material:</span> <span class="badge ms-2" style="background-color: #ffcc00; color: #000; font-size: 1.1rem; padding: 5px 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(255,204,0,0.5); font-weight: 800;">@Material</span></div>
+    <div>
+        <button class="btn btn-outline-secondary me-3" @onclick="ShowFreigabeListe">Freigabe Liste</button>
+        <button class="btn @(IsFreigegeben ? "btn-success" : "btn-danger") fw-bold" @onclick="TryFreigeben">Freigegeben: @(IsFreigegeben ? "Ja" : "Nein")</button>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-5">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4>Auftragsdaten</h4>
+            </div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">FA-Nr auswählen</label>
+                        <select class="form-select dark-input" value="@SelectedFaNr" @onchange="OnFaNrChanged">
+                            <option value="">FA-Nr...</option>
+                            @foreach(var fa in FaNrs) { <option value="@fa">@fa</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Maschinen-Nr</label>
+                        <select class="form-select dark-input" @bind="MaschinenNr">
+                            <option value="5192">5192</option>
+                            <option value="5193">5193</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Startdatum</label>
+                        <input type="date" class="form-control dark-input" @bind="StartDate" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Enddatum</label>
+                        <input type="date" class="form-control dark-input" @bind="EndDate" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Startzeit</label>
+                        <input type="time" class="form-control dark-input" @bind="StartTime" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Endzeit</label>
+                        <input type="time" class="form-control dark-input" @bind="EndTime" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Pausenzeit (min)</label>
+                        <input type="number" class="form-control dark-input" @bind="Pausen" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Ausfallzeit (min)</label>
+                        <input type="number" class="form-control dark-input" @bind="Ausfall" />
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-secondary">Bemerkung</label>
+                    <input type="text" class="form-control dark-input" @bind="EingabeBemerkung" />
+                </div>
+
+                <button class="btn btn-primary w-100" @onclick="AddEingabe">Eintrag hinzufügen</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chargenverfolgung -->
+     <div class="col-md-7">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4>Chargenverfolgung & Messwerte</h4>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label text-secondary">Charge wählen oder scannen</label>
+                     <select class="form-select dark-input @(IsSelectedChargeRed ? "border-danger text-danger" : "border-success text-success")" value="@SelectedCharge" @onchange="OnChargeChanged">
+                        <option value="">Bitte wählen...</option>
+                        @foreach(var c in AvailableChargen) { 
+                            <option value="@c.Charge" style="color: @(c.IsRed ? "#ff4d4d" : "#00ff7f")">
+                                @(c.IsRed ? "🔴" : "🟢") @c.DisplayText
+                            </option> 
+                        }
+                    </select>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Ist (Lfm)</label>
+                        <input type="text" class="form-control dark-input" @bind="LfmIst" />
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">WKZ Temp (°C)</label>
+                        <input type="text" class="form-control dark-input" @bind="WKZTemp" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Verbraucht (Lfm)</label>
+                        <input type="text" class="form-control dark-input" @bind="Verbraucht" />
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Folie Temp (°C)</label>
+                        <input type="text" class="form-control dark-input" @bind="FolieTemp" />
+                    </div>
+                </div>
+
+                <hr class="border-secondary mb-3" />
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                         <label class="form-label text-secondary">Gutteile</label>
+                         <input type="text" class="form-control dark-input" @bind="Gutteile" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-secondary">Schlecht (Intern)</label>
+                        <input type="text" class="form-control dark-input" @bind="Schlechtteile" />
+                    </div>
+                     <div class="col-md-6">
+                        <label class="form-label text-secondary">Schlecht (Extern)</label>
+                        <input type="text" class="form-control dark-input" @bind="SchlechtteileExt" />
+                    </div>
+                </div>
+
+                 <div class="d-flex justify-content-end">
+                    <button class="btn btn-danger me-2 px-4">Sperren</button>
+                    <button class="btn btn-primary px-4" @onclick="AddCharge">Hinzufügen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-5">
+         <div class="content-card h-100">
+             <div class="card-header-flex">
+                 <h4>Auftragsliste</h4>
+             </div>
+             <div class="table-responsive">
+                <table class="table table-dark table-hover custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Del</th>
+                            <th>Maschine</th>
+                            <th>Begin</th>
+                            <th>Ende</th>
+                            <th>Pause</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var e in Eingaben)
+                        {
+                            <tr>
+                                <td><button class="btn btn-sm btn-link text-danger" @onclick="() => Eingaben.Remove(e)"><i class="fa-solid fa-times"></i></button></td>
+                                <td>@e.MaschinenNr</td>
+                                <td>@e.Begin</td>
+                                <td>@e.Ende</td>
+                                <td>@e.Pausen</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+         </div>
+    </div>
+
+     <div class="col-md-7">
+         <div class="content-card h-100">
+             <div class="card-header-flex">
+                 <h4>Chargenliste</h4>
+             </div>
+             <div class="table-responsive">
+                <table class="table table-dark table-hover custom-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>Del</th>
+                            <th>Charge</th>
+                            <th>LFM Ist</th>
+                            <th>Verbr.</th>
+                            <th>Gut</th>
+                            <th>Schlecht</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach(var c in Chargen)
+                        {
+                            <tr>
+                                <td><button class="btn btn-sm btn-link text-danger" @onclick="() => Chargen.Remove(c)"><i class="fa-solid fa-times"></i></button></td>
+                                <td>@c.Charge</td>
+                                <td>@c.Flfmlst</td>
+                                <td>@c.Verbraucht</td>
+                                <td>@c.Gutteile</td>
+                                <td>@c.Schlechtteile</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+         </div>
+    </div>
+</div>
+
+<div class="card bg-dark border-secondary p-3 mt-4" style="background-color: var(--panel-color) !important;">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert @(statusMessage.Contains("Fehler") ? "alert-danger" : "alert-success") mb-0 py-2 border-0 shadow-sm">
+                    <i class="fa-solid @(statusMessage.Contains("Fehler") ? "fa-circle-xmark" : "fa-circle-check") me-2"></i>
+                    @statusMessage
+                </div>
+            }
+        </div>
+        <div class="d-flex align-items-center">
+            <div class="form-check form-switch me-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="absendenCheck" @bind="Abgesendet" style="transform: scale(1.3);">
+                <label class="form-check-label text-secondary ms-2" for="absendenCheck" style="margin-top:2px;">Auftrag als fertig markieren</label>
+            </div>
+            <button class="btn btn-primary px-5 py-2 fw-bold" @onclick="SaveAll"><i class="fa-solid fa-save me-2"></i>Speichern & Abschließen</button>
+        </div>
+    </div>
+</div>
+
+<FreigabeModal @bind-IsOpen="isFreigabeModalOpen" 
+               FaNr="@SelectedFaNr" 
+               Typ="FreigabeTyp.Thermoformung" 
+               Mode="freigabeModalMode" 
+               OnSuccess="RefreshFreigabeStatus" />
+
+@code {
+    private List<string> FaNrs = new();
+    private string SelectedFaNr = "";
+    private string Material = "Keine Gefunden";
+    private bool IsFreigegeben = false;
+    private string statusMessage = "";
+    
+    // Auftragsdaten State
+    private string MaschinenNr = "5192";
+    private DateTime? StartDate = DateTime.Today;
+    private DateTime? EndDate = DateTime.Today;
+    private TimeOnly? StartTime = new TimeOnly(6,0);
+    private TimeOnly? EndTime = new TimeOnly(14,0);
+    private string Pausen = "0";
+    private string Ausfall = "0";
+    private string EingabeBemerkung = "";
+
+    // Chargen State
+    private List<ChargeComboItem> AvailableChargen = new();
+    private string SelectedCharge = "";
+    private bool IsSelectedChargeRed = false;
+    private string LfmIst = "";
+    private string Verbraucht = "";
+    private string Gutteile = "0";
+    private string Schlechtteile = "0";
+    private string SchlechtteileExt = "0";
+    private string WKZTemp = "";
+    private string FolieTemp = "";
+    private string FIFO = "";
+
+    // Save State
+    private bool Abgesendet = false;
+
+    // Collections
+    private List<EingabeDaten> Eingaben = new();
+    private List<FChargeDaten> Chargen = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        FaNrs = await ThermoformungService.GetOpenFANrsAsync();
+    }
+
+    private async Task OnFaNrChanged(ChangeEventArgs e)
+    {
+        SelectedFaNr = e.Value?.ToString() ?? "";
+        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+
+        var data = await ThermoformungService.GetDataForFANrAsync(SelectedFaNr);
+        Eingaben = data.Eingaben;
+        Chargen = data.Chargen;
+        Material = data.Material;
+        
+        IsFreigegeben = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
+        AvailableChargen = await ThermoformungService.GetAvailableChargenAsync(SelectedFaNr);
+    }
+
+    private void OnChargeChanged(ChangeEventArgs e)
+    {
+        SelectedCharge = e.Value?.ToString() ?? "";
+        var match = AvailableChargen.FirstOrDefault(c => c.Charge == SelectedCharge);
+        IsSelectedChargeRed = match?.IsRed ?? false;
+    }
+
+    private async Task AddEingabe()
+    {
+        if(StartDate == null || EndDate == null || StartTime == null || EndTime == null || string.IsNullOrWhiteSpace(EingabeBemerkung))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte fülle alle markierten Felder und die Bemerkung aus.");
+            return;
+        }
+
+        DateTime begin = StartDate.Value.Date + StartTime.Value.ToTimeSpan();
+        DateTime ende = EndDate.Value.Date + EndTime.Value.ToTimeSpan();
+
+        // Duplicate Check
+        bool exists = Eingaben.Any(e => 
+            e.MaschinenNr == MaschinenNr && 
+            DateTime.TryParse(e.Begin, out var b) && b == begin && 
+            DateTime.TryParse(e.Ende, out var ed) && ed == ende);
+
+        if (exists)
+        {
+            await JS.InvokeVoidAsync("alert", "Ein Eintrag mit dieser Maschine und diesem Zeitraum existiert bereits.");
+            return;
+        }
+        
+        Eingaben.Add(new EingabeDaten {
+            MaschinenNr = MaschinenNr,
+            Begin = begin.ToString("yyyy-MM-dd HH:mm:ss"),
+            Ende = ende.ToString("yyyy-MM-dd HH:mm:ss"),
+            Pausen = Pausen, Ausfall = Ausfall, Bemerkung = EingabeBemerkung,
+            IsNewRowAuftrag = true
+        });
+        StateHasChanged();
+    }
+
+    private async Task AddCharge()
+    {
+        if(string.IsNullOrWhiteSpace(SelectedCharge) || string.IsNullOrWhiteSpace(LfmIst)) return;
+
+        if (IsSelectedChargeRed)
+        {
+            FIFO = await JS.InvokeAsync<string>("prompt", "Achtung: Sie buchen einen FIFO Verstoß! Bitte geben Sie eine Begründung ein:");
+            if (string.IsNullOrWhiteSpace(FIFO)) return;
+        }
+
+        Chargen.Add(new FChargeDaten {
+            Charge = SelectedCharge, Flfmlst = LfmIst, Verbraucht = Verbraucht,
+            Gutteile = Gutteile, Schlechtteile = Schlechtteile, SchlechtteileExt = SchlechtteileExt,
+            WKZTemp = WKZTemp, FolienTemp = FolieTemp, FIFO = FIFO,
+            IsNewRow = true
+        });
+
+        // Filter it out of available chargen visually
+        AvailableChargen.RemoveAll(c => c.Charge == SelectedCharge);
+        SelectedCharge = "";
+        StateHasChanged();
+    }
+
+    private async Task SaveAll()
+    {
+        try 
+        {
+            statusMessage = "Prüfe Freigabe...";
+            StateHasChanged();
+            await Task.Delay(1); // Force UI thread yield to render the status message
+
+            if (string.IsNullOrEmpty(SelectedFaNr)) 
+            {
+                statusMessage = "Fehler: Kein Fertigungsauftrag ausgewählt.";
+                return;
+            }
+
+            bool approved = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
+            if (!approved)
+            {
+                statusMessage = "Fehler: Keine Freigabe für heute erteilt.";
+                IsFreigegeben = false;
+                return;
+            }
+            
+            statusMessage = "Speichere Daten...";
+            StateHasChanged();
+
+            bool success = await ThermoformungService.SaveDataAsync(SelectedFaNr, Abgesendet, Eingaben, Chargen, Material, UserService.Personalnummer, UserService.Name);
+            
+            if (success)
+            {
+                statusMessage = "Daten erfolgreich gespeichert.";
+                if (Abgesendet) 
+                {
+                    Eingaben.Clear();
+                    Chargen.Clear();
+                    SelectedFaNr = ""; // Reset
+                }
+            }
+            else
+            {
+                statusMessage = "Kritischer Fehler beim Speichern!";
+            }
+        }
+        catch (Exception ex)
+        {
+            statusMessage = $"Systemfehler: {ex.Message}";
+            Console.WriteLine($"SaveAll Exception: {ex}");
+        }
+        finally 
+        {
+            StateHasChanged();
+        }
+    }
+
+    // Freigabe Modals Logic
+    private bool isFreigabeModalOpen = false;
+    private FreigabeModal.ModalMode freigabeModalMode = FreigabeModal.ModalMode.List;
+
+    private void ShowFreigabeListe()
+    {
+        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+        freigabeModalMode = FreigabeModal.ModalMode.List;
+        isFreigabeModalOpen = true;
+    }
+
+    private void TryFreigeben()
+    {
+        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+        freigabeModalMode = FreigabeModal.ModalMode.Create;
+        isFreigabeModalOpen = true;
+    }
+
+    private async Task RefreshFreigabeStatus()
+    {
+        IsFreigegeben = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
+        StateHasChanged();
+    }
+}

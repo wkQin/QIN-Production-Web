@@ -1,0 +1,180 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using QIN_Production_Web.Data
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="@($"brand-section {(IsCollapsed ? "collapsed" : "justify-content-between")}")">
+    <div class="d-flex align-items-center gap-3">
+        <div class="brand-logo" title="QIN Tool">
+            <i class="fa-solid fa-industry"></i>
+        </div>
+        @if (!IsCollapsed)
+        {
+            <div class="brand-text">
+                <h3>QIN-FORM</h3>
+                <span>v3.0.0 Web</span>
+            </div>
+        }
+    </div>
+    @if (!IsCollapsed)
+    {
+        <button class="btn btn-link text-secondary p-0" title="Navigation einklappen" @onclick="ToggleMenu">
+            <i class="fa-solid fa-bars fs-5"></i>
+        </button>
+    }
+    else
+    {
+        <button class="btn btn-link text-secondary p-0 mt-3" title="Navigation ausklappen" @onclick="ToggleMenu">
+            <i class="fa-solid fa-bars fs-5"></i>
+        </button>
+    }
+</div>
+
+<nav class="nav-container">
+    <div class="nav-section">
+        <NavLink class="@($"nav-item {(IsCollapsed ? "collapsed-item" : "")}")" href="" Match="NavLinkMatch.All" title="Dashboard">
+            <i class="fa-solid fa-home nav-icon"></i>
+            @if(!IsCollapsed) { <span>Dashboard</span> }
+        </NavLink>
+        
+        <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 14px;" />
+        
+        <!-- Quick Actions -->
+        <button class="@($"nav-item w-100 text-start border-0 {(IsCollapsed ? "collapsed-item px-0" : "px-3")} mb-3")" 
+                title="Zeiterfassung Starten" 
+                style="background: rgba(59, 130, 246, 0.15); border-left: 3px solid var(--accent-primary) !important; color: var(--text-primary) !important;" 
+                @onclick='() => NavigationManager.NavigateTo("/verwaltung/zeiterfassung")'>
+            <i class="fa-solid fa-clock nav-icon text-info"></i>
+            @if(!IsCollapsed) { <span class="fw-bold">Zeiterfassung</span> }
+        </button>
+
+        <!-- Fertigung Group -->
+        <div class="nav-group">
+            <div class="@($"nav-item has-children {(IsCollapsed ? "collapsed-item" : "")}")" @onclick="ToggleFertigung" title="Fertigung">
+                <div class="group-title-wrapper">
+                    <i class="fa-solid fa-bars-progress nav-icon"></i>
+                    @if(!IsCollapsed) { <span>Fertigung</span> }
+                </div>
+                @if (!IsCollapsed)
+                {
+                    <i class="fa-solid fa-chevron-@(IsFertigungOpen ? "down" : "right") chevron"></i>
+                }
+            </div>
+            
+            @if (IsFertigungOpen && !IsCollapsed)
+            {
+                <div class="nav-submenu">
+                    <NavLink class="sub-item" href="fertigung/wareneingang">Wareneingang</NavLink>
+                    <NavLink class="sub-item" href="fertigung/kiefel">Kiefel & Parco</NavLink>
+                    <NavLink class="sub-item" href="fertigung/panther">Panther</NavLink>
+                    <NavLink class="sub-item" href="fertigung/uv-haerten">UV-Härten</NavLink>
+                    <NavLink class="sub-item" href="fertigung/stanzen">Stanzen u. Fräsen</NavLink>
+                    <NavLink class="sub-item" href="fertigung/endkontrolle">Endkontrolle</NavLink>
+                </div>
+            }
+        </div>
+
+        <!-- Verwaltung Group -->
+        <AuthorizeView Roles="Admin, Verwaltung">
+            <Authorized Context="AuthContext">
+                <div class="nav-group">
+                    <div class="@($"nav-item has-children {(IsCollapsed ? "collapsed-item" : "")}")" @onclick="ToggleVerwaltung" title="Verwaltung">
+                        <div class="group-title-wrapper">
+                            <i class="fa-solid fa-user-tie nav-icon text-warning"></i>
+                            @if(!IsCollapsed) { <span>Verwaltung</span> }
+                        </div>
+                        @if (!IsCollapsed)
+                        {
+                            <i class="fa-solid fa-chevron-@(IsVerwaltungOpen ? "down" : "right") chevron"></i>
+                        }
+                    </div>
+                    
+                    @if (IsVerwaltungOpen && !IsCollapsed)
+                    {
+                        <div class="nav-submenu">
+                            <NavLink class="sub-item" href="verwaltung/fehleranalyse">Fehleranalyse</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/chargenanalyse">Chargenanalyse</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/barcode">Barcode-Profile</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/auftraege">Fertigungsaufträge</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/layout">Produktionslayout</NavLink>
+                        </div>
+                    }
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </div>
+</nav>
+
+<div class="@($"bottom-nav {(IsCollapsed ? "collapsed-nav" : "")}")">
+    <!-- Notification Dock -->
+    <div class="@($"d-flex mb-3 {(IsCollapsed ? "flex-column align-items-center gap-3" : "justify-content-around px-2")}")">
+        <button class="btn position-relative p-2" title="Systemnachrichten" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
+            <i class="fa-solid fa-envelope fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-dark" style="font-size: 0.6rem;">3</span>
+        </button>
+        
+        <button class="btn position-relative p-2" title="Benachrichtigungen" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
+            <i class="fa-solid fa-bell fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-dark rounded-circle shadow-sm"></span>
+        </button>
+    </div>
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="@($"nav-item user-profile mb-2 {(IsCollapsed ? "collapsed-item" : "")}")" title="@context.User.Identity?.Name">
+                <i class="fa-solid fa-circle-user nav-icon text-info fs-4"></i>
+                @if(!IsCollapsed) { 
+                    <div class="user-info ms-2" style="line-height: 1.2;">
+                        <span class="d-block fw-bold text-white" style="font-size: 0.85rem;">@context.User.Identity?.Name</span>
+                        <span class="d-block text-secondary" style="font-size: 0.70rem; text-transform: uppercase;">@context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                    </div>
+                }
+            </div>
+            
+            <a class="@($"nav-item text-danger border-top border-secondary pt-3 {(IsCollapsed ? "collapsed-item" : "")}")" @onclick="Logout" style="cursor: pointer;" title="Abmelden">
+                <i class="fa-solid fa-right-from-bracket nav-icon"></i>
+                @if(!IsCollapsed) { <span>Abmelden</span> }
+            </a>
+        </Authorized>
+    </AuthorizeView>
+
+    <NavLink class="@($"nav-item {(IsCollapsed ? "collapsed-item" : "")}")" href="einstellungen" title="Einstellungen">
+        <i class="fa-solid fa-gear nav-icon"></i>
+        @if(!IsCollapsed) { <span>Einstellungen</span> }
+    </NavLink>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsCollapsed { get; set; }
+    
+    [Parameter]
+    public EventCallback OnToggle { get; set; }
+
+    private bool IsFertigungOpen = true;
+    private bool IsVerwaltungOpen = false;
+
+    private void ToggleFertigung() {
+        if(!IsCollapsed) IsFertigungOpen = !IsFertigungOpen;
+    }
+    private void ToggleVerwaltung() {
+        if(!IsCollapsed) IsVerwaltungOpen = !IsVerwaltungOpen;
+    }
+
+    private async Task Logout()
+    {
+        if (AuthStateProvider is CustomAuthStateProvider customProvider)
+        {
+            await customProvider.UpdateAuthenticationState(null);
+            NavigationManager.NavigateTo("/login", true);
+        }
+    }
+
+    private async Task ToggleMenu()
+    {
+        if (OnToggle.HasDelegate)
+        {
+            await OnToggle.InvokeAsync();
+        }
+    }
+}
