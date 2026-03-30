@@ -150,7 +150,7 @@ namespace QIN_Production_Web.Data
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
-                await LogActivityAsync(userName, $"[Sauberraum] Fehlersammelkarte für Charge {e.Charge} wurde erfolgreich erstellt. Bemerkung: {e.Bemerkung}");
+                await ActivityLogService.InsertLogAsync(userName, $"[Sauberraum] Fehlersammelkarte für Charge {e.Charge} wurde erfolgreich erstellt. Bemerkung: {e.Bemerkung}");
                 return (true, "Erfolgreich gespeichert.");
             } catch (Exception ex) { return (false, ex.Message); }
         }
@@ -225,7 +225,7 @@ namespace QIN_Production_Web.Data
                         int affected = await cmd.ExecuteNonQueryAsync();
                         if (affected > 0)
                         {
-                            await LogActivityAsync(userName, $"[Sauberraum] Eintrag ID {id}: Feld '{field}' wurde auf '{value}' geändert.");
+                            await ActivityLogService.InsertLogAsync(userName, $"[Sauberraum] Eintrag ID {id}: Feld '{field}' wurde auf '{value}' geändert.");
                             return (true, "Aktualisiert");
                         }
                         return (false, "Eintrag nicht gefunden.");
@@ -247,32 +247,13 @@ namespace QIN_Production_Web.Data
                         int affected = await cmd.ExecuteNonQueryAsync();
                         if (affected > 0)
                         {
-                            await LogActivityAsync(userName, $"[Sauberraum] Eintrag mit ID {id} wurde erfolgreich gelöscht.");
+                            await ActivityLogService.InsertLogAsync(userName, $"[Sauberraum] Eintrag mit ID {id} wurde erfolgreich gelöscht.");
                             return (true, "Gelöscht");
                         }
                         return (false, "Eintrag nicht gefunden.");
                     }
                 }
             } catch (Exception ex) { return (false, ex.Message); }
-        }
-
-        private static async Task LogActivityAsync(string userName, string log)
-        {
-            try
-            {
-                using (var con = new SqlConnection(SqlManager.connectionString))
-                {
-                    await con.OpenAsync();
-                    string q = "INSERT INTO Logs (Benutzer, Prozess, Datum) VALUES (@Benutzer, @Prozess, @Datum)";
-                    using (var cmd = new SqlCommand(q, con))
-                    {
-                        cmd.Parameters.AddWithValue("@Benutzer", userName ?? "Unknown");
-                        cmd.Parameters.AddWithValue("@Prozess", log);
-                        cmd.Parameters.AddWithValue("@Datum", DateTime.Now);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-            } catch { }
         }
     }
 }

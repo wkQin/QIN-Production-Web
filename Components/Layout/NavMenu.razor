@@ -1,7 +1,9 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using QIN_Production_Web.Data
+@implements IDisposable
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
+@inject NachrichtenService MessageService
 
 <div class="@($"brand-section {(IsCollapsed ? "collapsed" : "justify-content-between")}")">
     <div class="d-flex align-items-center gap-3">
@@ -94,9 +96,11 @@
                         <div class="nav-submenu">
                             <NavLink class="sub-item" href="verwaltung/fehleranalyse">Fehleranalyse</NavLink>
                             <NavLink class="sub-item" href="verwaltung/chargenanalyse">Chargenanalyse</NavLink>
-                            <NavLink class="sub-item" href="verwaltung/barcode">Barcode-Profile</NavLink>
+                            <!-- <NavLink class="sub-item" href="verwaltung/barcode">Barcode-Profile</NavLink> -->
                             <NavLink class="sub-item" href="verwaltung/auftraege">Fertigungsaufträge</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/wareneingang">Wareneingang</NavLink>
                             <NavLink class="sub-item" href="verwaltung/layout">Produktionslayout</NavLink>
+                            <NavLink class="sub-item text-info fw-bold" href="verwaltung/aktivitaeten"><i class="fa-solid fa-list-check me-1"></i> Aktivitätenprotokoll</NavLink>
                         </div>
                     }
                 </div>
@@ -108,10 +112,13 @@
 <div class="@($"bottom-nav {(IsCollapsed ? "collapsed-nav" : "")}")">
     <!-- Notification Dock -->
     <div class="@($"d-flex mb-3 {(IsCollapsed ? "flex-column align-items-center gap-3" : "justify-content-around px-2")}")">
-        <button class="btn position-relative p-2" title="Systemnachrichten" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
+        <NavLink class="btn position-relative p-2" href="nachrichten" title="Systemnachrichten" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
             <i class="fa-solid fa-envelope fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-dark" style="font-size: 0.6rem;">3</span>
-        </button>
+            @if (UnreadCount > 0)
+            {
+                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-dark" style="font-size: 0.6rem;">@UnreadCount</span>
+            }
+        </NavLink>
         
         <button class="btn position-relative p-2" title="Benachrichtigungen" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
             <i class="fa-solid fa-bell fs-5"></i>
@@ -154,6 +161,45 @@
     private bool IsFertigungOpen = true;
     private bool IsVerwaltungOpen = false;
 
+    private int UnreadCount = 0;
+    private System.Threading.Timer? _pollingTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        MessageService.OnUnreadCountChanged += HandleUnreadCountChanged;
+        
+        await LoadUnreadCount();
+        
+        // Background polling every 5 seconds to catch cross-browser messages
+        _pollingTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadUnreadCount();
+                StateHasChanged();
+            });
+        }, null, 5000, 5000); 
+    }
+
+    private async void HandleUnreadCountChanged()
+    {
+        await InvokeAsync(async () =>
+        {
+            await LoadUnreadCount();
+            StateHasChanged();
+        });
+    }
+
+    private async Task LoadUnreadCount()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        string user = authState.User?.Identity?.Name ?? string.Empty;
+        if (!string.IsNullOrEmpty(user))
+        {
+            UnreadCount = await MessageService.GetTotalUnreadCountAsync(user);
+        }
+    }
+
     private void ToggleFertigung() {
         if(!IsCollapsed) IsFertigungOpen = !IsFertigungOpen;
     }
@@ -176,5 +222,11 @@
         {
             await OnToggle.InvokeAsync();
         }
+    }
+
+    public void Dispose()
+    {
+        MessageService.OnUnreadCountChanged -= HandleUnreadCountChanged;
+        _pollingTimer?.Dispose();
     }
 }

@@ -140,7 +140,7 @@ namespace QIN_Production_Web.Data
             return (chargen, material, nummer, anweisung, auftraege);
         }
 
-        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<UVAuftrag> auftraege, List<UVCharge> chargen)
+        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<UVAuftrag> auftraege, List<UVCharge> chargen, string userName = "Unbekannt")
         {
             try
             {
@@ -198,6 +198,11 @@ namespace QIN_Production_Web.Data
                         }
                     }
                 }
+                
+                await ActivityLogService.InsertLogAsync(userName, abgesendet 
+                    ? $"[UV Härte] Auftrag {faNr} erfolgreich abgeschlossen." 
+                    : $"[UV Härte] Auftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
+                    
                 return true;
             } catch (Exception ex) { Console.WriteLine(ex.Message); return false; }
         }

@@ -1,0 +1,427 @@
+@page "/verwaltung/wareneingang"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@using QIN_Production_Web.Data
+@inject VerwaltungWareneingangService WEService
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
+<PageTitle>Wareneingang Verwaltung</PageTitle>
+
+<div class="container-fluid py-4 min-vh-100 bg-dark">
+    <!-- Header -->
+    <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: rgba(32,35,42,0.85); backdrop-filter: blur(10px);">
+        <div class="d-flex align-items-center">
+            <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+                <i class="fa-solid fa-truck-loading fa-2x text-success"></i>
+            </div>
+            <div>
+                <h2 class="text-white mb-1 fw-bold">Wareneingang Verwaltung</h2>
+                <p class="text-secondary mb-0 small">Zentrale Verwaltung für gebuchte und offene Wareneingänge inklusive Chargen-Zuteilung</p>
+            </div>
+        </div>
+        
+        <hr class="border-secondary my-4" />
+        
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <ul class="nav nav-pills w-100 p-1 mx-0 rounded-3 border border-secondary d-flex" style="background: rgba(15,23,42,0.6);">
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveFilter == "Alle" ? "active bg-primary" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick='() => ChangeFilter("Alle")'>Alle</button>
+                    </li>
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveFilter == "Gebucht" ? "active bg-success" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick='() => ChangeFilter("Gebucht")'>Gebucht</button>
+                    </li>
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveFilter == "Nicht Gebucht" ? "active bg-warning text-dark" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick='() => ChangeFilter("Nicht Gebucht")'>Nicht Gebucht</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-5">
+                 <div class="input-group">
+                    <span class="input-group-text bg-secondary border-secondary text-white"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" class="form-control border-secondary text-white bg-dark" placeholder="Suche in Liste..." 
+                           @bind-value="SearchQuery" @bind-value:event="oninput" @onkeyup="FilterLocally" />
+                </div>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-light w-100 fw-bold" @onclick="LoadWEAsync">
+                    <i class="fa-solid fa-rotate-right me-1"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Wareneingang Table -->
+    <div class="card bg-dark border-secondary shadow-lg rounded-4 overflow-hidden mb-4">
+        <div class="card-header border-secondary bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-list me-2"></i> Wareneingänge</span>
+            <span class="badge bg-secondary rounded-pill">@(FilteredWERows.Count) Einträge</span>
+        </div>
+        <div class="card-body p-0">
+            @if (IsLoadingWE)
+            {
+                <div class="text-center p-5">
+                    <div class="spinner-border text-success" role="status">
+                        <span class="visually-hidden">Lade Daten...</span>
+                    </div>
+                </div>
+            }
+            else if (!FilteredWERows.Any())
+            {
+                <div class="text-center p-5 text-secondary">
+                    Keine Wareneingänge gefunden.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
+                    <table class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
+                        <thead class="table-dark sticky-top" style="background-color: #1c1f26;">
+                            <tr>
+                                <th class="text-center" style="width: 100px;">Aktionen</th>
+                                <th>Gebucht</th>
+                                <th>Lieferant</th>
+                                <th>Artikel</th>
+                                <th class="text-info">LS Nr</th>
+                                <th>Menge</th>
+                                <th>Chargen</th>
+                                <th>Datum</th>
+                                <th>Palettentausch</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in FilteredWERows)
+                            {
+                                bool isSelected = row.ID == SelectedWE?.ID;
+                                <tr class="@(isSelected ? "table-active border-start border-4 border-info" : "")" 
+                                    style="cursor: pointer;" @onclick="() => SelectWEAsync(row)">
+                                    <td class="text-center" @onclick:stopPropagation="true">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenWEModal(row)" title="Bearbeiten">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWEAsync(row.ID)" title="Löschen">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (row.Gebucht == true)
+                                        {
+                                            <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> JA</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-xmark me-1"></i> NEIN</span>
+                                        }
+                                    </td>
+                                    <td>@row.Lieferant</td>
+                                    <td>@row.Artikel</td>
+                                    <td class="fw-bold text-info">@row.LS_Nr</td>
+                                    <td>@row.Menge</td>
+                                    <td>
+                                        <span class="badge bg-secondary rounded-pill px-2">@row.Chargen</span>
+                                    </td>
+                                    <td>@row.Eingangsdatum</td>
+                                    <td class="text-center">
+                                        @if(row.Palettentausch == true)
+                                        {
+                                            <i class="fa-solid fa-check text-success"></i>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Chargen Table for selected Wareneingang -->
+    @if (SelectedWE != null)
+    {
+        <div class="card bg-dark border-info shadow-lg rounded-4 overflow-hidden mb-4 animate__animated animate__fadeIn">
+            <div class="card-header border-info bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                <span>
+                    <i class="fa-solid fa-boxes-stacked me-2 text-info"></i> Chargen für Lieferschein: <span class="text-info">@SelectedWE.LS_Nr</span>
+                </span>
+                <button class="btn btn-sm btn-info fw-bold text-dark" @onclick="OpenAddChargeModal">
+                    <i class="fa-solid fa-plus me-1"></i> Neue Charge
+                </button>
+            </div>
+            <div class="card-body p-0">
+                @if (IsLoadingChargen)
+                {
+                    <div class="text-center p-4">
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div> Lade Chargen...
+                    </div>
+                }
+                else if (!ChargenRows.Any())
+                {
+                    <div class="text-center p-4 text-secondary">
+                        Keine Chargen zu diesem Lieferschein hinterlegt.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover mb-0 text-nowrap align-middle">
+                            <thead class="table-dark" style="background-color: #17202A;">
+                                <tr>
+                                    <th style="width: 80px;">Aktionen</th>
+                                    <th>Charge Text</th>
+                                    <th>Echte Menge</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var charge in ChargenRows)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenChargeModal(charge)" title="Bearbeiten">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteChargeAsync(charge.ID)" title="Löschen">
+                                                    <i class="fa-solid fa-trash-can"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td class="fw-bold text-white">@charge.Charge</td>
+                                        <td class="text-info fw-bold">@charge.Echte_Menge</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<WEEditModal @ref="weModal" OnSave="SaveWEAsync" />
+<ChargeEditModal @ref="chargeModal" OnSave="SaveChargeAsync" />
+
+@code {
+    private string ActiveFilter = "Alle";
+    private string SearchQuery = "";
+    
+    private bool IsLoadingWE = false;
+    private bool IsLoadingChargen = false;
+
+    private List<WareneingangEntry> AllWERows = new();
+    private List<WareneingangEntry> FilteredWERows = new();
+    private WareneingangEntry? SelectedWE;
+
+    private List<ChargeEntry> ChargenRows = new();
+
+    private WEEditModal weModal = default!;
+    private ChargeEditModal chargeModal = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadWEAsync();
+    }
+
+    private async Task ChangeFilter(string filter)
+    {
+        if (ActiveFilter == filter) return;
+        ActiveFilter = filter;
+        await LoadWEAsync();
+    }
+
+    private void FilterLocally()
+    {
+        if (string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            FilteredWERows = AllWERows;
+        }
+        else
+        {
+            var q = SearchQuery.ToLower();
+            FilteredWERows = AllWERows.Where(x => 
+                (x.LS_Nr != null && x.LS_Nr.ToLower().Contains(q)) ||
+                (x.Lieferant != null && x.Lieferant.ToLower().Contains(q)) ||
+                (x.Artikel != null && x.Artikel.ToLower().Contains(q))
+            ).ToList();
+        }
+    }
+
+    private async Task LoadWEAsync()
+    {
+        IsLoadingWE = true;
+        SelectedWE = null;
+        StateHasChanged();
+
+        try
+        {
+            var raw = await WEService.GetWareneingangsAsync(ActiveFilter);
+            AllWERows = raw.ToList();
+            FilterLocally();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"WE Load Error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoadingWE = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectWEAsync(WareneingangEntry we)
+    {
+        SelectedWE = we;
+        await LoadChargenAsync(we.ID);
+    }
+
+    private async Task LoadChargenAsync(int weId)
+    {
+        IsLoadingChargen = true;
+        StateHasChanged();
+        try
+        {
+            var res = await WEService.GetChargenForWareneingangAsync(weId);
+            ChargenRows = res.ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Chargen Load Error: {ex.Message}");
+        }
+        finally
+        {
+            IsLoadingChargen = false;
+            StateHasChanged();
+        }
+    }
+
+    // --- Wareneingang Actions ---
+
+    private void OpenWEModal(WareneingangEntry row)
+    {
+        weModal.ShowAsync(row);
+    }
+
+    private async Task SaveWEAsync(WareneingangEntry updated)
+    {
+        try
+        {
+            IsLoadingWE = true;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            string userName = authState.User.Identity?.Name ?? "Verwaltung";
+            bool succ = await WEService.UpdateWareneingangAsync(updated, userName);
+            if (succ)
+            {
+                await LoadWEAsync(); // Refresh
+                if (SelectedWE?.ID == updated.ID) await SelectWEAsync(updated);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Fehler beim Speichern des WE:\n{ex.Message}");
+        }
+        finally
+        {
+            IsLoadingWE = false;
+        }
+    }
+
+    private async Task DeleteWEAsync(int id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Möchten Sie diesen gesamten Wareneingang (inkl. aller zugehörigen Chargen) unwiderruflich löschen?");
+        if (confirmed)
+        {
+            try
+            {
+                IsLoadingWE = true;
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                string userName = authState.User.Identity?.Name ?? "Verwaltung";
+                bool succ = await WEService.DeleteWareneingangAsync(id, userName);
+                if (succ) await LoadWEAsync();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Fehler: {ex.Message}");
+                IsLoadingWE = false;
+            }
+        }
+    }
+
+    // --- Chargen Actions ---
+
+    private void OpenChargeModal(ChargeEntry charge)
+    {
+        chargeModal.ShowAsync(charge);
+    }
+
+    private void OpenAddChargeModal()
+    {
+        if (SelectedWE == null) return;
+        var newChg = new ChargeEntry { ID = 0, Wareneingang_ID = SelectedWE.ID };
+        chargeModal.ShowAsync(newChg);
+    }
+
+    private async Task SaveChargeAsync(ChargeEntry edited)
+    {
+        try
+        {
+            IsLoadingChargen = true;
+            bool succ = false;
+            
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            string userName = authState.User.Identity?.Name ?? "Verwaltung";
+
+            if (edited.ID == 0)
+            {
+                succ = await WEService.AddChargeAsync(edited, userName);
+            }
+            else
+            {
+                succ = await WEService.UpdateChargeAsync(edited, userName);
+            }
+            
+            if (succ && SelectedWE != null)
+            {
+                await LoadChargenAsync(SelectedWE.ID);
+            }
+        }
+        catch(Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Fehler beim Speichern der Charge:\n{ex.Message}");
+        }
+        finally
+        {
+            IsLoadingChargen = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteChargeAsync(int chargeId)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Soll diese Charge gelöscht werden?");
+        if (confirmed)
+        {
+            try
+            {
+                IsLoadingChargen = true;
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                string userName = authState.User.Identity?.Name ?? "Verwaltung";
+                
+                bool succ = await WEService.DeleteChargeAsync(chargeId, userName);
+                if (succ && SelectedWE != null) await LoadChargenAsync(SelectedWE.ID);
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Fehler: {ex.Message}");
+                IsLoadingChargen = false;
+            }
+        }
+    }
+}

@@ -1,0 +1,195 @@
+@page "/verwaltung/aktivitaeten"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject QIN_Production_Web.Data.ActivityLogService LogService
+@using QIN_Production_Web.Data
+@implements IDisposable
+@rendermode InteractiveServer
+
+<PageTitle>Aktivitätenprotokoll</PageTitle>
+
+<div class="container-fluid py-4 min-vh-100 bg-dark position-relative overflow-hidden">
+    <!-- Background Effects -->
+    <div class="position-absolute top-0 start-0 w-100 h-100 pointer-events-none" style="background: radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.15), transparent 50%); z-index: 0;"></div>
+
+    <div class="position-relative z-1">
+        <!-- Header -->
+        <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: rgba(32,35,42,0.85); backdrop-filter: blur(10px);">
+            <div class="d-flex align-items-center">
+                <div class="p-3 rounded-circle me-3" style="background: rgba(56, 189, 248, 0.15);">
+                    <i class="fa-solid fa-list-check fa-2x" style="color: #38bdf8;"></i>
+                </div>
+                <div>
+                    <h2 class="text-white mb-1 fw-bold" style="letter-spacing: -0.02em;">Aktivitätenprotokoll</h2>
+                    <p class="text-secondary mb-0 small">Live-Überwachung aller wesentlichen Systemereignisse</p>
+                </div>
+            </div>
+            <hr class="border-secondary my-4" />
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <div class="input-group" style="max-width: 400px;">
+                    <span class="input-group-text bg-transparent border-secondary text-secondary"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" class="form-control bg-transparent border-secondary text-white" placeholder="Suchen..." @bind="SearchQuery" @bind:event="oninput" />
+                </div>
+                
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <span class="text-secondary small me-2"><i class="fa-solid fa-circle text-success fade-pulse me-1"></i> Live</span>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="RefreshLogs">
+                        <i class="fa-solid fa-rotate-right me-1"></i> Aktualisieren
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs View -->
+        <div class="card bg-dark border-secondary shadow-lg rounded-4 overflow-hidden" style="background: rgba(15,23,42,0.6) !important; backdrop-filter: blur(12px);">
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                    <table class="table table-dark table-hover mb-0 align-middle text-nowrap">
+                        <thead style="background: rgba(20,25,35,0.9); position: sticky; top: 0; z-index: 2;">
+                            <tr>
+                                <th class="text-secondary fw-normal border-bottom border-secondary py-3 px-4" style="width: 180px;">Zeitstempel</th>
+                                <th class="text-secondary fw-normal border-bottom border-secondary py-3 px-4" style="width: 200px;">Benutzer</th>
+                                <th class="text-secondary fw-normal border-bottom border-secondary py-3 px-4">Aktion / Prozess</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (FilteredLogs.Any())
+                            {
+                                @foreach (var log in FilteredLogs)
+                                {
+                                    <tr class="log-row">
+                                        <td class="px-4 py-3 border-bottom border-secondary text-secondary">
+                                            @log.Datum.ToString("dd.MM.yyyy HH:mm:ss")
+                                        </td>
+                                        <td class="px-4 py-3 border-bottom border-secondary">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-circle">
+                                                    @(GetInitials(log.Benutzer))
+                                                </div>
+                                                <span class="text-white fw-medium">@log.Benutzer</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 border-bottom border-secondary text-white text-wrap" style="min-width: 300px; line-height: 1.5;">
+                                            @HighlightKeywords(log.Prozess)
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="3" class="text-center py-5 text-secondary border-bottom border-secondary">
+                                        <i class="fa-solid fa-inbox fa-3x mb-3 opacity-50"></i>
+                                        <p class="mb-0">Keine Aktivitäten gefunden.</p>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(56, 189, 248, 0.2);
+        color: #38bdf8;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+    .fade-pulse {
+        animation: fadePulse 2s infinite;
+    }
+    @@keyframes fadePulse {
+        0% { opacity: 0.4; }
+        50% { opacity: 1; }
+        100% { opacity: 0.4; }
+    }
+    .log-row:hover td {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+</style>
+
+@code {
+    private List<ActivityLogDto> AllLogs = new();
+    private string SearchQuery = "";
+    private System.Threading.Timer? _timer;
+
+    private IEnumerable<ActivityLogDto> FilteredLogs => 
+        string.IsNullOrWhiteSpace(SearchQuery) 
+        ? AllLogs 
+        : AllLogs.Where(l => l.Prozess.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || 
+                             l.Benutzer.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogsAsync();
+        
+        // Poll every 5 seconds for real-time vibe
+        _timer = new System.Threading.Timer(async (state) =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadLogsAsync();
+                StateHasChanged();
+            });
+        }, null, 5000, 5000);
+    }
+
+    private async Task LoadLogsAsync()
+    {
+        try
+        {
+            var logs = await ActivityLogService.GetLogsAsync(500); // Lade die letzten 500
+            AllLogs = logs.ToList();
+        }
+        catch { }
+    }
+
+    private async Task RefreshLogs()
+    {
+        await LoadLogsAsync();
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "?";
+        var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0].Length >= 2 ? parts[0].Substring(0, 2).ToUpper() : parts[0].ToUpper();
+        return $"{parts[0][0]}{parts[^1][0]}".ToUpper();
+    }
+
+    private MarkupString HighlightKeywords(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return new MarkupString("");
+        
+        // Basic highlighting for structural keywords
+        string styled = text;
+        styled = styled.Replace("[Sauberraum]", "<span class='badge bg-primary bg-opacity-25 text-primary me-2'>Sauberraum</span>");
+        styled = styled.Replace("[Wareneingang]", "<span class='badge bg-success bg-opacity-25 text-success me-2'>Wareneingang</span>");
+        styled = styled.Replace("[WE-Verwaltung]", "<span class='badge bg-success bg-opacity-25 text-success me-2'>WE-Verwaltung</span>");
+        styled = styled.Replace("[Thermoformung]", "<span class='badge bg-warning bg-opacity-25 text-warning me-2'>Thermoformung</span>");
+        styled = styled.Replace("[UV Härte]", "<span class='badge bg-info bg-opacity-25 text-info me-2'>UV Härte</span>");
+        styled = styled.Replace("[Fertigungsaufträge]", "<span class='badge bg-danger bg-opacity-25 text-danger me-2'>Fertigungsaufträge</span>");
+        
+        // Highlight words like 'gelöscht', 'erfolgreich', 'erstellt'
+        styled = styled.Replace("gelöscht", "<span class='text-danger fw-bold'>gelöscht</span>");
+        styled = styled.Replace("erstellt", "<span class='text-success fw-bold'>erstellt</span>");
+        styled = styled.Replace("aktualisiert", "<span class='text-info fw-bold'>aktualisiert</span>");
+        styled = styled.Replace("erfolgreich", "<span class='text-success'>erfolgreich</span>");
+        
+        return new MarkupString(styled);
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

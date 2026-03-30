@@ -1,0 +1,118 @@
+@using QIN_Production_Web.Data
+
+@if (isVisible)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-secondary text-white" style="background: rgba(32,35,42,0.95); backdrop-filter: blur(10px);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-primary fw-bold">
+                        <i class="fa-solid fa-pen-to-square me-2"></i> FA Bearbeiten (#@RowId)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseAsync"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        @if (EditableModel != null)
+                        {
+                            @foreach (var kvp in EditableModel)
+                            {
+                                var key = kvp.Key;
+                                var value = kvp.Value;
+                                
+                                // ID forms primary key
+                                if (key.Equals("ID", StringComparison.OrdinalIgnoreCase)) continue;
+                                // Automatically managed columns
+                                if (key.Equals("Erstellungsdatum", StringComparison.OrdinalIgnoreCase) || 
+                                    key.Equals("Erstelldatum", StringComparison.OrdinalIgnoreCase)) continue;
+
+                                <div class="col-md-6 mb-2">
+                                    <label class="form-label text-secondary small mb-1 fw-bold">@key.Replace("_", " ")</label>
+                                    @if (value is bool b)
+                                    {
+                                        <div class="form-check form-switch mt-1">
+                                            <input type="checkbox" class="form-check-input" checked="@b" 
+                                                   @onchange="@(e => EditableModel[key] = (bool)(e.Value ?? false))" />
+                                        </div>
+                                    }
+                                    else if (value is DateTime dt)
+                                    {
+                                        <input type="datetime-local" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" 
+                                               value="@dt.ToString("yyyy-MM-ddTHH:mm")" 
+                                               @onchange="@(e => EditableModel[key] = DateTime.TryParse(e.Value?.ToString(), out var ret) ? ret : DateTime.Now)" />
+                                    }
+                                    else if (value is TimeSpan ts)
+                                    {
+                                        <input type="time" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" 
+                                               value="@ts.ToString(@"hh\:mm")" 
+                                               @onchange="@(e => EditableModel[key] = TimeSpan.TryParse(e.Value?.ToString(), out var ret) ? ret : TimeSpan.Zero)" />
+                                    }
+                                    else if (value is int i)
+                                    {
+                                        <input type="number" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" 
+                                               value="@i" 
+                                               @onchange="@(e => EditableModel[key] = int.TryParse(e.Value?.ToString(), out var ret) ? ret : 0)" />
+                                    }
+                                    else if (value is double or float or decimal)
+                                    {
+                                        <input type="number" step="any" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" 
+                                               value="@value" 
+                                               @onchange="@(e => EditableModel[key] = decimal.TryParse(e.Value?.ToString(), out var ret) ? ret : 0m)" />
+                                    }
+                                    else
+                                    {
+                                        <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" 
+                                               value="@(value?.ToString())" 
+                                               @onchange="@(e => EditableModel[key] = e.Value)" />
+                                    }
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary text-white fw-bold" @onclick="CloseAsync">Abbrechen</button>
+                    <button type="button" class="btn btn-primary fw-bold" @onclick="SaveAsync">
+                        <i class="fa-solid fa-save me-1"></i> Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isVisible = false;
+    private IDictionary<string, object>? EditableModel;
+    private int RowId;
+    
+    [Parameter]
+    public EventCallback<IDictionary<string, object>> OnSave { get; set; }
+
+    public Task ShowAsync(IDictionary<string, object> originalRow)
+    {
+        // Clone the dictionary to prevent modifying the grid directly on cancellation
+        EditableModel = originalRow.ToDictionary(k => k.Key, v => v.Value);
+        RowId = Convert.ToInt32(EditableModel["ID"] ?? 0);
+        isVisible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task CloseAsync()
+    {
+        isVisible = false;
+        EditableModel = null;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (EditableModel != null)
+        {
+            await OnSave.InvokeAsync(EditableModel);
+        }
+        await CloseAsync();
+    }
+}

@@ -1,0 +1,70 @@
+@using QIN_Production_Web.Data
+
+@if (isVisible)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-secondary text-white" style="background: rgba(32,35,42,0.95); backdrop-filter: blur(10px);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-info fw-bold">
+                        <i class="fa-solid @(Model.ID == 0 ? "fa-plus" : "fa-pen") me-2"></i> 
+                        @(Model.ID == 0 ? "Neue Charge Hinzufügen" : $"Charge Bearbeiten")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseAsync"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small mb-1 fw-bold">Charge (Text)</label>
+                        <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Charge" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-secondary small mb-1 fw-bold">Echte Menge (Zahl)</label>
+                        <input type="number" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Echte_Menge" />
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary text-white fw-bold" @onclick="CloseAsync">Abbrechen</button>
+                    <button type="button" class="btn btn-info fw-bold text-dark" @onclick="SaveAsync">
+                        <i class="fa-solid fa-save me-1"></i> Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isVisible = false;
+    private ChargeEntry Model = new();
+    
+    [Parameter]
+    public EventCallback<ChargeEntry> OnSave { get; set; }
+
+    public Task ShowAsync(ChargeEntry originalRow)
+    {
+        Model = new ChargeEntry
+        {
+            ID = originalRow.ID,
+            Charge = originalRow.Charge,
+            Echte_Menge = originalRow.Echte_Menge,
+            Wareneingang_ID = originalRow.Wareneingang_ID
+        };
+        
+        isVisible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task CloseAsync()
+    {
+        isVisible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        await OnSave.InvokeAsync(Model);
+        await CloseAsync();
+    }
+}

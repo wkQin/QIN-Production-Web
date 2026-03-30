@@ -182,6 +182,12 @@ namespace QIN_Production_Web.Data
                         else { activeId = Convert.ToInt32(await command.ExecuteScalarAsync()); }
 
                         if (activeId > 0 && chargenList != null) await InsertChargenAsync(activeId, chargenList, connection, liefermenge ?? "0");
+
+                        string userName = await ActivityLogService.GetUserNameByPersonalnummerAsync(personalnummer);
+                        string actionText = eintragBearbeiten 
+                            ? $"[Wareneingang] Eintrag ID {activeId} aktualisiert (Material: {material ?? "Unbekannt"})"
+                            : $"[Wareneingang] Neuer Eintrag ID {activeId} erstellt (Lieferant: {lieferant ?? "Unbekannt"}, Material: {material ?? "Unbekannt"})";
+                        await ActivityLogService.InsertLogAsync(userName, actionText);
                     }
                 }
                 return true;
@@ -246,7 +252,13 @@ namespace QIN_Production_Web.Data
                         command.Parameters.AddWithValue("@id", parsedId);
                         command.Parameters.AddWithValue("@Palettencharge", Palettencharge);
                         command.Parameters.AddWithValue("@Eingangsdatum", DateTime.Now);
-                        await command.ExecuteNonQueryAsync();
+                        int affected = await command.ExecuteNonQueryAsync();
+
+                        if (affected > 0)
+                        {
+                            string userName = await ActivityLogService.GetUserNameByPersonalnummerAsync("100"); // Fallback, UpdateWECharge lacks user context
+                            await ActivityLogService.InsertLogAsync(userName, $"[Wareneingang] Palettencharge für ID {parsedId} auf '{Palettencharge}' aktualisiert.");
+                        }
                     }
                 }
             }

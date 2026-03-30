@@ -25,6 +25,10 @@ builder.Services.AddScoped<EndkontrolleService>();
 builder.Services.AddScoped<FehleranalyseService>();
 builder.Services.AddScoped<ChargenanalyseService>();
 builder.Services.AddScoped<ProduktionslayoutService>();
+builder.Services.AddScoped<FertigungsauftraegeService>();
+builder.Services.AddScoped<VerwaltungWareneingangService>();
+builder.Services.AddScoped<NachrichtenService>();
+builder.Services.AddScoped<ActivityLogService>();
 // Zeiterfassung Services
 builder.Services.AddSingleton(new QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungPolicy());
 builder.Services.AddScoped<QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungMath>();

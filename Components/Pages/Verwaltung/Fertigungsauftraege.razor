@@ -1,0 +1,307 @@
+@page "/verwaltung/auftraege"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject QIN_Production_Web.Data.FertigungsauftraegeService FAService
+@inject IJSRuntime JS
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
+<PageTitle>Fertigungsaufträge Management</PageTitle>
+
+<div class="container-fluid py-4 min-vh-100 bg-dark">
+    <!-- Header -->
+    <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: rgba(32,35,42,0.85); backdrop-filter: blur(10px);">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
+                    <i class="fa-solid fa-clipboard-list fa-2x text-primary"></i>
+                </div>
+                <div>
+                    <h2 class="text-white mb-1 fw-bold">Fertigungsaufträge</h2>
+                    <p class="text-secondary mb-0 small">Zentrale Verwaltung für Thermoformung, Stanzen und UV Aufträge</p>
+                </div>
+            </div>
+        </div>
+        
+        <hr class="border-secondary my-4" />
+        
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <!-- Nav Pills for Table Selection -->
+                <ul class="nav nav-pills w-100 p-1 mx-0 rounded-3 border border-secondary d-flex" style="background: rgba(15,23,42,0.6);">
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveTab == "Thermoformung" ? "active" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick="@(() => SwitchTab("Thermoformung"))">Thermoformung</button>
+                    </li>
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveTab == "Stanzen" ? "active" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick="@(() => SwitchTab("Stanzen"))">Stanzen / Fräsen</button>
+                    </li>
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveTab == "UV" ? "active" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick="@(() => SwitchTab("UV"))">UV-Aufträge</button>
+                    </li>
+                    <li class="nav-item flex-fill text-center">
+                        <button class="nav-link w-100 @(ActiveTab == "UV Anweisungen" ? "active" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                                @onclick="@(() => SwitchTab("UV Anweisungen"))">UV-Anweisungen</button>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-secondary border-secondary text-white"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" class="form-control border-secondary text-white bg-dark" placeholder="Suche nach FA-Nr..." 
+                           @bind-value="SearchQuery" @bind-value:event="oninput" @onkeyup="HandleSearchKey" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select class="form-select border-secondary text-white bg-dark" @onchange="OnStatusFilterChanged">
+                    <option value="Alle">Abgesendet: Alle</option>
+                    <option value="Abgesendet = JA">Abgesendet: JA</option>
+                    <option value="Abgesendet = NEIN">Abgesendet: NEIN</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card bg-dark border-secondary shadow-lg rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            @if (IsLoading)
+            {
+                <div class="text-center p-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Lade Daten...</span>
+                    </div>
+                </div>
+            }
+            else if (ResultRows == null || !ResultRows.Any())
+            {
+                <div class="text-center p-5">
+                    <i class="fa-solid fa-folder-open fa-3x text-secondary mb-3"></i>
+                    <h4 class="text-white">Keine Aufträge gefunden</h4>
+                    <p class="text-secondary">Es wurden keine Datensätze für den gewählten Filter gefunden.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                    <table class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
+                        <thead class="table-dark sticky-top" style="background-color: #1c1f26;">
+                            <tr>
+                                <th class="text-center" style="width: 150px;">Aktionen</th>
+                                @foreach (var key in CurrentColumns)
+                                {
+                                    @if(key.Equals("ID", StringComparison.OrdinalIgnoreCase)) continue;
+                                    <th>@key.Replace("_", " ")</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in ResultRows)
+                            {
+                                int rowId = Convert.ToInt32(row["ID"] ?? 0);
+                                <tr>
+                                    <td class="text-center">
+                                        <div class="btn-group">
+                                            <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenEditModal(row)" title="Bearbeiten">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRow(rowId)" title="Löschen">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                    @foreach (var key in CurrentColumns)
+                                    {
+                                        if(key.Equals("ID", StringComparison.OrdinalIgnoreCase)) continue;
+                                        
+                                        var value = row[key];
+                                        <td>
+                                            @if (value is bool b)
+                                            {
+                                                <span class="badge @(b ? "bg-success" : "bg-warning text-dark")">@(b ? "JA" : "NEIN")</span>
+                                            }
+                                            else if (value is DateTime dt)
+                                            {
+                                                <span>@dt.ToString("dd.MM.yyyy HH:mm")</span>
+                                            }
+                                            else if (value is TimeSpan ts)
+                                            {
+                                                <span>@ts.ToString(@"hh\:mm")</span>
+                                            }
+                                            else
+                                            {
+                                                @((value?.ToString() ?? "-"))
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<FAEditModal @ref="editModal" OnSave="HandleModalSave" />
+
+@code {
+    private string ActiveTab = "Thermoformung";
+    private string SearchQuery = "";
+    private string SelectedStatus = "Alle";
+    private bool IsLoading = false;
+    private System.Timers.Timer? searchTimer;
+
+    private List<IDictionary<string, object>> ResultRows = new();
+    private List<string> CurrentColumns = new();
+    
+    private FAEditModal? editModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task SwitchTab(string tabName)
+    {
+        if (ActiveTab == tabName) return;
+        ActiveTab = tabName;
+        SearchQuery = "";
+        await LoadDataAsync();
+    }
+
+    private async Task OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        SelectedStatus = e.Value?.ToString() ?? "Alle";
+        await LoadDataAsync();
+    }
+
+    private void HandleSearchKey(KeyboardEventArgs e)
+    {
+        if (searchTimer != null)
+        {
+            searchTimer.Stop();
+            searchTimer.Dispose();
+        }
+        
+        // Anti-bounce for typing
+        searchTimer = new System.Timers.Timer(400);
+        searchTimer.Elapsed += async (s, args) =>
+        {
+            await InvokeAsync(LoadDataAsync);
+            searchTimer.Stop();
+        };
+        searchTimer.Start();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var rawData = await FAService.GetAuftraegeAsync(ActiveTab, SelectedStatus);
+            
+            // Client-side generic search across ALL available dynamic columns (Dates, Material, BelegNr, etc.)
+            if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                var q = SearchQuery.ToLower();
+                ResultRows = rawData.Where(row => 
+                    row.Values.Any(val => val != null && val.ToString()!.ToLower().Contains(q))
+                ).ToList();
+            }
+            else
+            {
+                ResultRows = rawData.ToList();
+            }
+            
+            // Extract distinct column layout from first row, or none if empty
+            if (rawData.Any())
+            {
+                CurrentColumns = rawData.First().Keys.ToList();
+            }
+            else
+            {
+                CurrentColumns.Clear();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Fehler beim Abrufen der FA Daten: {ex.Message}");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OpenEditModal(IDictionary<string, object> row)
+    {
+        if (editModal != null)
+        {
+            await editModal.ShowAsync(row);
+        }
+    }
+
+    private async Task HandleModalSave(IDictionary<string, object> updatedData)
+    {
+        int rowId = Convert.ToInt32(updatedData["ID"] ?? 0);
+        if (rowId > 0)
+        {
+            try
+            {
+                IsLoading = true;
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                string userName = authState.User.Identity?.Name ?? "Verwaltung";
+                
+                bool success = await FAService.UpdateAuftragAsync(ActiveTab, rowId, updatedData, userName);
+                if (success)
+                {
+                    await LoadDataAsync(); // Refresh
+                }
+            }
+            catch(Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Fehler beim Speichern:\n{ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task DeleteRow(int id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Möchten Sie diesen Fertigungsauftrag WIRKLICH endgültig löschen?");
+        if (confirmed)
+        {
+            try
+            {
+                IsLoading = true;
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                string userName = authState.User.Identity?.Name ?? "Verwaltung";
+                
+                bool success = await FAService.DeleteAuftragAsync(ActiveTab, id, userName);
+                if (success)
+                {
+                    await LoadDataAsync(); // Refresh
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Fehler beim Löschen:\n{ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+                StateHasChanged();
+            }
+        }
+    }
+}

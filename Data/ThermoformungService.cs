@@ -251,11 +251,11 @@ namespace QIN_Production_Web.Data
                             cmd.Parameters.AddWithValue("@FANr", faNr);
                             await cmd.ExecuteNonQueryAsync();
                         }
-                        await LogActivityAsync(userName, $"Thermoformungsauftrag {faNr} erfolgreich abgeschlossen");
+                        await ActivityLogService.InsertLogAsync(userName, $"[Thermoformung] Auftrag {faNr} erfolgreich abgeschlossen.");
                     }
                     else
                     {
-                        await LogActivityAsync(userName, $"Thermoformungsauftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
+                        await ActivityLogService.InsertLogAsync(userName, $"[Thermoformung] Auftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
                     }
 
                     // Chargen
@@ -364,27 +364,9 @@ namespace QIN_Production_Web.Data
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
-                await LogActivityAsync(user, $"[Kiefel/Parco] Freigabe erteilt für FA-Nr: {faNr}");
+                await ActivityLogService.InsertLogAsync(user, $"[Thermoformung] Freigabe erteilt für FA-Nr: {faNr}");
                 return true;
             } catch { return false; }
-        }
-
-        private static async Task LogActivityAsync(string user, string detail)
-        {
-            string query = "INSERT INTO dbo.Logs (Zeitstempel, [User], Aktivitaet) VALUES (GETDATE(), @User, @Detail)";
-            try
-            {
-                using (SqlConnection con = new SqlConnection(SqlManager.connectionString))
-                {
-                    await con.OpenAsync();
-                    using (SqlCommand cmd = new SqlCommand(query, con))
-                    {
-                        cmd.Parameters.AddWithValue("@User", user);
-                        cmd.Parameters.AddWithValue("@Detail", detail);
-                        await cmd.ExecuteNonQueryAsync();
-                    }
-                }
-            } catch { }
         }
     }
 }

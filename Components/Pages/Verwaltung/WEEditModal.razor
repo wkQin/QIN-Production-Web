@@ -1,0 +1,127 @@
+@using QIN_Production_Web.Data
+
+@if (isVisible)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-secondary text-white" style="background: rgba(32,35,42,0.95); backdrop-filter: blur(10px);">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title text-primary fw-bold">
+                        <i class="fa-solid fa-box-open me-2"></i> Wareneingang Bearbeiten (#@Model.ID)
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseAsync"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Lieferant</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Lieferant" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Lieferschein Nr (LS_Nr)</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.LS_Nr" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">EBE Nr</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.EBE_NR" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Position (Pos)</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Pos" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Menge</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Menge" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Artikel</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Artikel" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Zustand</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Zustand" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Eingangsdatum</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Eingangsdatum" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Benutzer (ID)</label>
+                            <input type="number" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Benutzer" />
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Palettentausch</label>
+                            <div class="form-check form-switch mt-1">
+                                <input type="checkbox" class="form-check-input" checked="@(Model.Palettentausch ?? false)" 
+                                       @onchange="@(e => Model.Palettentausch = (bool?)e.Value)" />
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold text-warning">Gebucht (Booking)</label>
+                            <div class="form-check form-switch mt-1">
+                                <input type="checkbox" class="form-check-input bg-warning border-warning" checked="@(Model.Gebucht ?? false)" 
+                                       @onchange="@(e => Model.Gebucht = (bool?)e.Value)" />
+                            </div>
+                        </div>
+                        <div class="col-12 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Bemerkung</label>
+                            <textarea class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" rows="2" @bind="Model.Bemerkung"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-outline-secondary text-white fw-bold" @onclick="CloseAsync">Abbrechen</button>
+                    <button type="button" class="btn btn-primary fw-bold" @onclick="SaveAsync">
+                        <i class="fa-solid fa-save me-1"></i> Speichern
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool isVisible = false;
+    private WareneingangEntry Model = new();
+    
+    [Parameter]
+    public EventCallback<WareneingangEntry> OnSave { get; set; }
+
+    public Task ShowAsync(WareneingangEntry originalRow)
+    {
+        // Clone object
+        Model = new WareneingangEntry
+        {
+            ID = originalRow.ID,
+            Lieferant = originalRow.Lieferant,
+            EBE_NR = originalRow.EBE_NR,
+            LS_Nr = originalRow.LS_Nr,
+            Pos = originalRow.Pos,
+            Menge = originalRow.Menge,
+            Artikel = originalRow.Artikel,
+            Bemerkung = originalRow.Bemerkung,
+            Zustand = originalRow.Zustand,
+            Benutzer = originalRow.Benutzer,
+            Eingangsdatum = originalRow.Eingangsdatum,
+            Palettentausch = originalRow.Palettentausch,
+            Gebucht = originalRow.Gebucht
+        };
+        
+        isVisible = true;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private Task CloseAsync()
+    {
+        isVisible = false;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveAsync()
+    {
+        await OnSave.InvokeAsync(Model);
+        await CloseAsync();
+    }
+}
