@@ -22,7 +22,9 @@ builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<EndkontrolleService>();
-
+builder.Services.AddScoped<FehleranalyseService>();
+builder.Services.AddScoped<ChargenanalyseService>();
+builder.Services.AddScoped<ProduktionslayoutService>();
 // Zeiterfassung Services
 builder.Services.AddSingleton(new QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungPolicy());
 builder.Services.AddScoped<QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungMath>();

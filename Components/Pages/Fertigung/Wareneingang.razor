@@ -252,8 +252,6 @@
 </div>
 
 @code {
-    private string Title = "Neuen Eintrag hinzufügen";
-    
     // Form
     private string Lieferschein = "";
     private string Pos = "";
@@ -306,11 +304,11 @@
         SortWarenList();
     }
 
-    private void HandleKeyUp(KeyboardEventArgs e)
+    private async Task HandleKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            AddCharge();
+            await AddCharge();
         }
     }
 

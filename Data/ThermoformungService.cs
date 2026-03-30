@@ -199,7 +199,7 @@ namespace QIN_Production_Web.Data
 
 
                     // Eingaben
-                    foreach (var row in eingaben)
+                    foreach (var row in eingaben ?? new List<EingabeDaten>())
                     {
                         int? reusableId = null;
                         if (row.IsNewRowAuftrag)
@@ -259,7 +259,7 @@ namespace QIN_Production_Web.Data
                     }
 
                     // Chargen
-                    foreach (var charge in chargen)
+                    foreach (var charge in chargen ?? new List<FChargeDaten>())
                     {
                         int lfmlst = int.TryParse(charge.Flfmlst, out int lfm) ? lfm : 0;
                         int verbraucht = int.TryParse(charge.Verbraucht, out int verb) ? verb : 0;

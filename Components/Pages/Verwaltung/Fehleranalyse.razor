@@ -1,0 +1,670 @@
+@page "/verwaltung/fehleranalyse"
+@rendermode InteractiveServer
+@using QIN_Production_Web.Data
+@using ApexCharts
+@inject FehleranalyseService AnalyseService
+@inject IJSRuntime JS
+
+<PageTitle>Fehleranalyse - Verwaltung</PageTitle>
+
+<div class="fehleranalyse-dashboard pb-5">
+
+    <!-- HEADER & ACTION BAR -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-bold mb-1 text-white" style="font-size: 2rem; letter-spacing: -0.02em;">Fehleranalyse</h1>
+            <p class="text-secondary mb-0">Auswertung · Fehlersammelkarten · Statistik</p>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <button class="btn btn-glass px-4 py-2 fw-bold text-white" @onclick="ExportData" disabled="@IsLoading">
+                <i class="fa-solid fa-file-excel text-success me-2"></i> Export
+            </button>
+            <button class="btn btn-gradient-primary px-5 py-2 fw-bold text-white" @onclick="StartAnalyse" disabled="@IsLoading">
+                @if (IsLoading) {
+                    <i class="fa-solid fa-spinner fa-spin me-2"></i> <span>Lädt...</span>
+                } else {
+                    <i class="fa-solid fa-chart-pie me-2"></i> <span>Analyse</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- MAIN 2-COLUMN LAYOUT -->
+    <div class="row g-4 mb-4 align-items-stretch">
+        
+        <!-- LEFT: EINGABE BEREICH -->
+        <div class="col-xl-3 col-lg-4">
+            <div class="glass-card d-flex flex-column h-100">
+                <div class="card-title-modern d-flex justify-content-between align-items-center">
+                    <div><i class="fa-solid fa-filter text-primary me-2"></i> Eingabe</div>
+                    <button class="btn btn-sm btn-glass text-secondary px-2" title="Filter zurücksetzen" @onclick="ResetFilter">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+                
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label class="modern-label">Charge</label>
+                        <input type="text" class="form-control modern-input text-white" placeholder="..." @bind="SearchCharge" />
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <label class="modern-label">Kunde</label>
+                        <select class="form-select modern-select" value="@SelectedKunde" @onchange="OnKundeChanged">
+                            <option value="">Alle Kunden</option>
+                            @foreach(var k in Kunden) { 
+                                <option value="@k.Name" style="@(k.IsActive ? "" : "color: #94a3b8; font-style: italic;")">
+                                    @k.Name @(k.IsActive ? "" : "(Inaktiv)")
+                                </option> 
+                            }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="modern-label">Projekt</label>
+                        <select class="form-select modern-select" value="@SelectedProjekt" @onchange="OnProjektChanged">
+                            <option value="">Alle Projekte</option>
+                            @foreach(var p in Projekte) { <option value="@p">@p</option> }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="modern-label">Artikel</label>
+                        <select class="form-select modern-select" @bind="SelectedArtikel">
+                            <option value="">Alle Artikel</option>
+                            @foreach(var a in ArtikelListe) { <option value="@a">@a</option> }
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="modern-label">Dekor</label>
+                        <select class="form-select modern-select" @bind="SelectedDekor">
+                            <option value="">Alle Dekore</option>
+                            @foreach(var d in DekorListe) { <option value="@d">@d</option> }
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-6">
+                        <label class="modern-label">Datum Von</label>
+                        <input type="date" class="form-control modern-input text-white" @bind="StartDatum" />
+                    </div>
+                    <div class="col-6">
+                        <label class="modern-label">Datum Bis</label>
+                        <input type="date" class="form-control modern-input text-white" @bind="EndDatum" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: RESULTS / CHARTS -->
+        <div class="col-xl-9 col-lg-8">
+            <div class="glass-card d-flex flex-column h-100" style="padding: 0; overflow: hidden;">
+                
+                <!-- TABS HEADER -->
+                <ul class="nav nav-tabs modern-tabs" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link @(ActiveTab == "gesamt" ? "active" : "")" @onclick='() => ActiveTab = "gesamt"'>Gesamt</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(ActiveTab == "eintraege" ? "active" : "")" @onclick='() => ActiveTab = "eintraege"'>Einzelne Einträge</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(ActiveTab == "bar" ? "active" : "")" @onclick='() => ActiveTab = "bar"'>Balkendiagramm</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link @(ActiveTab == "pie" ? "active" : "")" @onclick='() => ActiveTab = "pie"'>Tortendiagramm</button>
+                    </li>
+                </ul>
+
+                <!-- TABS CONTENT -->
+                <div class="tab-content" style="padding: 1.5rem; flex-grow: 1;">
+                    <!-- TAB: GESAMT -->
+                    <div class="tab-pane fade @(ActiveTab == "gesamt" ? "show active" : "d-none")">
+                        <div class="row g-4">
+                            <!-- EXTERN TABLE -->
+                            <div class="col-md-6">
+                                <h5 class="text-white mb-3"><i class="fa-solid fa-arrow-right-from-bracket text-primary me-2"></i>Externe Fehler</h5>
+                                <div class="modern-table-container">
+                                    <table class="modern-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Karte Extern</th>
+                                                <th class="text-end">Anzahl</th>
+                                                <th class="text-end">Prozent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if(!ExterneFehler.Any()) {
+                                                <tr><td colspan="3" class="text-center text-muted py-4">Bitte Analyse starten</td></tr>
+                                            }
+                                            @foreach(var item in ExterneFehler) {
+                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: rgba(255,255,255,0.05); font-weight: bold;" : "")">
+                                                    <td>@item.Karte</td>
+                                                    <td class="text-end">@item.Anzahl</td>
+                                                    <td class="text-end">@(item.Prozent?.ToString("P2"))</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <!-- INTERN TABLE -->
+                            <div class="col-md-6">
+                                <h5 class="text-white mb-3"><i class="fa-solid fa-arrow-right-to-bracket text-primary me-2"></i>Interne Fehler</h5>
+                                <div class="modern-table-container">
+                                    <table class="modern-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Karte Intern</th>
+                                                <th class="text-end">Anzahl</th>
+                                                <th class="text-end">Prozent</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @if(!InterneFehler.Any()) {
+                                                <tr><td colspan="3" class="text-center text-muted py-4">Bitte Analyse starten</td></tr>
+                                            }
+                                            @foreach(var item in InterneFehler) {
+                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: rgba(255,255,255,0.05); font-weight: bold;" : "")">
+                                                    <td>@item.Karte</td>
+                                                    <td class="text-end">@item.Anzahl</td>
+                                                    <td class="text-end">@(item.Prozent?.ToString("P2"))</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SUMMARY FOOTER -->
+                        <div class="mt-4 p-3 rounded d-flex justify-content-center align-items-center gap-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            <div class="text-center">
+                                <span class="modern-label text-success d-block mb-1">Gutteile</span>
+                                <span class="fs-4 fw-bold text-white">@GesamtResult.Gutteile <small class="text-secondary fs-6" style="margin-left: 5px;">(@(GesamtResult.Gesamt > 0 ? ((double)GesamtResult.Gutteile / GesamtResult.Gesamt).ToString("P2") : "0.00%"))</small></span>
+                            </div>
+                            <div class="text-center">
+                                <span class="modern-label text-danger d-block mb-1">Schlechtteile</span>
+                                <span class="fs-4 fw-bold text-white">@GesamtResult.Schlechtteile <small class="text-secondary fs-6" style="margin-left: 5px;">(@(GesamtResult.Gesamt > 0 ? ((double)GesamtResult.Schlechtteile / GesamtResult.Gesamt).ToString("P2") : "0.00%"))</small></span>
+                            </div>
+                            <div class="text-center" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 3rem;">
+                                <span class="modern-label text-primary d-block mb-1">Gesamt</span>
+                                <span class="fs-3 fw-bold text-white">@GesamtResult.Gesamt</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB: EINZELNE EINTRÄGE -->
+                    <div class="tab-pane fade @(ActiveTab == "eintraege" ? "show active" : "d-none")">
+                        <div class="modern-table-container" style="max-height: 500px; overflow: auto;">
+                            <table class="modern-table" style="white-space: nowrap; font-size: 0.85rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="background: rgba(30, 41, 59, 1);">Datum</th>
+                                        <th style="background: rgba(30, 41, 59, 1);">Charge</th>
+                                        <th style="background: rgba(30, 41, 59, 1);">Kunde</th>
+                                        <th style="background: rgba(30, 41, 59, 1);">Projekt</th>
+                                        <th style="background: rgba(30, 41, 59, 1);">Artikel</th>
+                                        <th style="background: rgba(30, 41, 59, 1);">Dekor</th>
+                                        
+                                        <!-- Error Individual Columns -->
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Fus.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Nad.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Pic.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Dek.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Far.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Fle.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Neb.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Ver.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Öl</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Tie.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Frä.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Kni.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Kra.</th>
+
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-success text-end">Gut</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-danger text-end">Schl.</th>
+                                        <th style="background: rgba(30, 41, 59, 1);" class="text-primary text-end">Ges.</th>
+                                        
+                                        <th style="background: rgba(30, 41, 59, 1);">Mitarbeiter</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if(!Eintraege.Any()) {
+                                        <tr><td colspan="23" class="text-center text-muted py-5">Keine Datensätze gefunden. Starten Sie eine Analyse.</td></tr>
+                                    }
+                                    @foreach(var row in Eintraege) {
+                                        <tr>
+                                            <td>@row.FSKdate.ToString("dd.MM.yyyy")</td>
+                                            <td class="fw-bold">@row.Charge</td>
+                                            <td title="@row.Kunde">@(row.Kunde.Length > 10 ? row.Kunde.Substring(0, 10) + ".." : row.Kunde)</td>
+                                            <td title="@row.Projekt">@(row.Projekt.Length > 10 ? row.Projekt.Substring(0, 10) + ".." : row.Projekt)</td>
+                                            <td title="@row.Artikel">@(row.Artikel.Length > 15 ? row.Artikel.Substring(0, 15) + ".." : row.Artikel)</td>
+                                            <td>@row.Dekor</td>
+                                            
+                                            <!-- Error Counts (dash if zero) -->
+                                            <td class="text-center text-secondary">@(row.Fusseln == 0 ? "-" : row.Fusseln)</td>
+                                            <td class="text-center text-secondary">@(row.Nadelstiche == 0 ? "-" : row.Nadelstiche)</td>
+                                            <td class="text-center text-secondary">@(row.Pickel == 0 ? "-" : row.Pickel)</td>
+                                            <td class="text-center text-secondary">@(row.Dekorfehler == 0 ? "-" : row.Dekorfehler)</td>
+                                            <td class="text-center text-secondary">@(row.Farbfehler == 0 ? "-" : row.Farbfehler)</td>
+                                            <td class="text-center text-secondary">@(row.Flecken == 0 ? "-" : row.Flecken)</td>
+                                            <td class="text-center text-secondary">@(row.Nebel == 0 ? "-" : row.Nebel)</td>
+                                            <td class="text-center text-secondary">@(row.Vertiefung == 0 ? "-" : row.Vertiefung)</td>
+                                            <td class="text-center text-secondary">@(row.Oelflecken == 0 ? "-" : row.Oelflecken)</td>
+                                            <td class="text-center text-secondary">@(row.Tiefziehfehler == 0 ? "-" : row.Tiefziehfehler)</td>
+                                            <td class="text-center text-secondary">@(row.Fraesfehler == 0 ? "-" : row.Fraesfehler)</td>
+                                            <td class="text-center text-secondary">@(row.Knicke == 0 ? "-" : row.Knicke)</td>
+                                            <td class="text-center text-secondary">@(row.Kratzer == 0 ? "-" : row.Kratzer)</td>
+
+                                            <td class="text-success text-end fw-bold">@row.Gutteile</td>
+                                            <td class="text-danger text-end fw-bold">@row.Schlechtteile</td>
+                                            <td class="text-primary text-end fw-bold">@row.Gesamt</td>
+                                            
+                                            <td class="text-info fw-bold">@row.PersonalName</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB: BALKENDIAGRAMM (ApexCharts) -->
+                    <div class="tab-pane fade @(ActiveTab == "bar" ? "show active" : "d-none")" style="position: relative; min-height: 500px;">
+                        @if(!ChartData.Any()) {
+                            <div class="text-center text-muted py-5 mt-5">Keine Datensätze gefunden. Starten Sie eine Analyse.</div>
+                        } else {
+                            <ApexChart TItem="ChargeItem" Options="@ChartOptions" Height="500">
+                                <ApexPointSeries TItem="ChargeItem"
+                                    Items="ChartData"
+                                    Name="Fehleranzahl"
+                                    SeriesType="SeriesType.Bar"
+                                    XValue="@(e => e.Karte)"
+                                    YValue="@(e => (decimal?)e.Anzahl)" />
+                            </ApexChart>
+                        }
+                    </div>
+
+                    <!-- TAB: PIE DIAGRAMM (ApexCharts) -->
+                    <div class="tab-pane fade @(ActiveTab == "pie" ? "show active" : "d-none")" style="position: relative; min-height: 400px;">
+                        @if(!ChartData.Any()) {
+                            <div class="text-center text-muted py-5 mt-5">Keine Datensätze gefunden. Starten Sie eine Analyse.</div>
+                        } else {
+                            <div style="max-width: 600px; margin: 0 auto; padding-top: 2rem;">
+                                <ApexChart TItem="ChargeItem" Options="@PieOptions" Height="400">
+                                    <ApexPointSeries TItem="ChargeItem"
+                                        Items="ChartData"
+                                        Name="Verteilung"
+                                        SeriesType="SeriesType.Donut"
+                                        XValue="@(e => e.Karte)"
+                                        YAggregate="@(e => (decimal?)e.Sum(x => x.Anzahl))" />
+                                </ApexChart>
+                            </div>
+                        }
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@code {
+    private string ActiveTab = "gesamt";
+    private string SearchCharge = "";
+    private string SelectedKunde = "";
+    private string SelectedProjekt = "";
+    private string SelectedArtikel = "";
+    private string SelectedDekor = "";
+    private DateTime StartDatum = DateTime.Today.AddDays(-30);
+    private DateTime EndDatum = DateTime.Today;
+
+    private List<CustomerData> Kunden = new();
+    private List<string> Projekte = new();
+    private List<string> ArtikelListe = new();
+    private List<string> DekorListe = new();
+
+    private List<FehlerRow> Eintraege = new();
+    private FehlerAnalyseResult GesamtResult = new();
+    private List<ChargeItem> ExterneFehler = new();
+    private List<ChargeItem> InterneFehler = new();
+    private List<ChargeItem> ChartData = new();
+    private bool IsLoading = false;
+
+    // ApexCharts Options for dark theme with forced background to fix transparent PNG export and explicitly colored fonts
+    private ApexChartOptions<ChargeItem> ChartOptions = new() {
+        Theme = new Theme { Mode = Mode.Dark },
+        Chart = new Chart { Background = "#0f172a", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
+        PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 4, Horizontal = true } },
+        Colors = new List<string> { "#3b82f6" }
+    };
+
+    private ApexChartOptions<ChargeItem> PieOptions = new() {
+        Theme = new Theme { Mode = Mode.Dark },
+        Chart = new Chart { Background = "#0f172a", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
+        Stroke = new Stroke { Show = false }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        Kunden = await AnalyseService.GetKundenAsync();
+    }
+
+    private async Task OnKundeChanged(ChangeEventArgs e)
+    {
+        SelectedKunde = e.Value?.ToString() ?? "";
+        SelectedProjekt = ""; SelectedArtikel = ""; SelectedDekor = "";
+        Projekte = await AnalyseService.GetProjekteAsync(SelectedKunde);
+        ArtikelListe.Clear(); DekorListe.Clear();
+    }
+
+    private async Task OnProjektChanged(ChangeEventArgs e)
+    {
+        SelectedProjekt = e.Value?.ToString() ?? "";
+        SelectedArtikel = ""; SelectedDekor = "";
+        var res = await AnalyseService.GetArtikelsAndDekorsAsync(SelectedProjekt);
+        ArtikelListe = res.Artikels;
+        DekorListe = res.Dekors;
+    }
+
+    private async Task StartAnalyse()
+    {
+        IsLoading = true;
+        StateHasChanged();
+        
+        await Task.Delay(50); 
+
+        Eintraege = await AnalyseService.GetRawFehlerRowsAsync(SearchCharge, SelectedKunde, SelectedProjekt, SelectedArtikel, SelectedDekor, StartDatum, EndDatum);
+
+        GesamtResult = new FehlerAnalyseResult
+        {
+            Fusseln = Eintraege.Sum(x => x.Fusseln),
+            Nadelstiche = Eintraege.Sum(x => x.Nadelstiche),
+            Pickel = Eintraege.Sum(x => x.Pickel),
+            Dekorfehler = Eintraege.Sum(x => x.Dekorfehler),
+            Farbfehler = Eintraege.Sum(x => x.Farbfehler),
+            Flecken = Eintraege.Sum(x => x.Flecken),
+            Nebel = Eintraege.Sum(x => x.Nebel),
+            Vertiefung = Eintraege.Sum(x => x.Vertiefung),
+            
+            Oelflecken = Eintraege.Sum(x => x.Oelflecken),
+            Tiefziehfehler = Eintraege.Sum(x => x.Tiefziehfehler),
+            Fraesfehler = Eintraege.Sum(x => x.Fraesfehler),
+            Knicke = Eintraege.Sum(x => x.Knicke),
+            Kratzer = Eintraege.Sum(x => x.Kratzer),
+            
+            Gutteile = Eintraege.Sum(x => x.Gutteile)
+        };
+
+        int total = GesamtResult.Gesamt == 0 ? 1 : GesamtResult.Gesamt;
+
+        ExterneFehler = new List<ChargeItem>
+        {
+            new() { Karte = "Ölflecken", Anzahl = GesamtResult.Oelflecken, Prozent = (double)GesamtResult.Oelflecken / total },
+            new() { Karte = "Tiefziehfehler", Anzahl = GesamtResult.Tiefziehfehler, Prozent = (double)GesamtResult.Tiefziehfehler / total },
+            new() { Karte = "Fräsfehler", Anzahl = GesamtResult.Fraesfehler, Prozent = (double)GesamtResult.Fraesfehler / total },
+            new() { Karte = "Knicke", Anzahl = GesamtResult.Knicke, Prozent = (double)GesamtResult.Knicke / total },
+            new() { Karte = "Kratzer", Anzahl = GesamtResult.Kratzer, Prozent = (double)GesamtResult.Kratzer / total },
+            new() { Karte = "Schlecht Extern", Anzahl = GesamtResult.SchlechtExtern, Prozent = (double)GesamtResult.SchlechtExtern / total }
+        };
+
+        InterneFehler = new List<ChargeItem>
+        {
+            new() { Karte = "Fusseln", Anzahl = GesamtResult.Fusseln, Prozent = (double)GesamtResult.Fusseln / total },
+            new() { Karte = "Nadelstiche", Anzahl = GesamtResult.Nadelstiche, Prozent = (double)GesamtResult.Nadelstiche / total },
+            new() { Karte = "Pickel", Anzahl = GesamtResult.Pickel, Prozent = (double)GesamtResult.Pickel / total },
+            new() { Karte = "Dekorfehler", Anzahl = GesamtResult.Dekorfehler, Prozent = (double)GesamtResult.Dekorfehler / total },
+            new() { Karte = "Farbfehler", Anzahl = GesamtResult.Farbfehler, Prozent = (double)GesamtResult.Farbfehler / total },
+            new() { Karte = "Flecken", Anzahl = GesamtResult.Flecken, Prozent = (double)GesamtResult.Flecken / total },
+            new() { Karte = "Nebel", Anzahl = GesamtResult.Nebel, Prozent = (double)GesamtResult.Nebel / total },
+            new() { Karte = "Vertiefung", Anzahl = GesamtResult.Vertiefung, Prozent = (double)GesamtResult.Vertiefung / total },
+            new() { Karte = "Schlecht Intern", Anzahl = GesamtResult.SchlechtIntern, Prozent = (double)GesamtResult.SchlechtIntern / total }
+        };
+
+        ChartData = InterneFehler.Concat(ExterneFehler)
+                        .Where(x => !x.Karte.StartsWith("Schlecht") && x.Anzahl > 0)
+                        .OrderByDescending(x => x.Anzahl)
+                        .ToList();
+
+        IsLoading = false;
+    }
+
+    private void ResetFilter()
+    {
+        SearchCharge = ""; SelectedKunde = ""; SelectedProjekt = ""; SelectedArtikel = ""; SelectedDekor = "";
+        Projekte.Clear(); ArtikelListe.Clear(); DekorListe.Clear();
+        StartDatum = DateTime.Today.AddDays(-30);
+        EndDatum = DateTime.Today;
+        Eintraege.Clear(); GesamtResult = new(); ExterneFehler.Clear(); InterneFehler.Clear(); ChartData.Clear();
+    }
+
+    private async Task ExportData()
+    {
+        if(!Eintraege.Any()) {
+            await JS.InvokeVoidAsync("alert", "Keine Daten zum Exportieren vorhanden. Bitte starte zuerst eine Analyse.");
+            return;
+        }
+
+        IsLoading = true;
+        StateHasChanged();
+        await Task.Delay(50);
+
+        string res = await AnalyseService.ExportToExcelAsync(Eintraege);
+        
+        IsLoading = false;
+        StateHasChanged();
+        
+        await JS.InvokeVoidAsync("alert", res);
+    }
+}
+
+<style>
+    .fehleranalyse-dashboard {
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+    }
+
+    .glass-card {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        padding: 1.5rem;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card-title-modern {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding-bottom: 0.75rem;
+    }
+
+    .modern-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #94a3b8;
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .modern-input, .modern-select {
+        background: rgba(15, 23, 42, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f8fafc !important;
+        border-radius: 10px;
+        padding: 0.8rem 1rem;
+        transition: all 0.3s ease;
+        width: 100%;
+        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+    }
+    
+    .modern-input:focus, .modern-select:focus {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        outline: none;
+        color: #fff;
+    }
+
+    .modern-select option {
+        background: #1e293b;
+        color: #f8fafc;
+        padding: 10px;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        border: none;
+        color: white;
+        font-weight: 700;
+        border-radius: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    }
+
+    .btn-gradient-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+        transform: translateY(-2px);
+    }
+
+    .btn-gradient-primary:disabled {
+        opacity: 0.7;
+    }
+
+    .btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #e2e8f0;
+        border-radius: 10px;
+        backdrop-filter: blur(5px);
+        transition: all 0.2s ease;
+    }
+
+    .btn-glass:hover:not(:disabled) {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.3);
+        color: #fff;
+    }
+
+    /* Tabs Styling */
+    .modern-tabs {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        padding: 0 1rem;
+        background: rgba(15, 23, 42, 0.3);
+    }
+
+    .modern-tabs .nav-link {
+        color: #94a3b8;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        padding: 1.2rem 1.5rem;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        border-radius: 0;
+    }
+
+    .modern-tabs .nav-link:hover {
+        color: #e2e8f0;
+        border-color: transparent;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .modern-tabs .nav-link.active {
+        color: #fff;
+        background: transparent;
+        border-color: transparent;
+        border-bottom: 3px solid #3b82f6;
+    }
+
+    /* Modern Table */
+    .modern-table-container {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(15, 23, 42, 0.5);
+    }
+    
+    .modern-table {
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .modern-table th {
+        background: rgba(30, 41, 59, 0.9);
+        color: #cbd5e1;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.05em;
+        padding: 1.2rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    
+    .modern-table td {
+        padding: 1rem;
+        color: #f8fafc;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        vertical-align: middle;
+        transition: background-color 0.2s ease;
+    }
+    
+    .modern-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: rgba(15, 23, 42, 0.4);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: rgba(71, 85, 105, 0.6);
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(100, 116, 139, 0.8);
+    }
+
+    /* Target ApexCharts elements to force dark mode rendering */
+    .apexcharts-tooltip {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .apexcharts-tooltip-title {
+        background: #0f172a !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    
+    .apexcharts-menu {
+        background: #1e293b !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        color: #fff !important;
+    }
+    
+    .apexcharts-legend-text {
+        color: #94a3b8 !important;
+    }
+</style>

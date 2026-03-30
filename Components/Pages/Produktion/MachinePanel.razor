@@ -1,0 +1,51 @@
+@using QIN_Production_Web.Data
+
+<div class="position-absolute" style="left: @(Left)px; top: @(Top)px; z-index: 50;">
+    <div class="p-2 rounded-3 border border-secondary shadow-lg" style="width: @(Width)px; background: rgba(32,35,42,0.85); backdrop-filter: blur(10px);">
+        <div class="d-flex align-items-stretch">
+            <div class="rounded-start" style="width: 6px; background: @(IsOfen ? "#5C4FFF" : "#1300FF");"></div>
+            <div class="flex-grow-1 ms-3 py-1">
+                <div class="fw-bold text-white fs-6 mb-2">@Title</div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary" style="font-size: 0.8rem;">Palette:</span>
+                    <span class="text-white fw-bold text-end ms-2" style="font-size: 0.8rem; word-break: break-word; line-height: 1.2;">@(string.IsNullOrWhiteSpace(MachineData?.AktuelleCharge) ? "(Leer)" : MachineData.AktuelleCharge)</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-secondary" style="font-size: 0.8rem;">Eingelagert:</span>
+                    <span class="text-white fw-bold text-end ms-2" style="font-size: 0.8rem;">@(MachineData?.LetzteNutzung?.ToString("dd.MM.yyyy HH:mm") ?? "-")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 w-100">
+                    <span class="text-secondary me-2 flex-shrink-0" style="font-size: 0.8rem;">Artikel:</span>
+                    <span class="text-white fw-bold text-end" style="font-size: 0.75rem; word-break: break-word; line-height: 1.2;">@(string.IsNullOrWhiteSpace(MachineData?.Artikel) ? "-" : MachineData.Artikel)</span>
+                </div>
+
+                <div class="text-end mt-1 mb-1">
+                    <button class="btn btn-sm text-white px-2 py-0 fw-bold border-0" 
+                            style="background: @(IsOfen ? "#5C4FFF" : "#1300FF"); border-radius: 4px; font-size: 0.8rem;" 
+                            @onclick="OnDetailsClick" 
+                            disabled="@(string.IsNullOrWhiteSpace(MachineData?.AktuelleCharge))">
+                        <i class="fa-solid fa-list-ul me-1"></i> Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public double Left { get; set; }
+    [Parameter] public double Top { get; set; }
+    [Parameter] public int Width { get; set; } = 340;
+    [Parameter] public bool IsOfen { get; set; }
+    [Parameter] public MachineInfo? MachineData { get; set; }
+    [Parameter] public EventCallback<string> OnDetails { get; set; }
+
+    private async Task OnDetailsClick()
+    {
+        if (!string.IsNullOrWhiteSpace(MachineData?.AktuelleCharge))
+        {
+            await OnDetails.InvokeAsync(MachineData.AktuelleCharge);
+        }
+    }
+}

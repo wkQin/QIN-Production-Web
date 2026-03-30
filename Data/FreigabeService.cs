@@ -147,7 +147,8 @@ namespace QIN_Production_Web.Data
                         cmd.Parameters.AddWithValue("@u", username);
                         var res = await cmd.ExecuteScalarAsync();
                         if (res == null || res == DBNull.Value) return false;
-                        return res.ToString() == "1" || res.ToString().ToLower() == "true";
+                        string val = res.ToString() ?? "";
+                        return val == "1" || val.ToLower() == "true";
                     }
                 }
             } catch { return false; }

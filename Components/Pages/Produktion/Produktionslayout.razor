@@ -1,0 +1,205 @@
+@page "/verwaltung/layout"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject QIN_Production_Web.Data.ProduktionslayoutService LayoutService
+@inject NavigationManager NavManager
+@rendermode InteractiveServer
+
+<PageTitle>Produktionslayout</PageTitle>
+
+<div class="h-100 w-100 d-flex flex-column bg-dark" style="overflow: hidden;">
+    <!-- Toolbar -->
+    <div class="p-3 d-flex justify-content-between align-items-center shadow-lg border-bottom border-secondary" style="background: rgba(15, 23, 42, 0.95); z-index: 100;">
+        <h4 class="text-white mb-0 fw-bold"><i class="fa-solid fa-map text-primary me-2"></i>Produktionslayout</h4>
+        
+        <div class="d-flex align-items-center gap-3">
+            @if(isLoading) {
+                <span class="spinner-border spinner-border-sm text-primary"></span>
+                <span class="text-secondary small me-3">Lade Maschinendaten...</span>
+            }
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary text-white btn-sm" @onclick="ZoomOut" title="Hinauszoomen"><i class="fa-solid fa-minus"></i></button>
+                <span class="btn border-secondary text-white btn-sm disabled" style="width: 70px;">@(Math.Round(Scale * 100))%</span>
+                <button class="btn btn-outline-secondary text-white btn-sm" @onclick="ZoomIn" title="Hineinzoomen"><i class="fa-solid fa-plus"></i></button>
+            </div>
+            <button class="btn btn-primary btn-sm fw-bold" @onclick="ResetView"><i class="fa-solid fa-compress me-1"></i>Zentrieren</button>
+        </div>
+    </div>
+
+    <!-- Map Area -->
+    <div class="flex-grow-1 position-relative" 
+         style="cursor: @(isPanning ? "grabbing" : "grab"); overflow: hidden; background: #0f111a; user-select: none;"
+         @onwheel="HandleWheel" 
+         @onmousedown="HandleMouseDown" 
+         @onmousemove="HandleMouseMove" 
+         @onmouseup="HandleMouseUp" 
+         @onmouseleave="HandleMouseUp">
+         
+        <div style="transform: translate(@(PanX.ToString(System.Globalization.CultureInfo.InvariantCulture))px, @(PanY.ToString(System.Globalization.CultureInfo.InvariantCulture))px) scale(@(Scale.ToString(System.Globalization.CultureInfo.InvariantCulture))); transform-origin: 0 0; width: 5000px; height: 3000px; position: absolute; top: 0; left: 0; transition: transform @(isPanning ? "0s" : "0.2s ease-out");">
+            <!-- Background Image -->
+            <img src="/images/lager.png" alt="Produktionskarte" style="width: 100%; height: 100%; object-fit: fill; pointer-events: none; opacity: 0.9;" draggable="false" />
+
+            <!-- Overlays -->
+            <!-- Regale -->
+            @foreach (var regal in Regale)
+            {
+                <div class="position-absolute d-flex align-items-center justify-content-center shadow-sm @(regal.IsActive ? "regal-active" : "regal-inactive")"
+                     style="left: @(regal.Left)px; top: @(regal.Top)px; width: @(regal.Width)px; height: @(regal.Height)px; transform: rotate(@(regal.Rotation)deg); transform-origin: center center;"
+                     title="@regal.Title @(regal.IsActive ? " - Clickable" : " - Inactive")"
+                     @onclick="() => OnRegalClick(regal)">
+                     @if(regal.IsActive) {
+                         <span class="fs-6 text-white fw-bold">@regal.Tag</span>
+                     }
+                </div>
+            }
+
+            <!-- Maschinen Overlays -->
+            <MachinePanel MachineData="@kiefelData" Title="KIEFEL" Left="830" Top="900" Width="320" OnDetails="NavigateToChargenanalyse" />
+            <MachinePanel MachineData="@parcoData" Title="PARCO" Left="490" Top="900" Width="320" OnDetails="NavigateToChargenanalyse" />
+            <MachinePanel MachineData="@pantherData" Title="PANTHER" Left="2950" Top="1195" Width="340" OnDetails="NavigateToChargenanalyse" />
+            
+            <MachinePanel MachineData="@ofen1Data" Title="OFEN 1" Left="4280" Top="928" Width="200" OnDetails="NavigateToChargenanalyse" />
+            <MachinePanel MachineData="@ofen2Data" Title="OFEN 2" Left="4280" Top="638" Width="200" OnDetails="NavigateToChargenanalyse" />
+        </div>
+        
+        <div class="position-absolute bottom-0 start-0 m-3 p-2 rounded bg-dark border border-secondary shadow-lg opacity-75" style="pointer-events: none;">
+            <span class="text-light small"><i class="fa-solid fa-arrows-up-down-left-right me-1"></i> Ziehen zum Bewegen | <i class="fa-solid fa-magnifying-glass me-1"></i> Mausrad zum Zoomen</span>
+        </div>
+    </div>
+</div>
+
+<RegalModal @ref="regalModal" />
+
+@code {
+    private RegalModal? regalModal;
+
+    public record MapRegal(string Title, int Left, int Top, int Width, int Height, int Rotation, bool IsActive, string Tag = "");
+
+    private List<MapRegal> Regale = new()
+    {
+        new("Regal Details", 52, 897, 673, 62, -90, true, "43-47"),
+        new("Regal Details", 848, 960, 800, 70, -90, false),
+        new("Regal Details", 1222, 962, 802, 62, -90, false),
+        new("Regal Details", 1064, 1094, 534, 62, -90, false),
+        new("Regal Details", 1837, 943, 247, 63, -90, false),
+        new("Regal", 1892, 1298, 137, 59, -90, false),
+        new("Regal Details", 1892, 1095, 535, 61, -90, false),
+        new("Regal Details", 1961, 1092, 534, 66, -90, false),
+        new("Regal Details", 2441, 1324, 479, 63, 0, false),
+        new("Regal Details", 1766, 1600, 280, 64, 0, false),
+        new("Regal Details", 594, 1594, 270, 63, 0, false),
+        new("Regal Details", 315, 2093, 258, 64, 0, false),
+        new("Regal Details", 1570, 1964, 281, 64, -90, false),
+        new("Regal Details", 1358, 2038, 534, 62, -90, false),
+        new("OFEN", 2971, 2255, 137, 94, 0, false)
+    };
+
+    private double Scale = 0.3;
+    private double PanX = 0;
+    private double PanY = 0;
+
+    private bool isPanning = false;
+    private double startMouseX, startMouseY;
+    private double startPanX, startPanY;
+    private bool isLoading = true;
+
+    private QIN_Production_Web.Data.MachineInfo? kiefelData;
+    private QIN_Production_Web.Data.MachineInfo? parcoData;
+    private QIN_Production_Web.Data.MachineInfo? pantherData;
+    private QIN_Production_Web.Data.MachineInfo? ofen1Data;
+    private QIN_Production_Web.Data.MachineInfo? ofen2Data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        PanX = -200;
+        PanY = -100;
+        await LoadDataAsync();
+    }
+
+    private async Task LoadDataAsync()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        kiefelData = await LayoutService.GetMachineInfoAsync("KIEFEL");
+        parcoData = await LayoutService.GetMachineInfoAsync("PARCO");
+        pantherData = await LayoutService.GetMachineInfoAsync("PANTHER");
+        ofen1Data = await LayoutService.GetMachineInfoAsync("H4OFEN1");
+        ofen2Data = await LayoutService.GetMachineInfoAsync("H4OFEN2");
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private void NavigateToChargenanalyse(string palette)
+    {
+        NavManager.NavigateTo($"/verwaltung/chargenanalyse?charge={Uri.EscapeDataString(palette)}");
+    }
+
+    private void ZoomIn() { Scale = Math.Min(3.0, Scale * 1.2); }
+    private void ZoomOut() { Scale = Math.Max(0.1, Scale / 1.2); }
+    private void ResetView() { Scale = 0.3; PanX = -200; PanY = -100; }
+
+    private void HandleWheel(WheelEventArgs e)
+    {
+        double oldScale = Scale;
+        double zoomFactor = e.DeltaY < 0 ? 1.1 : (1.0 / 1.1);
+        Scale = Math.Clamp(oldScale * zoomFactor, 0.1, 3.0);
+
+        // Zoom relative to mouse position
+        double mouseWorldX = (e.ClientX - PanX) / oldScale;
+        double mouseWorldY = (e.ClientY - PanY) / oldScale;
+
+        PanX = e.ClientX - (mouseWorldX * Scale);
+        PanY = e.ClientY - (mouseWorldY * Scale);
+    }
+
+    private void HandleMouseDown(MouseEventArgs e)
+    {
+        if (e.Button == 0) // Left click
+        {
+            isPanning = true;
+            startMouseX = e.ClientX;
+            startMouseY = e.ClientY;
+            startPanX = PanX;
+            startPanY = PanY;
+        }
+    }
+
+    private void HandleMouseMove(MouseEventArgs e)
+    {
+        if (isPanning)
+        {
+            PanX = startPanX + (e.ClientX - startMouseX);
+            PanY = startPanY + (e.ClientY - startMouseY);
+        }
+    }
+
+    private void HandleMouseUp(MouseEventArgs e) { isPanning = false; }
+    
+    private async Task OnRegalClick(MapRegal regal)
+    {
+        if(regal.IsActive && regalModal != null) {
+            await regalModal.ShowAsync(regal.Tag);
+        }
+    }
+}
+
+<style>
+    .regal-active {
+        background-color: rgba(255, 144, 0, 0.4);
+        border: 2px solid #FF9000;
+        cursor: pointer;
+        transition: all 0.2s;
+        z-index: 40;
+    }
+    .regal-active:hover {
+        background-color: rgba(255, 144, 0, 0.7);
+        box-shadow: 0 0 15px rgba(255, 144, 0, 0.8);
+    }
+    .regal-inactive {
+        background-color: rgba(255, 144, 0, 0.15);
+        border: 2px dashed rgba(255, 144, 0, 0.4);
+        cursor: not-allowed;
+        z-index: 30;
+    }
+</style>

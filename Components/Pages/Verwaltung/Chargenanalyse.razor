@@ -1,0 +1,722 @@
+@page "/verwaltung/chargenanalyse"
+@rendermode InteractiveServer
+
+<PageTitle>Chargenanalyse - Verwaltung</PageTitle>
+
+<div class="chargenanalyse-dashboard pb-5">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h1 class="fw-bold mb-1 text-white" style="font-size: 2rem; letter-spacing: -0.02em;">Chargenanalyse</h1>
+            <p class="text-secondary mb-0">Suchfilter · Zusammenfassung · Produktionsverlauf</p>
+        </div>
+    </div>
+
+    <div class="glass-card d-flex flex-column mb-4" style="padding: 0; overflow: hidden;">
+        <ul class="nav nav-tabs modern-tabs mb-4 border-0">
+            <li class="nav-item">
+                <a class="nav-link @(ActiveTab == "analyse" ? "active" : "")" style="cursor: pointer;" @onclick='() => SetTab("analyse")'><i class="fa-solid fa-chart-line me-2"></i>Analyse Übersicht</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ActiveTab == "details" ? "active" : "") @(SelectedResult == null ? "disabled" : "")" style="cursor: pointer;" @onclick='() => SetTab("details")'><i class="fa-solid fa-gears me-2"></i>Fertigung Details</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link @(ActiveTab == "wareneingang" ? "active" : "") @(SelectedResult == null ? "disabled" : "")" style="cursor: pointer;" @onclick='() => SetTab("wareneingang")'><i class="fa-solid fa-boxes-packing me-2"></i>Wareneingang</a>
+            </li>
+        </ul>
+
+        <div class="tab-content" style="padding: 1.5rem;">
+            
+            <!-- TAB: ANALYSE UBERSICHT (SEARCH & SUMMARY) -->
+            <div class="tab-pane fade @(ActiveTab == "analyse" ? "show active" : "d-none")">
+                @if(!string.IsNullOrEmpty(ErrorMessage)) {
+                    <div class="alert alert-danger mb-4">@ErrorMessage</div>
+                }
+                <div class="filter-bar mb-4 p-3 glass-card-inner">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-2">
+                            <label class="modern-label">Charge</label>
+                            <input type="text" class="form-control modern-input" placeholder="z.B. G22579-3L" @bind="Filters.Charge" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="modern-label">FA_Nr</label>
+                            <input type="text" class="form-control modern-input" placeholder="Fertigungsauftrag" @bind="Filters.FANr" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="modern-label">WE (Von)</label>
+                            <input type="date" class="form-control modern-input" @bind="Filters.DateVon" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="modern-label">WE (Bis)</label>
+                            <input type="date" class="form-control modern-input" @bind="Filters.DateBis" />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="modern-label">Artikel</label>
+                            <select class="form-select modern-select" @bind="Filters.Artikel">
+                                <option value="">Alle Artikel</option>
+                                @foreach(var art in ArtikelOptions) {
+                                    <option value="@art">@art</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-2 d-flex gap-2">
+                            <button class="btn btn-gradient-primary flex-grow-1 fw-bold text-white" @onclick="Suchen" disabled="@isSearching">
+                                @if(isSearching) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                                else { <i class="fa-solid fa-magnifying-glass"></i> }
+                                Suchen
+                            </button>
+                            <button class="btn btn-glass px-3" title="Filter leeren" @onclick="ClearFilters"><i class="fa-solid fa-rotate-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Zusammenfassung (Aggregiert)</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-xl-3 col-md-6"><div class="metric-card"><div class="metric-header">Thermoformung</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Thermo_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Thermo_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Thermo_SchlechtExtern ?? 0)</span></div></div></div>
+                    <div class="col-xl-2 col-md-6"><div class="metric-card"><div class="metric-header">Panther</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Panther_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Panther_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Panther_SchlechtExtern ?? 0)</span></div></div></div>
+                    <div class="col-xl-2 col-md-4"><div class="metric-card"><div class="metric-header">UV</div><div class="d-flex justify-content-between text-success"><span>Menge:</span><span class="fw-bold">@(Summary.UV_Menge ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Ausschuss:</span><span class="fw-bold">@(Summary.UV_Ausschuss ?? 0)</span></div></div></div>
+                    <div class="col-xl-2 col-md-4"><div class="metric-card"><div class="metric-header">Fräsen / Stanzen</div><div class="d-flex justify-content-between text-success"><span>Menge:</span><span class="fw-bold">@(Summary.Stanzen_Menge ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Ausschuss:</span><span class="fw-bold">@(Summary.Stanzen_Ausschuss ?? 0)</span></div></div></div>
+                    <div class="col-xl-3 col-md-4"><div class="metric-card"><div class="metric-header">Endkontrolle / Sauberraum</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Sauberraum_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Sauberraum_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Sauberraum_SchlechtExtern ?? 0)</span></div></div></div>
+                </div>
+
+                <div class="modern-table-container">
+                    <table class="modern-table">
+                        <thead>
+                            <tr>
+                                <th class="resizable-th" @onclick='() => SortTable("Charge")'>Charge @SortIcon("Charge")</th>
+                                <th class="resizable-th" @onclick='() => SortTable("FA_Nr")'>FA_Nr @SortIcon("FA_Nr")</th>
+                                <th class="resizable-th" @onclick='() => SortTable("Artikel")'>Artikel @SortIcon("Artikel")</th>
+                                <th class="resizable-th" @onclick='() => SortTable("WareneingangDatum")'>WE-Datum @SortIcon("WareneingangDatum")</th>
+                                <th class="resizable-th" @onclick='() => SortTable("WareneingangCharge")'>WE-Charge @SortIcon("WareneingangCharge")</th>
+                                <th class="text-center">Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var result in Ergebnisse) {
+                                <tr>
+                                    <td class="fw-bold">@result.Charge</td><td>@result.FA_Nr</td><td>@result.Artikel</td><td>@result.WareneingangDatum?.ToString("dd.MM.yyyy")</td>
+                                    <td class="text-secondary">@result.WareneingangCharge</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-glass text-info" @onclick="() => ExpandDetails(result)">
+                                            <i class="fa-solid fa-up-right-from-square me-1"></i> Details
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB: FERTIGUNG DETAILS -->
+            <div class="tab-pane fade @(ActiveTab == "details" ? "show active" : "d-none")">
+                @if (SelectedResult == null) {
+                    <div class="text-center py-5 text-secondary"><i class="fa-solid fa-list-check fa-3x mb-3 opacity-50"></i><h5>Wählen Sie eine Charge aus der Übersicht</h5></div>
+                } else {
+                    <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-circle-info text-primary me-2"></i>Allgemeine Informationen</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-xl-4"><div class="glass-card-inner p-4 h-100 d-flex flex-column border-primary" style="border-width: 2px;"><span class="modern-label text-primary">CHARGE</span><h3 class="fw-bold text-white mb-0">@SelectedResult.Charge</h3></div></div>
+                        <div class="col-xl-4"><div class="glass-card-inner p-4 h-100 d-flex flex-column"><span class="modern-label">MATERIAL</span><h4 class="fw-bold text-white mb-0">@(string.IsNullOrWhiteSpace(Hero.Material) || Hero.Material == "-" ? (WareneingangData?.Material ?? "-") : Hero.Material)</h4></div></div>
+                        <div class="col-xl-4"><div class="glass-card-inner p-4 h-100 d-flex flex-column justify-content-center text-center"><span class="modern-label text-success">LOKATION</span><h3 class="fw-bold text-success mb-0">@Hero.Standort</h3></div></div>
+                    </div>
+                    
+                    <div class="row g-3 mb-5">
+                        <div class="col-md-4"><div class="metric-card"><span class="modern-label">WE-ID</span><h4 class="fw-bold text-white mt-1">@Hero.WE_ID</h4></div></div>
+                        <div class="col-md-4"><div class="metric-card"><span class="modern-label">GESAMTSTATUS</span><h4 class="fw-bold text-white mt-1">@Hero.Gesamttatus</h4></div></div>
+                        <div class="col-md-4">
+                            <div class="metric-card">
+                                <span class="modern-label mb-2 d-block">Prozessstatus</span>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-secondary text-sm">Thermo:</span><span class="badge @(Hero.Thermo_Status == "Fertig" ? "bg-success" : (Hero.Thermo_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Thermo_Status</span></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-secondary text-sm">UV:</span><span class="badge @(Hero.UV_Status == "Fertig" ? "bg-success" : (Hero.UV_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.UV_Status</span></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-secondary text-sm">Stanzen:</span><span class="badge @(Hero.Stanzen_Status == "Fertig" ? "bg-success" : (Hero.Stanzen_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Stanzen_Status</span></div>
+                                <div class="d-flex justify-content-between"><span class="text-secondary text-sm">Endkontrolle:</span><span class="badge @(Hero.Endkontrolle_Status == "Fertig" ? "bg-success" : (Hero.Endkontrolle_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Endkontrolle_Status</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 1. THERMOFORMUNG -->
+                    <div class="glass-card mb-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-white fw-bold mb-0">Thermoformung</h5>
+                            <span class="badge @(Hero.Thermo_Status == "Fertig" ? "bg-success" : (Hero.Thermo_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Thermo_Status</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-5 text-success">@Hero.Thermo_Gutteile</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Int</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Ext</div></div>
+                            <div class="col-md-3"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.Thermo_Gutteile + Hero.Thermo_Schlecht_Int + Hero.Thermo_Schlecht_Ext)</div></div>
+                        </div>
+                        
+                        <button class="btn btn-sm btn-glass w-100 fw-bold border-secondary text-info mt-2" @onclick="() => showThermo = !showThermo">
+                            @(showThermo ? "EINTRÄGE AUSBLENDEN" : $"EINZELNE EINTRÄGE ANZEIGEN ({ThermoData.Count})")
+                        </button>
+                        @if (showThermo) {
+                            <div class="mt-4 pt-3 border-top border-secondary">
+                                @if(ThermoData.Any()) {
+                                    @foreach (var row in ThermoData) {
+                                        <div class="glass-card-inner p-3 mb-3 border-secondary" style="border-width: 1px;">
+                                            <div class="d-inline-block bg-primary bg-opacity-25 px-3 py-1 rounded text-primary fw-bold text-sm mb-3">FA-Nr: @row.FA_Nr</div>
+                                            <div class="row g-3 mb-3">
+                                                <div class="col-md-3"><span class="modern-label">START</span><div class="fw-bold fs-6">@(row.DatumStart?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+                                                <div class="col-md-3"><span class="modern-label">ENDE</span><div class="fw-bold fs-6">@(row.DatumEnde?.ToString("dd.MM.yyyy HH:mm") ?? "-")</div></div>
+                                                <div class="col-md-3"><span class="modern-label">PAUSENZEIT</span><div class="fw-bold fs-6">@row.Pausenzeit Min</div></div>
+                                                <div class="col-md-3"><span class="modern-label">AUSFALLZEIT</span><div class="fw-bold fs-6 text-danger">@row.Ausfallzeit Min</div></div>
+                                            </div>
+                                            <div class="row g-3">
+                                                <div class="col-md-3"><span class="modern-label">MASCHINE</span><div class="fw-bold fs-6">@row.MaschinenNr</div></div>
+                                                <div class="col-md-3"><span class="modern-label">BEARBEITER</span><div class="fw-bold fs-6">@row.Bearbeiter</div></div>
+                                                <div class="col-md-6"><span class="modern-label">BEMERKUNG</span><div class="text-light fs-6">@(string.IsNullOrWhiteSpace(row.Bemerkung) ? "-" : row.Bemerkung)</div></div>
+                                            </div>
+                                        </div>
+                                    }
+                                } else {
+                                    <div class="text-center text-secondary py-2">Keine Einträge vorhanden</div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- 2. UV-HÄRTUNG -->
+                    <div class="glass-card mb-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-white fw-bold mb-0">UV-Härtung</h5>
+                            <span class="badge @(Hero.UV_Status == "Fertig" ? "bg-success" : (Hero.UV_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.UV_Status</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4"><span class="modern-label">MENGE</span><div class="fw-bold fs-5 text-success">@Hero.UV_Menge</div></div>
+                            <div class="col-md-4"><span class="modern-label">AUSSCHUSS</span><div class="fw-bold fs-5 text-danger">@Hero.UV_Ausschuss</div></div>
+                            <div class="col-md-4"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.UV_Menge + Hero.UV_Ausschuss)</div></div>
+                        </div>
+
+                        <button class="btn btn-sm btn-glass w-100 fw-bold border-secondary text-info mt-2" @onclick="() => showUv = !showUv">
+                            @(showUv ? "EINTRÄGE AUSBLENDEN" : $"EINZELNE EINTRÄGE ANZEIGEN ({UvData.Count})")
+                        </button>
+                        @if (showUv) {
+                            <div class="mt-4 pt-3 border-top border-secondary">
+                                @if(UvData.Any()) {
+                                    @foreach (var row in UvData) {
+                                        <div class="glass-card-inner p-3 mb-3 border-secondary" style="border-width: 1px;">
+                                            <div class="row g-3">
+                                                <div class="col-md-3"><span class="modern-label">ERSTELLT AM</span><div class="fw-bold fs-6">@(row.Erstelldatum?.ToString("dd.MM.yyyy") ?? "-")</div></div>
+                                                <div class="col-md-3"><span class="modern-label">MENGE</span><div class="fw-bold fs-6 text-success">@(row.Menge ?? 0)</div></div>
+                                                <div class="col-md-3"><span class="modern-label">AUSSCHUSS</span><div class="fw-bold fs-6 text-danger">@(row.Ausschuss ?? 0)</div></div>
+                                                <div class="col-md-3"><span class="modern-label">BEARBEITER</span><div class="fw-bold fs-6">@row.Bearbeiter</div></div>
+                                            </div>
+                                        </div>
+                                    }
+                                } else {
+                                    <div class="text-center text-secondary py-2">Keine Einträge vorhanden</div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- 3. STANZEN -->
+                    <div class="glass-card mb-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-white fw-bold mb-0">Stanzen</h5>
+                            <span class="badge @(Hero.Stanzen_Status == "Fertig" ? "bg-success" : (Hero.Stanzen_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Stanzen_Status</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4"><span class="modern-label">MENGE</span><div class="fw-bold fs-5 text-success">@Hero.Stanzen_Menge</div></div>
+                            <div class="col-md-4"><span class="modern-label">AUSSCHUSS</span><div class="fw-bold fs-5 text-danger">@Hero.Stanzen_Ausschuss</div></div>
+                            <div class="col-md-4"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.Stanzen_Menge + Hero.Stanzen_Ausschuss)</div></div>
+                        </div>
+
+                        <button class="btn btn-sm btn-glass w-100 fw-bold border-secondary text-info mt-2" @onclick="() => showStanzen = !showStanzen">
+                            @(showStanzen ? "EINTRÄGE AUSBLENDEN" : $"EINZELNE EINTRÄGE ANZEIGEN ({StanzenData.Count})")
+                        </button>
+                        @if (showStanzen) {
+                            <div class="mt-4 pt-3 border-top border-secondary">
+                                @if(StanzenData.Any()) {
+                                    @foreach (var row in StanzenData) {
+                                        <div class="glass-card-inner p-3 mb-3 border-secondary" style="border-width: 1px;">
+                                            <div class="d-inline-block bg-primary bg-opacity-25 px-3 py-1 rounded text-primary fw-bold text-sm mb-3">FA-Nr: @row.FA_Nr</div>
+                                            <div class="row g-3">
+                                                <div class="col-md-3"><span class="modern-label">MENGE</span><div class="fw-bold fs-5 text-success">@(row.Menge ?? 0)</div></div>
+                                                <div class="col-md-3"><span class="modern-label">AUSSCHUSS</span><div class="fw-bold fs-5 text-danger">@(row.Ausschuss ?? 0)</div></div>
+                                                <div class="col-md-3"><span class="modern-label">ERSTELLT AM</span><div class="fw-bold fs-6">@(row.Erstelldatum?.ToString("dd.MM.yyyy") ?? "-")</div></div>
+                                                <div class="col-md-3"><span class="modern-label">BEARBEITER</span><div class="fw-bold fs-6">@row.Bearbeiter</div></div>
+                                            </div>
+                                        </div>
+                                    }
+                                } else {
+                                    <div class="text-center text-secondary py-2">Keine Einträge vorhanden</div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <!-- 4. ENDKONTROLLE -->
+                    <div class="glass-card mb-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-white fw-bold mb-0">Endkontrolle / Sauberraum</h5>
+                            <span class="badge @(Hero.Endkontrolle_Status == "Fertig" ? "bg-success" : (Hero.Endkontrolle_Status == "In Arbeit" ? "bg-warning text-dark" : "bg-secondary"))">@Hero.Endkontrolle_Status</span>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-3"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-5 text-success">@Hero.Endkontrolle_Gutteile</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Schlecht_Int</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Schlecht_Ext</div></div>
+                            <div class="col-md-3"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.Endkontrolle_Gutteile + Hero.Endkontrolle_Schlecht_Int + Hero.Endkontrolle_Schlecht_Ext)</div></div>
+                        </div>
+
+                        <button class="btn btn-sm btn-glass w-100 fw-bold border-secondary text-info mt-2" @onclick="() => showEndkontrolle = !showEndkontrolle">
+                            @(showEndkontrolle ? "EINTRÄGE AUSBLENDEN" : $"EINZELNE EINTRÄGE ANZEIGEN ({EndkontrolleData.Count})")
+                        </button>
+                        @if (showEndkontrolle) {
+                            <div class="mt-4 pt-3 border-top border-secondary">
+                                @if(EndkontrolleData.Any()) {
+                                    @foreach (var row in EndkontrolleData) {
+                                        <div class="glass-card-inner p-3 mb-4 border-secondary" style="border-width: 1px;">
+                                            <div class="row g-3 mb-3 border-bottom border-secondary pb-3">
+                                                <div class="col-md-4"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-4 text-success">@(row.Gutteile ?? 0)</div></div>
+                                                <div class="col-md-5"><span class="modern-label">SCHLECHTTEILE</span><div class="fw-bold fs-4 text-danger">@row.Schlechtteile <span class="fs-6 text-secondary ms-1 fw-normal">(@row.Schlecht_Int Int (@row.Int_Prozent%) / @row.Schlecht_Ext Ext (@row.Ext_Prozent%))</span></div></div>
+                                                <div class="col-md-3"><span class="modern-label">BEARBEITER</span><div class="fw-bold fs-6 mt-2">@row.Bearbeiter (@(row.Speicherdatum?.ToString("dd.MM.yyyy") ?? "-"))</div></div>
+                                            </div>
+                                            
+                                            <div class="row g-3">
+                                                <div class="col-md-6 border-end border-secondary">
+                                                    <span class="modern-label text-warning mb-2">INTERNE FEHLER (@row.Schlecht_Int)</span>
+                                                    <div class="d-flex flex-wrap gap-2 mt-2 mb-2 pe-2">
+                                                        @if((row.Fusseln ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Fusseln: @row.Fusseln</span> }
+                                                        @if((row.Nadelstiche ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Nadelstiche: @row.Nadelstiche</span> }
+                                                        @if((row.Pickel ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Pickel: @row.Pickel</span> }
+                                                        @if((row.Dekorfehler ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Dekorfehler: @row.Dekorfehler</span> }
+                                                        @if((row.Color ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Farbfehler: @row.Color</span> }
+                                                        @if((row.Flecken ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Flecken: @row.Flecken</span> }
+                                                        @if((row.Nebel ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Nebel: @row.Nebel</span> }
+                                                        @if((row.Vertiefung ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Vertiefung: @row.Vertiefung</span> }
+                                                        @if(row.Schlecht_Int == 0) { <span class="text-secondary text-sm">Keine internen Fehler</span> }
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <span class="modern-label text-info mb-2 ps-2">EXTERNE FEHLER (@row.Schlecht_Ext)</span>
+                                                    <div class="d-flex flex-wrap gap-2 mt-2 mb-2 ps-2">
+                                                        @if((row.Oelflecken ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Ölflecken: @row.Oelflecken</span> }
+                                                        @if((row.Tiefziehfehler ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Tiefziehfehler: @row.Tiefziehfehler</span> }
+                                                        @if((row.Fraesfehler ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Fräsfehler: @row.Fraesfehler</span> }
+                                                        @if((row.Knicke ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Knicke: @row.Knicke</span> }
+                                                        @if((row.Kratzer ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Kratzer: @row.Kratzer</span> }
+                                                        @if(row.Schlecht_Ext == 0) { <span class="text-secondary text-sm ps-2">Keine externen Fehler</span> }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mt-3">
+                                                <span class="modern-label">BEMERKUNG</span>
+                                                <p class="text-light mb-0" style="font-size: 0.9rem;">@(string.IsNullOrWhiteSpace(row.Bemerkung) ? "-" : row.Bemerkung)</p>
+                                            </div>
+                                        </div>
+                                    }
+                                } else {
+                                    <div class="text-center text-secondary py-2">Keine Einträge vorhanden</div>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                }
+            </div>
+
+            <!-- TAB: WARENEINGANG -->
+            <div class="tab-pane fade @(ActiveTab == "wareneingang" ? "show active" : "d-none")">
+                @if (SelectedResult == null || WareneingangData == null) {
+                    <div class="text-center py-5 text-secondary"><i class="fa-solid fa-boxes-packing fa-3x mb-3 opacity-50"></i><h5>Kein Wareneingang vorhanden</h5></div>
+                } else {
+                    <div class="glass-card-inner p-4 position-relative overflow-hidden mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <span class="modern-label text-primary">LIEFERANT</span>
+                                <h2 class="fw-bold text-white mb-4">@WareneingangData.Lieferant</h2>
+                                
+                                <div class="d-flex gap-5">
+                                    <div><span class="modern-label">LS-NR</span><span class="text-white fw-bold fs-5">@WareneingangData.Lieferscheinnummer</span></div>
+                                    <div><span class="modern-label">EBE-NR</span><span class="text-white fw-bold fs-5">@WareneingangData.EBENummer</span></div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="badge bg-primary px-4 py-2 fs-6 mb-3 rounded-pill">@WareneingangData.Zustand</div>
+                                <div class="d-flex justify-content-end gap-3">
+                                    <div class="text-center"><span class="modern-label d-block text-white" style="font-size: 0.6rem;">PALETTENTAUSCH</span><span class="badge @(WareneingangData.Palettentausch == true ? "bg-success" : "bg-danger")">@(WareneingangData.Palettentausch == true ? "Ja" : "Nein")</span></div>
+                                    <div class="text-center"><span class="modern-label d-block text-white" style="font-size: 0.6rem;">GEBUCHT</span><span class="badge @(WareneingangData.Gebucht == true ? "bg-success" : "bg-danger")">@(WareneingangData.Gebucht == true ? "Ja" : "Nein")</span></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-3"><div class="metric-card"><span class="modern-label">EINGANGSDATUM</span><div class="fw-bold text-white fs-5">@(WareneingangData.Wareneingangdatum?.ToString("dd.MM.yyyy") ?? "-")</div></div></div>
+                        <div class="col-md-3"><div class="metric-card"><span class="modern-label">MATERIAL</span><div class="fw-bold text-white fs-5">@WareneingangData.Material</div></div></div>
+                        <div class="col-md-3"><div class="metric-card"><span class="modern-label">LIEFERMENGE</span><div class="fw-bold text-success fs-5">@(WareneingangData.Menge ?? 0) Stk/Lfm</div></div></div>
+                        <div class="col-md-3"><div class="metric-card"><span class="modern-label">BEARBEITER</span><div class="fw-bold text-white fs-5">@WareneingangData.Bearbeiter</div></div></div>
+                    </div>
+                    <div class="glass-card-inner p-3 mt-3">
+                        <span class="modern-label">BEMERKUNG</span>
+                        <p class="text-light mb-0">@(string.IsNullOrWhiteSpace(WareneingangData.Bemerkung) ? "-" : WareneingangData.Bemerkung)</p>
+                    </div>
+                }
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<style>
+    .resizable-th {
+        resize: horizontal;
+        overflow: hidden;
+        cursor: pointer;
+        position: relative;
+    }
+    .resizable-th i {
+        font-size: 0.8em;
+        margin-left: 5px;
+        opacity: 0.5;
+    }
+    .resizable-th:hover i {
+        opacity: 1;
+    }
+</style>
+
+@code {
+    [Inject] private QIN_Production_Web.Data.ChargenanalyseService Service { get; set; } = default!;
+
+    private string ActiveTab = "analyse";
+    
+    // Filter Bindings
+    private QIN_Production_Web.Data.AnalyseFilters Filters = new();
+    private List<string> ArtikelOptions = new();
+
+    // Summary Properties
+    private QIN_Production_Web.Data.AnalyseSummary Summary = new();
+
+    // Data Lists
+    private List<QIN_Production_Web.Data.AnalyseResult> Ergebnisse = new();
+    private QIN_Production_Web.Data.AnalyseResult? SelectedResult;
+    
+    private QIN_Production_Web.Data.HeroData Hero = new();
+    private List<QIN_Production_Web.Data.ThermoRow> ThermoData = new();
+    private List<QIN_Production_Web.Data.UvRow> UvData = new();
+    private List<QIN_Production_Web.Data.StanzenRow> StanzenData = new();
+    private List<QIN_Production_Web.Data.EndkontrolleRow> EndkontrolleData = new();
+    private QIN_Production_Web.Data.WareneingangRow? WareneingangData;
+
+    private bool isSearching = false;
+    private string ErrorMessage = "";
+
+    private bool showThermo = false;
+    private bool showUv = false;
+    private bool showStanzen = false;
+    private bool showEndkontrolle = false;
+
+    private string sortColumn = "WareneingangDatum";
+    private bool sortAscending = false;
+
+    private MarkupString SortIcon(string column)
+    {
+        if (sortColumn != column) return new MarkupString("<i class='fa-solid fa-sort'></i>");
+        return sortAscending ? new MarkupString("<i class='fa-solid fa-sort-up text-primary'></i>") : new MarkupString("<i class='fa-solid fa-sort-down text-primary'></i>");
+    }
+
+    private void SortTable(string column)
+    {
+        if (sortColumn == column) sortAscending = !sortAscending;
+        else { sortColumn = column; sortAscending = true; }
+
+        if (column == "Charge") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.Charge).ToList() : Ergebnisse.OrderByDescending(x => x.Charge).ToList();
+        else if (column == "FA_Nr") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.FA_Nr).ToList() : Ergebnisse.OrderByDescending(x => x.FA_Nr).ToList();
+        else if (column == "Artikel") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.Artikel).ToList() : Ergebnisse.OrderByDescending(x => x.Artikel).ToList();
+        else if (column == "WareneingangDatum") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.WareneingangDatum).ToList() : Ergebnisse.OrderByDescending(x => x.WareneingangDatum).ToList();
+        else if (column == "WareneingangCharge") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.WareneingangCharge).ToList() : Ergebnisse.OrderByDescending(x => x.WareneingangCharge).ToList();
+    }
+
+    private void SetTab(string tab) {
+        if (tab == "details" || tab == "wareneingang") {
+            if (SelectedResult == null) return;
+        }
+        ActiveTab = tab;
+    }
+
+    [SupplyParameterFromQuery(Name = "charge")]
+    public string? ChargeQuery { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Filters.DateVon = DateTime.Today.AddDays(-30);
+        Filters.DateBis = DateTime.Today;
+        
+        if (!string.IsNullOrWhiteSpace(ChargeQuery))
+        {
+            Filters.Charge = ChargeQuery;
+            Filters.DateVon = null; // Override dates to find the charge accurately anywhere
+            Filters.DateBis = null;
+        }
+
+        try {
+            // Fetch common Artikel options
+            using (var conn = new Microsoft.Data.SqlClient.SqlConnection(QIN_Production_Web.Data.SqlManager.connectionString))
+            {
+                await conn.OpenAsync();
+                var args = await Dapper.SqlMapper.QueryAsync<string>(conn, "SELECT DISTINCT ISNULL(Artikel, '') AS Artikel FROM dbo.Kunden WHERE Artikel IS NOT NULL AND Artikel != '' ORDER BY Artikel");
+                ArtikelOptions = args.ToList();
+            }
+
+            await Suchen();
+
+            // Auto-expand if linked from Layout
+            if (!string.IsNullOrWhiteSpace(ChargeQuery) && Ergebnisse.Count > 0)
+            {
+                var match = Ergebnisse.FirstOrDefault(x => 
+                    string.Equals(x.Charge, ChargeQuery, StringComparison.OrdinalIgnoreCase) || 
+                    string.Equals(x.WareneingangCharge, ChargeQuery, StringComparison.OrdinalIgnoreCase))
+                    ?? Ergebnisse.FirstOrDefault();
+                    
+                if (match != null)
+                {
+                    await ExpandDetails(match);
+                }
+            }
+        } catch(Exception ex) {
+            ErrorMessage = $"Init Error: {ex.Message}";
+        }
+    }
+
+    private async Task Suchen()
+    {
+        isSearching = true;
+        ErrorMessage = "";
+        StateHasChanged();
+
+        try {
+            var (rows, summary) = await Service.GetChargenAsync(Filters);
+            Ergebnisse = rows;
+            Summary = summary;
+        } catch(Exception ex) {
+            ErrorMessage = $"Suchen Error: {ex.Message} | StackTrace: {ex.StackTrace}";
+        }
+        
+        isSearching = false;
+        StateHasChanged();
+    }
+
+    private void ClearFilters()
+    {
+        Filters = new QIN_Production_Web.Data.AnalyseFilters
+        {
+            DateVon = DateTime.Today.AddDays(-30),
+            DateBis = DateTime.Today
+        };
+        Ergebnisse.Clear();
+        Summary = new QIN_Production_Web.Data.AnalyseSummary();
+    }
+
+    private async Task ExpandDetails(QIN_Production_Web.Data.AnalyseResult result)
+    {
+        ErrorMessage = "";
+        SelectedResult = result;
+        ActiveTab = "details";
+        StateHasChanged();
+
+        try {
+            // 1. Hero
+            Hero = await Service.LoadHeroAsync(result.Charge);
+            // 2. Details
+            ThermoData = await Service.LoadThermoAsync(result.Charge);
+            UvData = await Service.LoadUVAsync(result.Charge);
+            StanzenData = await Service.LoadStanzenAsync(result.Charge);
+            EndkontrolleData = await Service.LoadEndkontrolleAsync(result.Charge);
+            
+            // 3. Wareneingang
+            if (Hero.IsWareneingangAvailable)
+                WareneingangData = await Service.LoadWareneingangAsync(Hero.WE_ID);
+            else
+                WareneingangData = null;
+
+        } catch(Exception ex) {
+            ErrorMessage = $"Details Error: {ex.Message} \n {ex.StackTrace}";
+        }
+
+        StateHasChanged();
+    }
+}
+
+<style>
+    .chargenanalyse-dashboard {
+        font-family: 'Inter', sans-serif;
+        color: #f8fafc;
+    }
+
+    .glass-card {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(15px);
+        -webkit-backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .glass-card-inner {
+        background: rgba(15, 23, 42, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+    }
+
+    .modern-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #94a3b8;
+        margin-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: block;
+    }
+
+    .modern-input, .modern-select {
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #f8fafc !important;
+        border-radius: 8px;
+        padding: 0.6rem 0.8rem;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .modern-input:focus, .modern-select:focus {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        outline: none;
+        color: #fff;
+    }
+
+    .modern-select option {
+        background: #1e293b;
+        color: #f8fafc;
+    }
+
+    .btn-gradient-primary {
+        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+        border: none;
+        color: white;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-gradient-primary:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        transform: translateY(-1px);
+    }
+
+    .btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-glass:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #fff !important;
+    }
+
+    .metric-card {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        padding: 1rem;
+        transition: all 0.2s ease;
+        height: 100%;
+    }
+
+    .metric-card:hover {
+        background: rgba(30, 41, 59, 0.8);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .metric-header {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 0.8rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding-bottom: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .text-sm { font-size: 0.85rem; }
+
+    .modern-tabs {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        background: rgba(15, 23, 42, 0.3);
+        padding: 0 1rem;
+    }
+
+    .modern-tabs .nav-link {
+        color: #94a3b8;
+        border: none;
+        border-bottom: 3px solid transparent;
+        font-weight: 600;
+        padding: 1.2rem 1.5rem;
+        font-size: 0.95rem;
+        border-radius: 0;
+        transition: all 0.2s;
+    }
+
+    .modern-tabs .nav-link:hover {
+        color: #e2e8f0;
+        background: rgba(255, 255, 255, 0.02);
+    }
+
+    .modern-tabs .nav-link.active {
+        color: #fff;
+        background: transparent;
+        border-bottom: 3px solid #3b82f6;
+    }
+
+    .modern-table-container {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(15, 23, 42, 0.5);
+    }
+    
+    .modern-table {
+        margin-bottom: 0;
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9rem;
+    }
+    
+    .modern-table th {
+        background: rgba(30, 41, 59, 0.9);
+        color: #94a3b8;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        padding: 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .modern-table td {
+        padding: 0.8rem 1rem;
+        color: #f8fafc;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        vertical-align: middle;
+    }
+    
+    .modern-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.04);
+    }
+
+    .modern-accordion .accordion-button:focus {
+        box-shadow: none;
+    }
+    .modern-accordion .accordion-button:not(.collapsed) {
+        color: #fff;
+        background-color: transparent;
+        box-shadow: none;
+    }
+</style>
