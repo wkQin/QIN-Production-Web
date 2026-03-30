@@ -2,6 +2,7 @@
 @using QIN_Production_Web.Data
 @using Microsoft.AspNetCore.Components.Authorization
 @inject LoginService LoginService
+@inject SsoTokenCache TokenCache
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @inject IWebHostEnvironment Env
@@ -52,9 +53,9 @@
             }
         </button>
 
-        <button class="btn btn-glass w-100 py-3 fw-bold fs-5 text-info mt-3" @onclick="AuthenticateADUser" tabindex="0">
+        <a target="_top" data-enhance-nav="false" class="btn btn-glass w-100 py-3 fw-bold fs-5 text-info mt-3 d-flex align-items-center justify-content-center text-decoration-none" href="/api/auth/windows">
             <i class="fa-brands fa-windows me-2"></i> Windows / AD Login
-        </button>
+        </a>
 
         @if (Env.IsDevelopment())
         {
@@ -137,6 +138,41 @@
 
     private bool isLoading = false;
 
+    [SupplyParameterFromQuery]
+    private string? ssoToken { get; set; }
+
+    [SupplyParameterFromQuery]
+    private string? ssoError { get; set; }
+    
+    [SupplyParameterFromQuery]
+    private string? adUser { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Handle incoming SSO redirects
+        if (!string.IsNullOrEmpty(ssoError))
+        {
+            if (ssoError == "UserNotFound")
+                ErrorMessage = $"Active Directory User '{adUser}' konnte nicht im System gefunden werden!";
+            else
+                ErrorMessage = "Windows Authentifizierung fehlgeschlagen oder vom Browser verweigert.";
+        }
+        else if (!string.IsNullOrEmpty(ssoToken) && Guid.TryParse(ssoToken, out var tokenGuid))
+        {
+            var userSession = TokenCache.RetrieveSession(tokenGuid);
+            if (userSession != null)
+            {
+                var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
+                await customAuthStateProvider.UpdateAuthenticationState(userSession);
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                ErrorMessage = "Login-Sitzung ist abgelaufen oder ungültig. Bitte erneut versuchen.";
+            }
+        }
+    }
+
     private void HandleKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Enter" && !isLoading)
@@ -174,27 +210,6 @@
         
         isLoading = false;
         StateHasChanged();
-    }
-
-    private async Task AuthenticateADUser()
-    {
-        ErrorMessage = string.Empty;
-
-        // Erkenne den Namen des aktuellen Windows-Nutzers
-        string adUsername = Environment.UserName; 
-
-        var userSession = await LoginService.ADLoginAsync(adUsername);
-
-        if (userSession != null)
-        {
-            var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
-            await customAuthStateProvider.UpdateAuthenticationState(userSession);
-            NavigationManager.NavigateTo("/");
-        }
-        else
-        {
-            ErrorMessage = $"Active Directory User '{adUsername}' konnte nicht im System gefunden werden!";
-        }
     }
 
     private async Task AuthenticateDevUser()
