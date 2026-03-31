@@ -19,10 +19,18 @@
     <link rel="stylesheet" href="@Assets["QIN-Production-Web.styles.css"]" />
     <ImportMap />
     <link rel="icon" type="image/png" href="favicon.png" />
+    <script>
+        (function() {
+            var theme = localStorage.getItem('qin_theme') || 'dark';
+            var fontSize = localStorage.getItem('qin_fontsize') || '100';
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.style.setProperty('--user-font-scale', fontSize + '%');
+        })();
+    </script>
     <HeadOutlet @rendermode="new InteractiveServerRenderMode(prerender: false)" />
 </head>
 
-<body>
+<body data-theme="dark">
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
@@ -37,6 +45,20 @@
             anchorElement.click();
             anchorElement.remove();
             URL.revokeObjectURL(url);
+        };
+
+        window.updateClientSettings = (theme, fontSize) => {
+            localStorage.setItem('qin_theme', theme);
+            localStorage.setItem('qin_fontsize', fontSize);
+            document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.style.setProperty('--user-font-scale', fontSize + '%');
+        };
+
+        window.resetClientSettings = () => {
+            localStorage.removeItem('qin_theme');
+            localStorage.removeItem('qin_fontsize');
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.documentElement.style.setProperty('--user-font-scale', '100%');
         };
 
         window.makeTableResizable = function(tableId) {

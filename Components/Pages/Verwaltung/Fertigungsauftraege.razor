@@ -9,7 +9,7 @@
 
 <div class="container-fluid py-4 min-vh-100 bg-dark">
     <!-- Header -->
-    <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: rgba(32,35,42,0.85); backdrop-filter: blur(10px);">
+    <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: var(--bg-card); backdrop-filter: blur(10px);">
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div class="d-flex align-items-center">
                 <div class="bg-primary bg-opacity-10 p-3 rounded-circle me-3">
@@ -27,7 +27,7 @@
         <div class="row g-3 align-items-center">
             <div class="col-md-5">
                 <!-- Nav Pills for Table Selection -->
-                <ul class="nav nav-pills w-100 p-1 mx-0 rounded-3 border border-secondary d-flex" style="background: rgba(15,23,42,0.6);">
+                <ul class="nav nav-pills w-100 p-1 mx-0 rounded-3 border border-secondary d-flex" style="background: var(--bg-hover);">
                     <li class="nav-item flex-fill text-center">
                         <button class="nav-link w-100 @(ActiveTab == "Thermoformung" ? "active" : "text-white") fw-bold rounded-2 px-3 py-2" 
                                 @onclick="@(() => SwitchTab("Thermoformung"))">Thermoformung</button>
@@ -86,7 +86,7 @@
             {
                 <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
                     <table class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
-                        <thead class="table-dark sticky-top" style="background-color: #1c1f26;">
+                        <thead class="table-dark sticky-top" style="background-color: var(--bg-hover);">
                             <tr>
                                 <th class="text-center" style="width: 150px;">Aktionen</th>
                                 @foreach (var key in CurrentColumns)
@@ -305,3 +305,4 @@
         }
     }
 }
+

@@ -71,11 +71,11 @@
 
                 <h5 class="text-white mb-3 fw-bold"><i class="fa-solid fa-chart-pie text-primary me-2"></i>Zusammenfassung (Aggregiert)</h5>
                 <div class="row g-3 mb-4">
-                    <div class="col-xl-3 col-md-6"><div class="metric-card"><div class="metric-header">Thermoformung</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Thermo_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Thermo_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Thermo_SchlechtExtern ?? 0)</span></div></div></div>
-                    <div class="col-xl-2 col-md-6"><div class="metric-card"><div class="metric-header">Panther</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Panther_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Panther_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Panther_SchlechtExtern ?? 0)</span></div></div></div>
+                    <div class="col-xl-3 col-md-6"><div class="metric-card"><div class="metric-header">Thermoformung</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Thermo_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Thermo_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Thermo_SchlechtExtern ?? 0)</span></div></div></div>
+                    <div class="col-xl-2 col-md-6"><div class="metric-card"><div class="metric-header">Panther</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Panther_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Panther_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Panther_SchlechtExtern ?? 0)</span></div></div></div>
                     <div class="col-xl-2 col-md-4"><div class="metric-card"><div class="metric-header">UV</div><div class="d-flex justify-content-between text-success"><span>Menge:</span><span class="fw-bold">@(Summary.UV_Menge ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Ausschuss:</span><span class="fw-bold">@(Summary.UV_Ausschuss ?? 0)</span></div></div></div>
                     <div class="col-xl-2 col-md-4"><div class="metric-card"><div class="metric-header">Fräsen / Stanzen</div><div class="d-flex justify-content-between text-success"><span>Menge:</span><span class="fw-bold">@(Summary.Stanzen_Menge ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Ausschuss:</span><span class="fw-bold">@(Summary.Stanzen_Ausschuss ?? 0)</span></div></div></div>
-                    <div class="col-xl-3 col-md-4"><div class="metric-card"><div class="metric-header">Endkontrolle / Sauberraum</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Sauberraum_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Sauberraum_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Sauberraum_SchlechtExtern ?? 0)</span></div></div></div>
+                    <div class="col-xl-3 col-md-4"><div class="metric-card"><div class="metric-header">Endkontrolle / Sauberraum</div><div class="d-flex justify-content-between text-success"><span>Gutteile:</span><span class="fw-bold">@(Summary.Sauberraum_Gutteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (ext):</span><span class="fw-bold">@(Summary.Sauberraum_Schlechtteile ?? 0)</span></div><div class="d-flex justify-content-between text-danger"><span>Schlecht (int):</span><span class="fw-bold">@(Summary.Sauberraum_SchlechtExtern ?? 0)</span></div></div></div>
                 </div>
 
                 <div class="modern-table-container">
@@ -141,8 +141,8 @@
                         </div>
                         <div class="row g-3 mb-4">
                             <div class="col-md-3"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-5 text-success">@Hero.Thermo_Gutteile</div></div>
-                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Int</div></div>
-                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Ext</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Int</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Thermo_Schlecht_Ext</div></div>
                             <div class="col-md-3"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.Thermo_Gutteile + Hero.Thermo_Schlecht_Int + Hero.Thermo_Schlecht_Ext)</div></div>
                         </div>
                         
@@ -254,8 +254,8 @@
                         </div>
                         <div class="row g-3 mb-4">
                             <div class="col-md-3"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-5 text-success">@Hero.Endkontrolle_Gutteile</div></div>
-                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Schlecht_Int</div></div>
-                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Schlecht_Ext</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (EXT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Gutteile</div></div>
+                            <div class="col-md-3"><span class="modern-label">SCHLECHT (INT)</span><div class="fw-bold fs-5 text-danger">@Hero.Endkontrolle_Schlecht_Ext</div></div>
                             <div class="col-md-3"><span class="modern-label">GESAMT</span><div class="fw-bold fs-5 text-info">@(Hero.Endkontrolle_Gutteile + Hero.Endkontrolle_Schlecht_Int + Hero.Endkontrolle_Schlecht_Ext)</div></div>
                         </div>
 
@@ -269,13 +269,13 @@
                                         <div class="glass-card-inner p-3 mb-4 border-secondary" style="border-width: 1px;">
                                             <div class="row g-3 mb-3 border-bottom border-secondary pb-3">
                                                 <div class="col-md-4"><span class="modern-label">GUTTEILE</span><div class="fw-bold fs-4 text-success">@(row.Gutteile ?? 0)</div></div>
-                                                <div class="col-md-5"><span class="modern-label">SCHLECHTTEILE</span><div class="fw-bold fs-4 text-danger">@row.Schlechtteile <span class="fs-6 text-secondary ms-1 fw-normal">(@row.Schlecht_Int Int (@row.Int_Prozent%) / @row.Schlecht_Ext Ext (@row.Ext_Prozent%))</span></div></div>
+                                                <div class="col-md-5"><span class="modern-label">SCHLECHTTEILE</span><div class="fw-bold fs-4 text-danger">@row.Schlechtteile <span class="fs-6 text-secondary ms-1 fw-normal">(@row.Schlecht_Int Ext (@row.Int_Prozent%) / @row.Schlecht_Ext Int (@row.Ext_Prozent%))</span></div></div>
                                                 <div class="col-md-3"><span class="modern-label">BEARBEITER</span><div class="fw-bold fs-6 mt-2">@row.Bearbeiter (@(row.Speicherdatum?.ToString("dd.MM.yyyy") ?? "-"))</div></div>
                                             </div>
                                             
                                             <div class="row g-3">
                                                 <div class="col-md-6 border-end border-secondary">
-                                                    <span class="modern-label text-warning mb-2">INTERNE FEHLER (@row.Schlecht_Int)</span>
+                                                    <span class="modern-label text-warning mb-2">EXTERNE FEHLER (@row.Schlecht_Int)</span>
                                                     <div class="d-flex flex-wrap gap-2 mt-2 mb-2 pe-2">
                                                         @if((row.Fusseln ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Fusseln: @row.Fusseln</span> }
                                                         @if((row.Nadelstiche ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Nadelstiche: @row.Nadelstiche</span> }
@@ -285,18 +285,18 @@
                                                         @if((row.Flecken ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Flecken: @row.Flecken</span> }
                                                         @if((row.Nebel ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Nebel: @row.Nebel</span> }
                                                         @if((row.Vertiefung ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Vertiefung: @row.Vertiefung</span> }
-                                                        @if(row.Schlecht_Int == 0) { <span class="text-secondary text-sm">Keine internen Fehler</span> }
+                                                        @if(row.Schlecht_Int == 0) { <span class="text-secondary text-sm">Keine externen Fehler</span> }
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <span class="modern-label text-info mb-2 ps-2">EXTERNE FEHLER (@row.Schlecht_Ext)</span>
+                                                    <span class="modern-label text-info mb-2 ps-2">INTERNE FEHLER (@row.Schlecht_Ext)</span>
                                                     <div class="d-flex flex-wrap gap-2 mt-2 mb-2 ps-2">
                                                         @if((row.Oelflecken ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Ölflecken: @row.Oelflecken</span> }
                                                         @if((row.Tiefziehfehler ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Tiefziehfehler: @row.Tiefziehfehler</span> }
                                                         @if((row.Fraesfehler ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Fräsfehler: @row.Fraesfehler</span> }
                                                         @if((row.Knicke ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Knicke: @row.Knicke</span> }
                                                         @if((row.Kratzer ?? 0) > 0) { <span class="badge bg-dark border border-secondary p-2">Kratzer: @row.Kratzer</span> }
-                                                        @if(row.Schlecht_Ext == 0) { <span class="text-secondary text-sm ps-2">Keine externen Fehler</span> }
+                                                        @if(row.Schlecht_Ext == 0) { <span class="text-secondary text-sm ps-2">Keine internen Fehler</span> }
                                                     </div>
                                                 </div>
                                             </div>
@@ -550,14 +550,14 @@
         background: rgba(30, 41, 59, 0.5);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         border-radius: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
     }
 
     .glass-card-inner {
         background: rgba(15, 23, 42, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
     }
 
@@ -573,7 +573,7 @@
 
     .modern-input, .modern-select {
         background: rgba(0, 0, 0, 0.2);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         color: #f8fafc !important;
         border-radius: 8px;
         padding: 0.6rem 0.8rem;
@@ -591,7 +591,7 @@
     }
 
     .modern-select option {
-        background: #1e293b;
+        background: var(--bg-card);
         color: #f8fafc;
     }
 
@@ -610,20 +610,20 @@
     }
 
     .btn-glass {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--border-color);
+        border: 1px solid var(--border-color);
         border-radius: 8px;
         transition: all 0.2s ease;
     }
 
     .btn-glass:hover {
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--border-color);
         color: #fff !important;
     }
 
     .metric-card {
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        background: var(--bg-hover);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         padding: 1rem;
         transition: all 0.2s ease;
@@ -640,7 +640,7 @@
         font-weight: 700;
         color: #f8fafc;
         margin-bottom: 0.8rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-color);
         padding-bottom: 0.4rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -649,7 +649,7 @@
     .text-sm { font-size: 0.85rem; }
 
     .modern-tabs {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border-color);
         background: rgba(15, 23, 42, 0.3);
         padding: 0 1rem;
     }
@@ -667,7 +667,7 @@
 
     .modern-tabs .nav-link:hover {
         color: #e2e8f0;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--border-color);
     }
 
     .modern-tabs .nav-link.active {
@@ -679,7 +679,7 @@
     .modern-table-container {
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         background: rgba(15, 23, 42, 0.5);
     }
     
@@ -698,7 +698,7 @@
         font-size: 0.75rem;
         letter-spacing: 0.05em;
         padding: 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-color);
     }
     
     .modern-table td {
@@ -721,3 +721,4 @@
         box-shadow: none;
     }
 </style>
+

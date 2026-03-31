@@ -1,86 +1,143 @@
 @page "/"
+@using QIN_Production_Web.Data
+@using Microsoft.AspNetCore.Components.Authorization
+@inject LoginService LoginService
+@inject AlertService AlertService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Dashboard - QIN Production Web</PageTitle>
 
 <div class="dashboard-header mb-5">
-    <h2>Willkommen zurück, <strong>Max</strong>!</h2>
+    <h2>Willkommen zurück, <strong>@UserName</strong>!</h2>
     <p class="text-secondary">Hier ist die Live-Übersicht deiner heutigen Produktion.</p>
 </div>
 
-<div class="row g-4 mb-4">
-    <!-- Stat Cards -->
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon bg-blue"><i class="fa-solid fa-boxes-stacked"></i></div>
-            <div class="stat-details">
-                <span class="stat-title">Offene Aufträge</span>
-                <h3 class="stat-value">24</h3>
+<div class="row g-4 mb-4 align-items-stretch">
+    <!-- Main Content Area -->
+    <div class="col-xl-6 col-lg-12">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4>Aktuelle Produktion</h4>
+            </div>
+            <div class="card-body">
+                <div class="empty-state h-100 min-vh-25">
+                    <i class="fa-solid fa-industry mb-3"></i>
+                    <p>Produktionsdaten werden geladen...</p>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon bg-green"><i class="fa-solid fa-check-circle"></i></div>
-            <div class="stat-details">
-                <span class="stat-title">Erledigt Heute</span>
-                <h3 class="stat-value">18</h3>
+
+    <!-- Ankündigungen Sidebar -->
+    <div class="col-xl-3 col-lg-6">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4><i class="fa-solid fa-bullhorn text-primary me-2"></i> Ankündigungen</h4>
+            </div>
+            <div class="card-body p-0 overflow-auto custom-scrollbar" style="max-height: 500px;">
+                @if (alerts.Count == 0)
+                {
+                    <div class="p-4 text-center text-secondary">
+                        <small>Keine aktuellen Ankündigungen.</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush border-0">
+                        @foreach (var alert in alerts)
+                        {
+                            <div class="list-group-item notification-item border-bottom border-dark m-0 rounded-0" @onclick="() => ReadAlert(alert)">
+                                <div class="notif-dot @(!alert.IsRead ? "bg-blue shadow-sm" : "bg-secondary opacity-50") mt-1"></div>
+                                <div class="notif-content w-100">
+                                    <strong class="text-truncate d-block @(!alert.IsRead ? "text-white" : "text-secondary")">@alert.Title</strong>
+                                    <span class="d-block text-truncate text-secondary" style="max-width: 90%;">
+                                        @alert.Message
+                                    </span>
+                                    <div class="text-secondary mt-1" style="font-size: 0.75rem;">
+                                        @alert.CreatedAt.ToShortDateString() • von @alert.CreatedBy
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon bg-orange"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <div class="stat-details">
-                <span class="stat-title">Ausschuss (Stk)</span>
-                <h3 class="stat-value">12</h3>
+
+    <!-- Right Sidebar Area -->
+    <div class="col-xl-3 col-lg-6">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4><i class="fa-solid fa-users text-success me-2"></i> Wer ist online?</h4>
+                <span class="badge bg-success rounded-pill">@onlineUsers.Count</span>
             </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="stat-card">
-            <div class="stat-icon bg-purple"><i class="fa-solid fa-clock-rotate-left"></i></div>
-            <div class="stat-details">
-                <span class="stat-title">Ø Zykluszeit</span>
-                <h3 class="stat-value">4.2s</h3>
+            <div class="card-body p-0">
+                @if (onlineUsers.Count == 0)
+                {
+                    <div class="p-4 text-center text-secondary">
+                        <small>Keine anderen Benutzer aktiv.</small>
+                    </div>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush border-0">
+                        @foreach (var user in onlineUsers)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center border-bottom border-dark" style="background: transparent;">
+                                <div class="d-flex align-items-center gap-3 py-2">
+                                    <div class="position-relative">
+                                        <i class="fa-solid fa-circle-user fs-2 text-info"></i>
+                                        <span class="position-absolute bottom-0 end-0 p-1 bg-success border border-dark rounded-circle" style="width: 12px; height: 12px;"></span>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-white">@user.Name</div>
+                                        <div class="text-secondary small">@user.Rechte</div>
+                                    </div>
+                                </div>
+                                @if (user.Name != UserName)
+                                {
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" @onclick="() => SendMessageTo(user)">
+                                        <i class="fa-regular fa-comment-dots"></i> Nachricht
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
 </div>
 
-<div class="row g-4">
-    <div class="col-md-8">
-        <div class="content-card">
-            <div class="card-header-flex">
-                <h4>Aktuelle Produktion</h4>
-                <button class="btn btn-sm btn-outline-primary shadow-sm" style="border-radius: 8px;">
-                    <i class="fa-solid fa-eye me-2"></i>Details
-                </button>
-            </div>
-            <div class="card-body">
-                <div class="empty-state">
-                    <i class="fa-solid fa-chart-line"></i>
-                    <p>Livedaten werden geladen...</p>
+<!-- Alert Modal -->
+@if (selectedAlert != null)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg">
+                <div class="modal-header border-bottom border-secondary">
+                    <h5 class="modal-title text-primary fw-bold">
+                        <i class="fa-solid fa-bullhorn me-2"></i> @selectedAlert.Title
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseAlert"></button>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="content-card">
-            <div class="card-header-flex">
-                <h4>Ankündigungen</h4>
-            </div>
-            <div class="card-body">
-                <div class="notification-item">
-                    <div class="notif-dot bg-blue"></div>
-                    <div class="notif-content">
-                        <strong>Neues Release v3.0</strong>
-                        <span>Web-Version ist nun im Testbetrieb.</span>
+                <div class="modal-body p-4">
+                    <p style="white-space: pre-wrap; font-size: 1.1rem; line-height: 1.6;">@selectedAlert.Message</p>
+                    
+                    <div class="mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center text-secondary small">
+                        <span><i class="fa-solid fa-user-pen me-2"></i>Erstellt von <strong>@selectedAlert.CreatedBy</strong></span>
+                        <span><i class="fa-regular fa-calendar me-2"></i>@selectedAlert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                     </div>
                 </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-secondary w-100 fw-bold" @onclick="CloseAlert">Schließen</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 <style>
     .dashboard-header h2 {
@@ -92,51 +149,6 @@
         color: var(--text-secondary);
     }
     
-    .stat-card {
-        background: var(--bg-card);
-        border: var(--glass-border);
-        border-radius: 16px;
-        padding: 24px;
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-    }
-    .stat-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.6rem;
-    }
-    .bg-blue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .bg-green { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .bg-orange { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3);}
-    .bg-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3);}
-    
-    .stat-title {
-        color: var(--text-secondary);
-        font-size: 0.8rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-    .stat-value {
-        margin: 0;
-        font-weight: 800;
-        font-size: 1.8rem;
-        color: var(--text-primary);
-        margin-top: 4px;
-        font-family: 'Montserrat', sans-serif;
-    }
-    
     .content-card {
         background: var(--bg-card);
         border: var(--glass-border);
@@ -145,6 +157,7 @@
         display: flex;
         flex-direction: column;
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        overflow: hidden;
     }
     .card-header-flex {
         padding: 24px;
@@ -152,6 +165,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: rgba(30, 41, 59, 0.5);
     }
     .card-header-flex h4 { 
         margin: 0; 
@@ -159,10 +173,9 @@
         font-weight: 700;
         color: var(--text-primary);
     }
-    .card-body { padding: 24px; flex: 1;}
     
     .empty-state {
-        height: 250px;
+        min-height: 250px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -170,7 +183,7 @@
         color: var(--text-secondary);
         opacity: 0.5;
     }
-    .empty-state i { font-size: 4rem; margin-bottom: 16px; color: var(--text-secondary); }
+    .empty-state i { font-size: 4rem; color: var(--text-secondary); }
     
     .notification-item {
         display: flex;
@@ -183,12 +196,12 @@
         cursor: pointer;
     }
     .notification-item:hover {
-        background: rgba(255,255,255,0.08);
+        background: var(--border-color);
     }
     .notif-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; box-shadow: 0 0 10px #60a5fa;}
     .notif-content strong { display: block; color: var(--text-primary); font-size: 1rem; margin-bottom: 2px;}
     .notif-content span { color: var(--text-secondary); font-size: 0.85rem; }
-    
+
     .btn-outline-primary {
         color: var(--accent-hover);
         border-color: var(--accent-hover);
@@ -197,4 +210,66 @@
         background-color: var(--accent-hover);
         color: #fff;
     }
+    
+    .border-dark {
+        border-color: var(--border-color) !important;
+    }
+
+    /* Custom stealthy scrollbar for the widgets */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0,0,0,0.1); 
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: var(--border-color); 
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: var(--border-color); 
+    }
 </style>
+
+@code {
+    private List<UserSession> onlineUsers = new();
+    private List<SystemAlert> alerts = new();
+    private string UserName = "Benutzer";
+    private string UserId = string.Empty;
+    
+    private SystemAlert? selectedAlert = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        UserName = authState.User?.Identity?.Name ?? "Benutzer";
+        UserId = authState.User?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? string.Empty;
+        
+        onlineUsers = await LoginService.GetOnlineUsersAsync();
+        if (!string.IsNullOrEmpty(UserId))
+        {
+            alerts = await AlertService.GetRecentAlertsAsync(UserId);
+        }
+    }
+    
+    private void SendMessageTo(UserSession user)
+    {
+        NavigationManager.NavigateTo($"/nachrichten");
+    }
+
+    private async Task ReadAlert(SystemAlert alert)
+    {
+        selectedAlert = alert;
+        if (!alert.IsRead && !string.IsNullOrEmpty(UserId))
+        {
+            alert.IsRead = true;
+            await AlertService.MarkAlertAsReadAsync(alert.AlertID, UserId);
+        }
+    }
+
+    private void CloseAlert()
+    {
+        selectedAlert = null;
+    }
+}
+

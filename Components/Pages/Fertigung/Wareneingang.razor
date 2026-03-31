@@ -187,7 +187,7 @@
                     </button>
                 </div>
 
-                <hr style="border-color: rgba(255,255,255,0.1); margin: 1.5rem 0;" />
+                <hr style="border-color: var(--border-color); margin: 1.5rem 0;" />
                 
                 <div class="mt-auto">
                     <label class="modern-label text-warning mb-2"><i class="fa-solid fa-tags me-1"></i> Lieferanten-Charge</label>
@@ -203,7 +203,7 @@
 
     <!-- BOTTOM: LETZTE WARENEINGÄNGE -->
     <div class="glass-card p-0 overflow-hidden mt-2 mb-4">
-        <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: rgba(255,255,255,0.05) !important;">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
             <div>
                 <h4 class="text-white fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Letzte Buchungen (Historie)</h4>
                 <span class="text-secondary small">Klicken Sie auf eine Zeile, um den Eintrag in die Maske oben zu laden.</span>
@@ -514,7 +514,7 @@
         background: rgba(30, 41, 59, 0.5);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         border-radius: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         padding: 1.5rem;
@@ -532,7 +532,7 @@
         color: #f8fafc;
         display: flex;
         align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border-color);
         padding-bottom: 0.75rem;
     }
 
@@ -547,7 +547,7 @@
 
     .modern-input, .modern-select {
         background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         color: #f8fafc !important;
         border-radius: 10px;
         padding: 0.8rem 1rem;
@@ -565,7 +565,7 @@
     }
 
     .modern-select option {
-        background: #1e293b;
+        background: var(--bg-card);
         color: #f8fafc;
         padding: 10px;
     }
@@ -639,8 +639,8 @@
     }
 
     .btn-glass {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--border-color);
+        border: 1px solid var(--border-color);
         color: #e2e8f0;
         border-radius: 10px;
         backdrop-filter: blur(5px);
@@ -648,7 +648,7 @@
     }
 
     .btn-glass:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--border-color);
         border-color: rgba(255, 255, 255, 0.3);
         color: #fff;
     }
@@ -661,7 +661,7 @@
     .modern-table-container {
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         background: rgba(15, 23, 42, 0.5);
     }
     
@@ -679,7 +679,7 @@
         font-size: 0.8rem;
         letter-spacing: 0.05em;
         padding: 1.2rem 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-color);
     }
     
     .modern-table td {
@@ -741,3 +741,4 @@
         background: rgba(100, 116, 139, 0.8);
     }
 </style>
+

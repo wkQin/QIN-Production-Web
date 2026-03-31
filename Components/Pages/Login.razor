@@ -2,8 +2,7 @@
 @using QIN_Production_Web.Data
 @using Microsoft.AspNetCore.Components.Authorization
 @inject LoginService LoginService
-@inject SsoTokenCache TokenCache
-@inject AuthenticationStateProvider AuthStateProvider
+@inject LoginTokenCache TokenCache
 @inject NavigationManager NavigationManager
 @inject IWebHostEnvironment Env
 @rendermode InteractiveServer
@@ -41,6 +40,15 @@
             </div>
         </div>
 
+        <div class="mb-4 text-start d-flex align-items-center">
+            <div class="form-check form-switch custom-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="rememberMeSwitch" @bind="RememberMe">
+                <label class="form-check-label text-secondary ms-2" for="rememberMeSwitch" style="cursor: pointer;">
+                    Angemeldet bleiben
+                </label>
+            </div>
+        </div>
+
         <button class="btn btn-gradient-primary w-100 py-3 fw-bold fs-5 text-white" @onclick="AuthenticateUser" tabindex="0" disabled="@isLoading">
             @if (isLoading)
             {
@@ -53,18 +61,7 @@
             }
         </button>
 
-        <a target="_top" data-enhance-nav="false" class="btn btn-glass w-100 py-3 fw-bold fs-5 text-info mt-3 d-flex align-items-center justify-content-center text-decoration-none" href="/api/auth/windows">
-            <i class="fa-brands fa-windows me-2"></i> Windows / AD Login
-        </a>
 
-        @if (Env.IsDevelopment())
-        {
-            <div class="mt-4 pt-3 border-top border-secondary">
-                <button class="btn btn-outline-warning w-100 py-2 fw-bold" @onclick="AuthenticateDevUser" tabindex="-1">
-                    <i class="fa-solid fa-code me-2"></i> Developer Auto-Login
-                </button>
-            </div>
-        }
 
         <div class="mt-4 text-secondary small">
             &copy; @DateTime.Now.Year QIN Form GmbH & Co. KG
@@ -74,7 +71,7 @@
 
 <style>
     .login-wrapper {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-card) 100%);
         font-family: 'Inter', sans-serif;
     }
 
@@ -82,7 +79,7 @@
         background: rgba(30, 41, 59, 0.6);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         border-radius: 20px;
         width: 100%;
         max-width: 450px;
@@ -90,7 +87,7 @@
 
     .modern-input {
         background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         border-left: none;
         padding: 0.8rem 1rem;
         transition: all 0.3s ease;
@@ -129,47 +126,29 @@
         transform: translateY(-2px);
         box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
     }
+    .custom-switch .form-check-input:checked {
+        background-color: #3b82f6;
+        border-color: #3b82f6;
+    }
 </style>
 
 @code {
     private string Username { get; set; } = string.Empty;
     private string Password { get; set; } = string.Empty;
+    private bool RememberMe { get; set; } = true;
     private string ErrorMessage { get; set; } = string.Empty;
 
     private bool isLoading = false;
 
     [SupplyParameterFromQuery]
-    private string? ssoToken { get; set; }
+    private string? m { get; set; }
 
-    [SupplyParameterFromQuery]
-    private string? ssoError { get; set; }
-    
-    [SupplyParameterFromQuery]
-    private string? adUser { get; set; }
-
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        // Handle incoming SSO redirects
-        if (!string.IsNullOrEmpty(ssoError))
+        if (!string.IsNullOrEmpty(m))
         {
-            if (ssoError == "UserNotFound")
-                ErrorMessage = $"Active Directory User '{adUser}' konnte nicht im System gefunden werden!";
-            else
-                ErrorMessage = "Windows Authentifizierung fehlgeschlagen oder vom Browser verweigert.";
-        }
-        else if (!string.IsNullOrEmpty(ssoToken) && Guid.TryParse(ssoToken, out var tokenGuid))
-        {
-            var userSession = TokenCache.RetrieveSession(tokenGuid);
-            if (userSession != null)
-            {
-                var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
-                await customAuthStateProvider.UpdateAuthenticationState(userSession);
-                NavigationManager.NavigateTo("/");
-            }
-            else
-            {
-                ErrorMessage = "Login-Sitzung ist abgelaufen oder ungültig. Bitte erneut versuchen.";
-            }
+            // Pre-fill the username box from the Magic Link
+            Username = m;
         }
     }
 
@@ -185,46 +164,48 @@
     {
         ErrorMessage = string.Empty;
 
-        if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+        if (string.IsNullOrWhiteSpace(Username))
         {
-            ErrorMessage = "Bitte Benutzername und Passwort eingeben.";
+            ErrorMessage = "Bitte Benutzername / Personalnummer eingeben.";
             return;
         }
 
         isLoading = true;
         StateHasChanged();
 
-        var userSession = await LoginService.LoginAsync(Username, Password);
+        UserSession? userSession = null;
 
-        if (userSession != null)
+        // Wenn KEIN Passwort eingegeben wurde, prüfen wir, ob es ein privilegierter "Fast Login" ist.
+        if (string.IsNullOrWhiteSpace(Password))
         {
-            var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
-            await customAuthStateProvider.UpdateAuthenticationState(userSession);
-            NavigationManager.NavigateTo("/");
+            userSession = await LoginService.FastLoginAsync(Username);
+
+            if (userSession == null)
+            {
+                ErrorMessage = "Für diesen Nutzer ist ein Passwort erforderlich (oder Personalnummer ungültig).";
+                isLoading = false;
+                StateHasChanged();
+                return;
+            }
         }
         else
         {
-            ErrorMessage = "Benutzername oder Passwort ist falsch!";
-            Password = string.Empty;
+            // Normaler Login mit Passwort
+            userSession = await LoginService.LoginAsync(Username, Password);
+
+            if (userSession == null)
+            {
+                ErrorMessage = "Benutzername oder Passwort ist falsch!";
+                Password = string.Empty;
+                isLoading = false;
+                StateHasChanged();
+                return;
+            }
         }
-        
-        isLoading = false;
-        StateHasChanged();
-    }
 
-    private async Task AuthenticateDevUser()
-    {
-        ErrorMessage = string.Empty;
-
-        var devSession = new UserSession
-        {
-            Name = "Developer",
-            Rechte = "Admin",
-            Personalnummer = "DEV-999"
-        };
-
-        var customAuthStateProvider = (CustomAuthStateProvider)AuthStateProvider;
-        await customAuthStateProvider.UpdateAuthenticationState(devSession);
-        NavigationManager.NavigateTo("/");
+        // Login erfolgreich, erstelle ein temporäres Übertragungs-Token
+        var token = TokenCache.GenerateToken(userSession, RememberMe);
+        NavigationManager.NavigateTo($"/api/auth/process?token={token}", forceLoad: true);
     }
 }
+

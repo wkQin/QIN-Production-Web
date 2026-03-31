@@ -140,7 +140,7 @@
                                                 <tr><td colspan="3" class="text-center text-muted py-4">Bitte Analyse starten</td></tr>
                                             }
                                             @foreach(var item in ExterneFehler) {
-                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: rgba(255,255,255,0.05); font-weight: bold;" : "")">
+                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: var(--border-color); font-weight: bold;" : "")">
                                                     <td>@item.Karte</td>
                                                     <td class="text-end">@item.Anzahl</td>
                                                     <td class="text-end">@(item.Prozent?.ToString("P2"))</td>
@@ -167,7 +167,7 @@
                                                 <tr><td colspan="3" class="text-center text-muted py-4">Bitte Analyse starten</td></tr>
                                             }
                                             @foreach(var item in InterneFehler) {
-                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: rgba(255,255,255,0.05); font-weight: bold;" : "")">
+                                                <tr style="@(item.Karte.StartsWith("Schlecht") ? "background: var(--border-color); font-weight: bold;" : "")">
                                                     <td>@item.Karte</td>
                                                     <td class="text-end">@item.Anzahl</td>
                                                     <td class="text-end">@(item.Prozent?.ToString("P2"))</td>
@@ -180,7 +180,7 @@
                         </div>
 
                         <!-- SUMMARY FOOTER -->
-                        <div class="mt-4 p-3 rounded d-flex justify-content-center align-items-center gap-5" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="mt-4 p-3 rounded d-flex justify-content-center align-items-center gap-5" style="background: var(--border-color); border: 1px solid var(--border-color);">
                             <div class="text-center">
                                 <span class="modern-label text-success d-block mb-1">Gutteile</span>
                                 <span class="fs-4 fw-bold text-white">@GesamtResult.Gutteile <small class="text-secondary fs-6" style="margin-left: 5px;">(@(GesamtResult.Gesamt > 0 ? ((double)GesamtResult.Gutteile / GesamtResult.Gesamt).ToString("P2") : "0.00%"))</small></span>
@@ -189,7 +189,7 @@
                                 <span class="modern-label text-danger d-block mb-1">Schlechtteile</span>
                                 <span class="fs-4 fw-bold text-white">@GesamtResult.Schlechtteile <small class="text-secondary fs-6" style="margin-left: 5px;">(@(GesamtResult.Gesamt > 0 ? ((double)GesamtResult.Schlechtteile / GesamtResult.Gesamt).ToString("P2") : "0.00%"))</small></span>
                             </div>
-                            <div class="text-center" style="border-left: 2px solid rgba(255,255,255,0.1); padding-left: 3rem;">
+                            <div class="text-center" style="border-left: 2px solid var(--border-color); padding-left: 3rem;">
                                 <span class="modern-label text-primary d-block mb-1">Gesamt</span>
                                 <span class="fs-3 fw-bold text-white">@GesamtResult.Gesamt</span>
                             </div>
@@ -337,14 +337,14 @@
     // ApexCharts Options for dark theme with forced background to fix transparent PNG export and explicitly colored fonts
     private ApexChartOptions<ChargeItem> ChartOptions = new() {
         Theme = new Theme { Mode = Mode.Dark },
-        Chart = new Chart { Background = "#0f172a", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
+        Chart = new Chart { Background = "var(--bg-main)", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
         PlotOptions = new PlotOptions { Bar = new PlotOptionsBar { BorderRadius = 4, Horizontal = true } },
         Colors = new List<string> { "#3b82f6" }
     };
 
     private ApexChartOptions<ChargeItem> PieOptions = new() {
         Theme = new Theme { Mode = Mode.Dark },
-        Chart = new Chart { Background = "#0f172a", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
+        Chart = new Chart { Background = "var(--bg-main)", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
         Stroke = new Stroke { Show = false }
     };
 
@@ -403,16 +403,6 @@
 
         ExterneFehler = new List<ChargeItem>
         {
-            new() { Karte = "Ölflecken", Anzahl = GesamtResult.Oelflecken, Prozent = (double)GesamtResult.Oelflecken / total },
-            new() { Karte = "Tiefziehfehler", Anzahl = GesamtResult.Tiefziehfehler, Prozent = (double)GesamtResult.Tiefziehfehler / total },
-            new() { Karte = "Fräsfehler", Anzahl = GesamtResult.Fraesfehler, Prozent = (double)GesamtResult.Fraesfehler / total },
-            new() { Karte = "Knicke", Anzahl = GesamtResult.Knicke, Prozent = (double)GesamtResult.Knicke / total },
-            new() { Karte = "Kratzer", Anzahl = GesamtResult.Kratzer, Prozent = (double)GesamtResult.Kratzer / total },
-            new() { Karte = "Schlecht Extern", Anzahl = GesamtResult.SchlechtExtern, Prozent = (double)GesamtResult.SchlechtExtern / total }
-        };
-
-        InterneFehler = new List<ChargeItem>
-        {
             new() { Karte = "Fusseln", Anzahl = GesamtResult.Fusseln, Prozent = (double)GesamtResult.Fusseln / total },
             new() { Karte = "Nadelstiche", Anzahl = GesamtResult.Nadelstiche, Prozent = (double)GesamtResult.Nadelstiche / total },
             new() { Karte = "Pickel", Anzahl = GesamtResult.Pickel, Prozent = (double)GesamtResult.Pickel / total },
@@ -421,6 +411,16 @@
             new() { Karte = "Flecken", Anzahl = GesamtResult.Flecken, Prozent = (double)GesamtResult.Flecken / total },
             new() { Karte = "Nebel", Anzahl = GesamtResult.Nebel, Prozent = (double)GesamtResult.Nebel / total },
             new() { Karte = "Vertiefung", Anzahl = GesamtResult.Vertiefung, Prozent = (double)GesamtResult.Vertiefung / total },
+            new() { Karte = "Schlecht Extern", Anzahl = GesamtResult.SchlechtExtern, Prozent = (double)GesamtResult.SchlechtExtern / total }
+        };
+
+        InterneFehler = new List<ChargeItem>
+        {
+            new() { Karte = "Ölflecken", Anzahl = GesamtResult.Oelflecken, Prozent = (double)GesamtResult.Oelflecken / total },
+            new() { Karte = "Tiefziehfehler", Anzahl = GesamtResult.Tiefziehfehler, Prozent = (double)GesamtResult.Tiefziehfehler / total },
+            new() { Karte = "Fräsfehler", Anzahl = GesamtResult.Fraesfehler, Prozent = (double)GesamtResult.Fraesfehler / total },
+            new() { Karte = "Knicke", Anzahl = GesamtResult.Knicke, Prozent = (double)GesamtResult.Knicke / total },
+            new() { Karte = "Kratzer", Anzahl = GesamtResult.Kratzer, Prozent = (double)GesamtResult.Kratzer / total },
             new() { Karte = "Schlecht Intern", Anzahl = GesamtResult.SchlechtIntern, Prozent = (double)GesamtResult.SchlechtIntern / total }
         };
 
@@ -471,7 +471,7 @@
         background: rgba(30, 41, 59, 0.5);
         backdrop-filter: blur(15px);
         -webkit-backdrop-filter: blur(15px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         border-radius: 16px;
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
         padding: 1.5rem;
@@ -485,7 +485,7 @@
         color: #f8fafc;
         display: flex;
         align-items: center;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border-color);
         padding-bottom: 0.75rem;
     }
 
@@ -500,7 +500,7 @@
 
     .modern-input, .modern-select {
         background: rgba(15, 23, 42, 0.7);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid var(--border-color);
         color: #f8fafc !important;
         border-radius: 10px;
         padding: 0.8rem 1rem;
@@ -518,7 +518,7 @@
     }
 
     .modern-select option {
-        background: #1e293b;
+        background: var(--bg-card);
         color: #f8fafc;
         padding: 10px;
     }
@@ -544,8 +544,8 @@
     }
 
     .btn-glass {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: var(--border-color);
+        border: 1px solid var(--border-color);
         color: #e2e8f0;
         border-radius: 10px;
         backdrop-filter: blur(5px);
@@ -553,14 +553,14 @@
     }
 
     .btn-glass:hover:not(:disabled) {
-        background: rgba(255, 255, 255, 0.15);
+        background: var(--border-color);
         border-color: rgba(255, 255, 255, 0.3);
         color: #fff;
     }
 
     /* Tabs Styling */
     .modern-tabs {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-bottom: 1px solid var(--border-color);
         padding: 0 1rem;
         background: rgba(15, 23, 42, 0.3);
     }
@@ -579,7 +579,7 @@
     .modern-tabs .nav-link:hover {
         color: #e2e8f0;
         border-color: transparent;
-        background: rgba(255, 255, 255, 0.02);
+        background: var(--border-color);
     }
 
     .modern-tabs .nav-link.active {
@@ -593,7 +593,7 @@
     .modern-table-container {
         border-radius: 12px;
         overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+        border: 1px solid var(--border-color);
         background: rgba(15, 23, 42, 0.5);
     }
     
@@ -611,7 +611,7 @@
         font-size: 0.8rem;
         letter-spacing: 0.05em;
         padding: 1.2rem 1rem;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-bottom: 1px solid var(--border-color);
         position: sticky;
         top: 0;
         z-index: 1;
@@ -647,20 +647,20 @@
 
     /* Target ApexCharts elements to force dark mode rendering */
     .apexcharts-tooltip {
-        background: #1e293b !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
         color: #fff !important;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
     }
     
     .apexcharts-tooltip-title {
-        background: #0f172a !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: var(--bg-main) !important;
+        border-bottom: 1px solid var(--border-color) !important;
     }
     
     .apexcharts-menu {
-        background: #1e293b !important;
-        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
         color: #fff !important;
     }
     
@@ -668,3 +668,4 @@
         color: #94a3b8 !important;
     }
 </style>
+

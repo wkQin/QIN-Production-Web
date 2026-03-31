@@ -4,7 +4,7 @@
 {
     <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-secondary text-white" style="background: rgba(32,35,42,0.95); backdrop-filter: blur(10px);">
+            <div class="modal-content border-secondary text-white" style="background: var(--bg-card); backdrop-filter: blur(10px);">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-info fw-bold">
                         <i class="fa-solid @(Model.ID == 0 ? "fa-plus" : "fa-pen") me-2"></i> 
@@ -15,11 +15,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label text-secondary small mb-1 fw-bold">Charge (Text)</label>
-                        <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Charge" />
+                        <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Charge" />
                     </div>
                     <div class="mb-3">
                         <label class="form-label text-secondary small mb-1 fw-bold">Echte Menge (Zahl)</label>
-                        <input type="number" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Echte_Menge" />
+                        <input type="number" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Echte_Menge" />
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
@@ -68,3 +68,4 @@
         await CloseAsync();
     }
 }
+

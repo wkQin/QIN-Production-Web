@@ -157,7 +157,7 @@ else if(ActiveTab == "control")
     
     /* Highlight the selected table active row specifically to overcome bootstrap overrides */
     .table-dark.table-hover tbody tr.table-active {
-        background-color: rgba(255, 255, 255, 0.1) !important;
+        background-color: var(--border-color) !important;
     }
 </style>
 
@@ -205,3 +205,4 @@ else if(ActiveTab == "control")
         ScanCode = ""; // Clear for next scan
     }
 }
+

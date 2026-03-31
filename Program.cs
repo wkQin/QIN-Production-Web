@@ -3,7 +3,10 @@ using QIN_Production_Web.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Negotiate;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Authentication;
+using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,20 +14,27 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddControllers();
 builder.Services.AddAuthenticationCore();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/login";
-    })
-    .AddNegotiate();
+    });
 builder.Services.AddAuthorization();
-builder.Services.AddSingleton<SsoTokenCache>();
+
+// FIX: Persist encryption keys so that F5/Server Restarts don't invalidate LocalStorage!
+builder.Services.AddDataProtection()
+    .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, ".keys")));
+
 builder.Services.AddScoped<ProtectedLocalStorage>();
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<ProtectedSessionStorage>();
+
+// Use Singleton for our fast token exchange cache
+builder.Services.AddSingleton<LoginTokenCache>();
+
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AlertService>();
 builder.Services.AddScoped<EndkontrolleService>();
 builder.Services.AddScoped<FehleranalyseService>();
 builder.Services.AddScoped<ChargenanalyseService>();
@@ -61,35 +71,39 @@ app.UseAntiforgery();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
-app.MapGet("/api/auth/windows", [Microsoft.AspNetCore.Authorization.Authorize(AuthenticationSchemes = Microsoft.AspNetCore.Authentication.Negotiate.NegotiateDefaults.AuthenticationScheme)] async (HttpContext context, LoginService loginService, SsoTokenCache tokenCache) => 
+app.MapGet("/api/auth/process", async (HttpContext context, LoginTokenCache cache) => 
 {
-    var windowsUsername = context.User.Identity?.Name;
-    if (string.IsNullOrWhiteSpace(windowsUsername))
+    var tokenStr = context.Request.Query["token"];
+    if (cache.TryGetToken(tokenStr, out var session, out var rememberMe))
     {
-        return Results.Redirect("/login?ssoError=NoWindowsIdentity");
-    }
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, session.Name ?? ""),
+            new Claim(ClaimTypes.Role, session.Rechte ?? ""),
+            new Claim("UserId", session.Personalnummer ?? "")
+        };
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        
+        var authProperties = new AuthenticationProperties 
+        { 
+            IsPersistent = rememberMe,
+            ExpiresUtc = rememberMe ? DateTimeOffset.UtcNow.AddDays(30) : null
+        };
 
-    var session = await loginService.ADLoginAsync(windowsUsername);
-    
-    // Fallback: If "DOMAIN\User" fails, try just "User"
-    if (session == null && windowsUsername.Contains('\\'))
-    {
-        var justName = windowsUsername.Split('\\').Last();
-        session = await loginService.ADLoginAsync(justName);
+        await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
+        return Results.Redirect(session.Rechte == "Admin" || session.Rechte == "Verwaltung" ? "/verwaltung/aktivitaeten" : "/");
     }
-
-    if (session != null)
-    {
-        var token = tokenCache.StoreSession(session);
-        return Results.Redirect($"/login?ssoToken={token}");
-    }
-    else
-    {
-        return Results.Redirect($"/login?ssoError=UserNotFound&adUser={Uri.EscapeDataString(windowsUsername)}");
-    }
+    return Results.Redirect("/login?error=InvalidToken");
 });
 
+app.MapGet("/api/auth/logout", async (HttpContext context) => 
+{
+    await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+    return Results.Redirect("/login");
+});
+
+app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

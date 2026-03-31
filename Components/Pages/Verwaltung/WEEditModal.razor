@@ -4,7 +4,7 @@
 {
     <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-secondary text-white" style="background: rgba(32,35,42,0.95); backdrop-filter: blur(10px);">
+            <div class="modal-content border-secondary text-white" style="background: var(--bg-card); backdrop-filter: blur(10px);">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-primary fw-bold">
                         <i class="fa-solid fa-box-open me-2"></i> Wareneingang Bearbeiten (#@Model.ID)
@@ -15,39 +15,39 @@
                     <div class="row g-3">
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Lieferant</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Lieferant" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Lieferant" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Lieferschein Nr (LS_Nr)</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.LS_Nr" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.LS_Nr" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">EBE Nr</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.EBE_NR" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.EBE_NR" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Position (Pos)</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Pos" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Pos" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Menge</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Menge" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Menge" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Artikel</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Artikel" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Artikel" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Zustand</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Zustand" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Zustand" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Eingangsdatum</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Eingangsdatum" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Eingangsdatum" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Benutzer (ID)</label>
-                            <input type="number" class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" @bind="Model.Benutzer" />
+                            <input type="number" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Benutzer" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Palettentausch</label>
@@ -65,7 +65,7 @@
                         </div>
                         <div class="col-12 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Bemerkung</label>
-                            <textarea class="form-control border-secondary text-white" style="background: rgba(15,23,42,0.6);" rows="2" @bind="Model.Bemerkung"></textarea>
+                            <textarea class="form-control border-secondary text-white" style="background: var(--bg-hover);" rows="2" @bind="Model.Bemerkung"></textarea>
                         </div>
                     </div>
                 </div>
@@ -125,3 +125,4 @@
         await CloseAsync();
     }
 }
+

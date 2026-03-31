@@ -4,6 +4,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager NavigationManager
 @inject NachrichtenService MessageService
+@inject AlertService AlertService
 
 <div class="@($"brand-section {(IsCollapsed ? "collapsed" : "justify-content-between")}")">
     <div class="d-flex align-items-center gap-3">
@@ -39,7 +40,7 @@
             @if(!IsCollapsed) { <span>Dashboard</span> }
         </NavLink>
         
-        <hr style="border-color: rgba(255,255,255,0.1); margin: 12px 14px;" />
+        <hr style="border-color: var(--border-color); margin: 12px 14px;" />
         
         <!-- Quick Actions -->
         <button class="@($"nav-item w-100 text-start border-0 {(IsCollapsed ? "collapsed-item px-0" : "px-3")} mb-3")" 
@@ -112,7 +113,7 @@
 <div class="@($"bottom-nav {(IsCollapsed ? "collapsed-nav" : "")}")">
     <!-- Notification Dock -->
     <div class="@($"d-flex mb-3 {(IsCollapsed ? "flex-column align-items-center gap-3" : "justify-content-around px-2")}")">
-        <NavLink class="btn position-relative p-2" href="nachrichten" title="Systemnachrichten" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
+        <NavLink class="btn position-relative p-2" href="nachrichten" title="Systemnachrichten" style="border-radius: 12px; background: var(--border-color); color: var(--text-secondary); transition: all 0.2s;">
             <i class="fa-solid fa-envelope fs-5"></i>
             @if (UnreadCount > 0)
             {
@@ -120,9 +121,12 @@
             }
         </NavLink>
         
-        <button class="btn position-relative p-2" title="Benachrichtigungen" style="border-radius: 12px; background: rgba(255,255,255,0.05); color: var(--text-secondary); transition: all 0.2s;">
+        <button class="btn position-relative p-2" title="Benachrichtigungen" style="border-radius: 12px; background: var(--border-color); color: var(--text-secondary); transition: all 0.2s;" @onclick="OpenNavAlerts">
             <i class="fa-solid fa-bell fs-5"></i>
-            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-dark rounded-circle shadow-sm"></span>
+            @if (AlertCount > 0)
+            {
+                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-dark rounded-circle shadow-sm"></span>
+            }
         </button>
     </div>
 
@@ -138,7 +142,7 @@
                 }
             </div>
             
-            <a class="@($"nav-item text-danger border-top border-secondary pt-3 {(IsCollapsed ? "collapsed-item" : "")}")" @onclick="Logout" style="cursor: pointer;" title="Abmelden">
+            <a class="@($"nav-item text-danger border-top border-secondary pt-3 {(IsCollapsed ? "collapsed-item" : "")}")" href="/api/auth/logout" target="_top" style="cursor: pointer;" title="Abmelden">
                 <i class="fa-solid fa-right-from-bracket nav-icon"></i>
                 @if(!IsCollapsed) { <span>Abmelden</span> }
             </a>
@@ -151,6 +155,54 @@
     </NavLink>
 </div>
 
+<!-- Nav Alerts Modal -->
+@if (showNavAlerts)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg">
+                <div class="modal-header border-bottom border-secondary">
+                    <h5 class="modal-title text-primary fw-bold">
+                        <i class="fa-solid fa-bullhorn me-2"></i> Aktuelle Ankündigungen
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseNavAlerts"></button>
+                </div>
+                <div class="modal-body p-0" style="max-height: 60vh; overflow-y: auto;">
+                    <div class="list-group list-group-flush border-0">
+                        @if (navAlerts.Count == 0)
+                        {
+                            <div class="p-4 text-center text-secondary">
+                                <i class="fa-solid fa-check-circle fs-2 mb-2"></i><br/>
+                                Keine Ankündigungen vorhanden.
+                            </div>
+                        }
+                        else
+                        {
+                            @foreach (var alert in navAlerts)
+                            {
+                                <div class="list-group-item border-bottom border-secondary m-0 rounded-0" style="background: rgba(30,30,30,0.5);">
+                                    <strong class="@(!alert.IsRead ? "text-white" : "text-secondary") fs-5 d-block mb-2">
+                                        @if (!alert.IsRead) { <span class="badge bg-blue me-2 shadow-sm rounded-pill" style="font-size: 0.70rem;">Neu</span> }
+                                        @alert.Title
+                                    </strong>
+                                    <p class="text-secondary mb-3" style="white-space: pre-wrap; line-height: 1.5;">@alert.Message</p>
+                                    <div class="text-secondary small d-flex justify-content-between border-top border-dark pt-2">
+                                        <span><i class="fa-solid fa-user-pen me-1"></i> @alert.CreatedBy</span>
+                                        <span><i class="fa-regular fa-clock me-1"></i> @alert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-3">
+                    <button type="button" class="btn btn-secondary w-100 fw-bold" @onclick="CloseNavAlerts">Schließen</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter]
     public bool IsCollapsed { get; set; }
@@ -162,13 +214,27 @@
     private bool IsVerwaltungOpen = false;
 
     private int UnreadCount = 0;
+    private int AlertCount = 0;
+    private bool showNavAlerts = false;
+    private List<SystemAlert> navAlerts = new();
+    
     private System.Threading.Timer? _pollingTimer;
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var role = authState.User?.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value;
+
+        if (role == "Admin" || role == "Verwaltung")
+        {
+            IsFertigungOpen = false;
+            IsVerwaltungOpen = true;
+        }
+
         MessageService.OnUnreadCountChanged += HandleUnreadCountChanged;
         
         await LoadUnreadCount();
+        await LoadAlerts();
         
         // Background polling every 5 seconds to catch cross-browser messages
         _pollingTimer = new System.Threading.Timer(async _ =>
@@ -200,20 +266,46 @@
         }
     }
 
+    private async Task LoadAlerts()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        string userId = authState.User?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? string.Empty;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            navAlerts = await AlertService.GetRecentAlertsAsync(userId);
+            AlertCount = navAlerts.Count(a => !a.IsRead);
+        }
+    }
+
+    private async Task OpenNavAlerts()
+    {
+        showNavAlerts = true;
+        
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        string userId = authState.User?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? string.Empty;
+        
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var unreadAlerts = navAlerts.Where(a => !a.IsRead).ToList();
+            foreach (var alert in unreadAlerts)
+            {
+                alert.IsRead = true;
+                await AlertService.MarkAlertAsReadAsync(alert.AlertID, userId);
+            }
+            AlertCount = 0;
+        }
+    }
+
+    private void CloseNavAlerts()
+    {
+        showNavAlerts = false;
+    }
+
     private void ToggleFertigung() {
         if(!IsCollapsed) IsFertigungOpen = !IsFertigungOpen;
     }
     private void ToggleVerwaltung() {
         if(!IsCollapsed) IsVerwaltungOpen = !IsVerwaltungOpen;
-    }
-
-    private async Task Logout()
-    {
-        if (AuthStateProvider is CustomAuthStateProvider customProvider)
-        {
-            await customProvider.UpdateAuthenticationState(null);
-            NavigationManager.NavigateTo("/login", true);
-        }
     }
 
     private async Task ToggleMenu()
@@ -230,3 +322,4 @@
         _pollingTimer?.Dispose();
     }
 }
+

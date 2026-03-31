@@ -14,7 +14,7 @@
 <PageTitle>Zeiterfassung | QIN-FORM Web</PageTitle>
 
 <!-- HEADER -->
-<div class="mb-4 p-4 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+<div class="mb-4 p-4 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
     <div class="row w-100 m-0">
         <!-- Title & Left side -->
         <div class="col-md-4 p-0 d-flex flex-column justify-content-center">
@@ -35,33 +35,33 @@
             }
 
             <div class="d-flex align-items-center gap-2">
-                <button class="btn border text-white" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="PrevMonth">
+                <button class="btn border text-white" style="background: var(--border-color); border-color: var(--border-color) !important;" @onclick="PrevMonth">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
                 
                 <select class="form-select" 
-                        style="width: auto; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                        style="width: auto; height: 38px; background: var(--bg-card) !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
                         @onchange="OnMonthChanged">
                     @foreach (var m in CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Where(n => !string.IsNullOrEmpty(n)))
                     {
-                        <option value="@m" selected="@(m == SelectedMonth)" style="background: #1a222c; color: white;">@m</option>
+                        <option value="@m" selected="@(m == SelectedMonth)" style="background: var(--bg-card); color: white;">@m</option>
                     }
                 </select>
 
                 <select class="form-select" 
-                        style="width: auto; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                        style="width: auto; height: 38px; background: var(--bg-card) !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
                         @onchange="OnYearChanged">
                     @for (int y = 2023; y <= DateTime.Now.Year + 1; y++)
                     {
-                        <option value="@y" selected="@(y == SelectedYear)" style="background: #1a222c; color: white;">@y</option>
+                        <option value="@y" selected="@(y == SelectedYear)" style="background: var(--bg-card); color: white;">@y</option>
                     }
                 </select>
 
-                <button class="btn border text-white" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="NextMonth">
+                <button class="btn border text-white" style="background: var(--border-color); border-color: var(--border-color) !important;" @onclick="NextMonth">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
 
-                <button class="btn border text-white ms-1 px-4" style="background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1) !important;" @onclick="GoToCurrentMonth">
+                <button class="btn border text-white ms-1 px-4" style="background: var(--border-color); border-color: var(--border-color) !important;" @onclick="GoToCurrentMonth">
                     Heute
                 </button>
             </div>
@@ -70,9 +70,9 @@
         <!-- Manual Section Container (Row 2 equivalent) -->
         <AuthorizeView Roles="Admin, Verwaltung">
             <div class="col-12 p-0 mt-3">
-                <div class="p-3 rounded-4" style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);">
+                <div class="p-3 rounded-4" style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color);">
                     <div class="d-flex align-items-center gap-3">
-                        <button class="btn text-white fw-bold px-3 py-2 rounded-3" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15) !important;" @onclick="ToggleManualPanel">
+                        <button class="btn text-white fw-bold px-3 py-2 rounded-3" style="background: var(--border-color); border: 1px solid var(--border-color) !important;" @onclick="ToggleManualPanel">
                             <i class="fa-solid fa-plus me-1"></i> Manuelle Buchung
                         </button>
 
@@ -81,11 +81,11 @@
                 <div class="d-flex align-items-center gap-2 me-3">
                     <span class="text-secondary small">Benutzer:</span>
                     <select class="form-select" 
-                            style="width: auto; min-width: 180px; height: 38px; background: #1a222c !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
+                            style="width: auto; min-width: 180px; height: 38px; background: var(--bg-card) !important; color: white !important; border: 1px solid #444 !important; border-radius: 4px;" 
                             @onchange="OnUserChanged">
                         @foreach (var u in Users)
                         {
-                            <option value="@u.Benutzer" selected="@(u.Benutzer == SelectedUser?.Benutzer)" style="background: #1a222c; color: white;">@u.Benutzer</option>
+                            <option value="@u.Benutzer" selected="@(u.Benutzer == SelectedUser?.Benutzer)" style="background: var(--bg-card); color: white;">@u.Benutzer</option>
                         }
                     </select>
                 </div>
@@ -98,23 +98,23 @@
 
                     @if (IsManualPanelOpen)
                     {
-                        <div class="mt-3 p-3 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+                        <div class="mt-3 p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
                             <!-- Manual booking layout exactly matching WPF Grouping -->
                             <div class="row g-3 px-1">
                                 <div class="col-md-auto pe-4">
                                     <label class="form-label text-secondary small mb-1">Datum</label>
-                                    <input type="date" class="form-control" style="width: 140px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualDate" />
+                                    <input type="date" class="form-control" style="width: 140px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualDate" />
                                 </div>
                                 <div class="col-md-auto pe-4">
                                     <label class="form-label text-secondary small mb-1">Uhrzeit</label>
-                                    <input type="time" class="form-control text-center" style="width: 100px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualTime" />
+                                    <input type="time" class="form-control text-center" style="width: 100px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualTime" />
                                 </div>
                                 <div class="col-md-auto pe-4">
                                     <label class="form-label text-secondary small mb-1">Aktion</label>
-                                    <select class="form-select" style="width: 130px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualAction">
+                                    <select class="form-select" style="width: 130px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualAction">
                                         @foreach (var action in ManualActions)
                                         {
-                                            <option value="@action" style="background:#1a222c; color:white;">@action</option>
+                                            <option value="@action" style="background:var(--bg-card); color:white;">@action</option>
                                         }
                                     </select>
                                 </div>
@@ -127,10 +127,10 @@
                                 <div class="col-md-auto ms-auto border-start border-secondary ps-4">
                                     <label class="form-label text-secondary small mb-1">Abwesenheit (alternativ)</label>
                                     <div class="d-flex gap-2">
-                                        <select class="form-select" style="width: 140px; background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="SelectedAbsenceType">
+                                        <select class="form-select" style="width: 140px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="SelectedAbsenceType">
                                             @foreach (var type in AbsenceTypes)
                                             {
-                                                <option value="@type" style="background:#1a222c; color:white;">@type</option>
+                                                <option value="@type" style="background:var(--bg-card); color:white;">@type</option>
                                             }
                                         </select>
                                         <button class="btn text-white fw-bold px-4" style="background: rgba(168, 85, 247, 0.2); border: 1px solid rgba(168, 85, 247, 0.4);" @onclick="SaveAbsence" disabled="@(!CanSaveAbsence)">Setzen</button>
@@ -141,10 +141,10 @@
                             <div class="row g-3 mt-1 px-1">
                                 <div class="col">
                                     <label class="form-label text-secondary small mb-1">Bemerkung</label>
-                                    <input type="text" class="form-control" style="background: #1a222c !important; color: white !important; border: 1px solid rgba(255,255,255,0.2) !important;" @bind="ManualNote" />
+                                    <input type="text" class="form-control" style="background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualNote" />
                                 </div>
                                 <div class="col-auto d-flex align-items-end">
-                                    <button class="btn fw-bold px-4 rounded-3 text-white" style="height: 38px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);" @onclick="AddManualBooking">
+                                    <button class="btn fw-bold px-4 rounded-3 text-white" style="height: 38px; background: var(--border-color); border: 1px solid var(--border-color);" @onclick="AddManualBooking">
                                         Buchung Speichern
                                     </button>
                                 </div>
@@ -166,33 +166,33 @@
     }
     .zf-expanded-content {
         margin-left: 46px; 
-        border-top: 1px solid rgba(255,255,255,0.05);
+        border-top: 1px solid var(--border-color);
     }
     .zf-card {
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: var(--border-color);
+        border: 1px solid var(--border-color);
         border-radius: 12px;
         transition: background 0.2s;
         margin-bottom: 12px;
     }
     .zf-card:hover {
-        background: rgba(255,255,255,0.05);
+        background: var(--border-color);
     }
     .zf-btn-toggle {
         width: 26px; height: 26px; border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+        background: var(--border-color); border: 1px solid var(--border-color);
         color: white; cursor: pointer;
     }
     .zf-btn-toggle:hover {
-        background: rgba(255,255,255,0.2);
+        background: var(--border-color);
     }
     .zf-booking-row {
         display: grid;
         grid-template-columns: 80px 90px 200px 1fr auto auto;
         align-items: center;
-        background: rgba(255,255,255,0.02);
-        border: 1px solid rgba(255,255,255,0.05);
+        background: var(--border-color);
+        border: 1px solid var(--border-color);
         border-radius: 10px;
         padding: 8px 12px;
         margin-bottom: 8px;
@@ -202,28 +202,28 @@
 <!-- SUMMARY CARDS -->
 <div class="row g-3 mb-4">
     <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Arbeitszeit (Monat)</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryTotalWorked</div>
             <div class="text-secondary small mt-1">@SollText</div>
         </div>
     </div>
     <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Fehlzeiten</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryMissingDays</div>
             <div class="text-secondary small mt-1">Tage ohne vollständige Buchung</div>
         </div>
     </div>
     <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Manuell erfasst</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryManualCount</div>
             <div class="text-secondary small mt-1">Einträge über Verwaltung</div>
         </div>
     </div>
     <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);">
+        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Überstunden (tgl.)</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryDailyOvertime</div>
             <div class="text-secondary small mt-1">Täglich berechnet</div>
@@ -232,7 +232,7 @@
 </div>
 
 <!-- DATA GRID (Cards Layout matching WPF) -->
-<div class="p-4 rounded-4" style="background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.05);">
+<div class="p-4 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
     
     <!-- Shared Column Headers -->
     <div class="zf-row text-secondary px-3 pb-2 mb-2 border-bottom border-dark small fw-bold">
@@ -251,7 +251,7 @@
         {
             @if (day.IsWeekStart)
             {
-                <div class="d-inline-block px-3 py-1 mb-2 mt-3 rounded-pill fw-bold" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-primary); font-size: 0.85rem;">
+                <div class="d-inline-block px-3 py-1 mb-2 mt-3 rounded-pill fw-bold" style="background: var(--border-color); border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.85rem;">
                     KW @day.WeekHeaderText
                 </div>
             }
@@ -706,3 +706,4 @@
         return true;
     }
 }
+

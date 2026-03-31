@@ -14,14 +14,14 @@
     /* Premium Chat Aesthetics */
     .chat-container {
         max-height: 100vh;
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        background: linear-gradient(135deg, var(--bg-main) 0%, var(--bg-card) 100%);
     }
 
     .glass-panel {
-        background: rgba(30, 41, 59, 0.7);
+        background: var(--bg-card);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--border-color);
         box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }
 
@@ -33,7 +33,7 @@
         background: transparent;
     }
     .scroll-area::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 255, 255, 0.2);
+        background-color: var(--border-color);
         border-radius: 10px;
     }
 
@@ -43,7 +43,7 @@
         border-left: 3px solid transparent;
     }
     .contact-item:hover {
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: var(--border-color) !important;
         transform: translateX(4px);
     }
     .contact-item.active {
@@ -92,7 +92,7 @@
         height: 12px;
         background: #3b82f6;
         border-bottom-left-radius: 100%;
-        border-right: 6px solid #1e293b;
+        border-right: 6px solid var(--bg-card);
         z-index: -1;
     }
 
@@ -110,7 +110,7 @@
         height: 12px;
         background: rgba(51, 65, 85, 0.9);
         border-bottom-right-radius: 100%;
-        border-left: 6px solid #1e293b;
+        border-left: 6px solid var(--bg-card);
         z-index: -1;
     }
 
@@ -396,6 +396,7 @@
 
     private bool IsLoadingContacts = true;
     private bool IsLoadingMessages = false;
+    private bool shouldScrollToBottom = false;
 
     private System.Threading.Timer? _pollTimer;
 
@@ -476,10 +477,7 @@
         if (SelectedUser == userName) return;
         SelectedUser = userName;
         await LoadMessagesAsync();
-        
-        // Auto scroll once loaded
-        await Task.Delay(50);
-        await ScrollToBottom();
+        shouldScrollToBottom = true;
     }
 
     private async Task LoadMessagesAsync(bool silent = false)
@@ -496,8 +494,8 @@
             // If we received new messages via polling, scroll to bottom
             if (silent && Messages.Count > oldCount)
             {
-                await Task.Delay(50);
-                await ScrollToBottom();
+                shouldScrollToBottom = true;
+                InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception ex)
@@ -541,6 +539,15 @@
         {
             await LoadMessagesAsync(silent: true);
             await LoadConversationsAsync(silent: true);
+            shouldScrollToBottom = true;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (shouldScrollToBottom)
+        {
+            shouldScrollToBottom = false;
             await ScrollToBottom();
         }
     }
@@ -559,3 +566,4 @@
         _pollTimer?.Dispose();
     }
 }
+

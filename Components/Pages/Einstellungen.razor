@@ -1,0 +1,217 @@
+@page "/einstellungen"
+@using Microsoft.AspNetCore.Components.Authorization
+@using QIN_Production_Web.Data
+@inject AlertService AlertService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+<PageTitle>Einstellungen - QIN-FORM</PageTitle>
+
+<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
+    <div>
+        <h2 class="mb-0 text-white fw-bold"><i class="fa-solid fa-gear text-secondary me-2"></i> Einstellungen</h2>
+        <p class="text-secondary">Persönliche und systemweite Konfigurationen.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Allgemein -->
+    <div class="col-md-6">
+        <div class="content-card h-100">
+            <div class="card-header-flex">
+                <h4><i class="fa-solid fa-user me-2"></i> Profil</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-4">Eingeloggt als: <strong class="text-white fs-5">@UserName</strong></p>
+                
+                <hr class="border-secondary mb-4"/>
+                
+                <h5 class="text-white mb-3"><i class="fa-solid fa-paintbrush me-2 text-info"></i> Aussehen & Barrierefreiheit</h5>
+                <p class="text-secondary small mb-3">Passe das Design und die Schriftgröße für diesen Browser individuell an.</p>
+                
+                <div class="mb-3">
+                    <label class="form-label text-secondary fw-bold">Erscheinungsbild</label>
+                    <select class="form-select bg-dark text-white border-secondary rounded-3" @bind="currentTheme">
+                        <option value="dark">🌙 Dark Mode (Standard)</option>
+                        <option value="light">☀️ Light Mode</option>
+                    </select>
+                </div>
+
+                <div class="mb-4 pb-2">
+                    <label class="form-label text-secondary fw-bold d-flex justify-content-between">
+                        <span>Schriftgröße</span>
+                        <span class="text-info">@(currentFontSize)%</span>
+                    </label>
+                    <input type="range" class="form-range" min="80" max="150" step="10" @bind="currentFontSize" @bind:event="oninput" />
+                    <div class="d-flex justify-content-between text-secondary small px-1">
+                        <span>Klein</span>
+                        <span>Normal</span>
+                        <span>Sehr groß</span>
+                    </div>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button class="btn btn-primary fw-bold" @onclick="ApplySettings"><i class="fa-solid fa-check me-2"></i> Speichern</button>
+                    <button class="btn btn-outline-secondary fw-bold" @onclick="ResetSettings"><i class="fa-solid fa-rotate-left me-2"></i> Zurücksetzen</button>
+                </div>
+                
+                @if(settingsSaved)
+                {
+                    <div class="text-success mt-2 small"><i class="fa-solid fa-check-circle me-1"></i> Einstellungen angewendet!</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Verwaltung Nur: Ankündigungen erstellen -->
+    <AuthorizeView Roles="Admin, Verwaltung">
+        <Authorized Context="AuthContext">
+            <div class="col-md-6">
+                <div class="content-card h-100" style="border: 1px solid var(--accent-primary);">
+                    <div class="card-header-flex">
+                        <h4 class="text-primary"><i class="fa-solid fa-bullhorn me-2"></i> Neue System-Ankündigung schreiben</h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary small mb-4">
+                            Sende eine Nachricht an alle Nutzer des Systems. Diese wird sofort auf dem Dashboard und als Push-Benachrichtigung für alle zugänglich sein.
+                        </p>
+                        
+                        @if (isAlertSuccess)
+                        {
+                            <div class="alert alert-success d-flex align-items-center p-3 mb-4 rounded-3 text-white border-0" style="background: rgba(25, 135, 84, 0.2); border-left: 4px solid var(--bs-success) !important;" role="alert">
+                                <i class="fa-solid fa-circle-check fs-4 me-3 text-success"></i>
+                                <div>Ankündigung wurde erfolgreich an alle Benutzer gesendet!</div>
+                            </div>
+                        }
+                        
+                        <EditForm Model="@newAlert" OnValidSubmit="SendAlert">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label text-secondary fw-bold">Titel der Ankündigung</label>
+                                <InputText @bind-Value="newAlert.Title" class="form-control bg-dark text-white border-secondary rounded-3" placeholder="Z. B. Wichtiges Update oder Server-Wartung" required />
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label text-secondary fw-bold">Nachricht</label>
+                                <InputTextArea @bind-Value="newAlert.Message" class="form-control bg-dark text-white border-secondary rounded-3" rows="4" placeholder="Schreibe hier die vollständige Mitteilung..." required />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3 py-2" disabled="@isSubmitting">
+                                @if(isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Wird gesendet...</span>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-paper-plane me-2"></i> <span>Mitteilung sofort senden</span>
+                                }
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+    </AuthorizeView>
+</div>
+
+<style>
+    .form-control:focus {
+        background-color: #2b3035 !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+    }
+</style>
+
+@code {
+    private string UserName = "";
+    private SystemAlert newAlert = new();
+    private bool isSubmitting = false;
+    private bool isAlertSuccess = false;
+    
+    // UI Settings
+    private string currentTheme = "dark";
+    private int currentFontSize = 100;
+    private bool settingsSaved = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        UserName = authState.User?.Identity?.Name ?? "Unbekannt";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try 
+            {
+                var theme = await JS.InvokeAsync<string>("localStorage.getItem", "qin_theme");
+                if (!string.IsNullOrEmpty(theme)) currentTheme = theme;
+
+                var fs = await JS.InvokeAsync<string>("localStorage.getItem", "qin_fontsize");
+                if (int.TryParse(fs, out int parsedFs)) currentFontSize = parsedFs;
+                
+                StateHasChanged();
+            }
+            catch { /* Ignore pre-render errors if any */ }
+        }
+    }
+
+    private async Task ApplySettings()
+    {
+        await JS.InvokeVoidAsync("updateClientSettings", currentTheme, currentFontSize.ToString());
+        settingsSaved = true;
+        
+        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
+            InvokeAsync(() => {
+                settingsSaved = false;
+                StateHasChanged();
+            });
+        }), null, 3000, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task ResetSettings()
+    {
+        currentTheme = "dark";
+        currentFontSize = 100;
+        await JS.InvokeVoidAsync("resetClientSettings");
+        settingsSaved = true;
+        
+        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
+            InvokeAsync(() => {
+                settingsSaved = false;
+                StateHasChanged();
+            });
+        }), null, 3000, System.Threading.Timeout.Infinite);
+    }
+
+    private async Task SendAlert()
+    {
+        if (string.IsNullOrWhiteSpace(newAlert.Title) || string.IsNullOrWhiteSpace(newAlert.Message))
+            return;
+
+        isSubmitting = true;
+        isAlertSuccess = false;
+
+        newAlert.CreatedBy = UserName;
+
+        await AlertService.CreateAlertAsync(newAlert);
+        
+        // Reset form
+        newAlert = new SystemAlert();
+        isSubmitting = false;
+        isAlertSuccess = true;
+        
+        // Timer to hide success message automatically
+        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
+            InvokeAsync(() => {
+                isAlertSuccess = false;
+                StateHasChanged();
+            });
+        }), null, 4000, System.Threading.Timeout.Infinite);
+    }
+}
