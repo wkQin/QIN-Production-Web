@@ -163,7 +163,7 @@ namespace QIN_Production_Web.Data
                 using (var con = new SqlConnection(SqlManager.connectionString))
                 {
                     await con.OpenAsync();
-                    string q = @"SELECT TOP 20 ID, Charge, [FA-Nr], Kunde, Projekt, Artikel, Dekor, Gutteile, Fusseln, Nadelstiche, Pickel, Dekorfehler, Color, Flecken, Nebel, Vertiefung, Oelflecken, Tiefziehfehler, Fraesfehler, Knicke, Kratzer, FSKdate, Bemerkungen 
+                    string q = @"SELECT TOP 10 ID, Charge, [FA-Nr], Kunde, Projekt, Artikel, Dekor, Gutteile, Fusseln, Nadelstiche, Pickel, Dekorfehler, Color, Flecken, Nebel, Vertiefung, Oelflecken, Tiefziehfehler, Fraesfehler, Knicke, Kratzer, FSKdate, Bemerkungen 
                                  FROM dbo.Table1 WHERE Personalnummer = @Personalnummer ORDER BY ID DESC";
                     using (var cmd = new SqlCommand(q, con))
                     {

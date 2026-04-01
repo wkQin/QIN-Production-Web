@@ -314,7 +314,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        UserPersonalnummer = UserService.Personalnummer;
+        // Proper await for auth state to ensure we have the correct user
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        
+        // Extract Personalnummer from "UserId" claim, fallback to UserService default if not found
+        UserPersonalnummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? UserService.Personalnummer;
+        
         NeuerEintrag.Personalnummer = UserPersonalnummer;
 
         Kunden = await EndkontrolleService.GetCustomersAsync();
