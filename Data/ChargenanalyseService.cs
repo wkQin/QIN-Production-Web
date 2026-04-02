@@ -15,7 +15,6 @@ namespace QIN_Production_Web.Data
         public DateTime? DateVon { get; set; }
         public DateTime? DateBis { get; set; }
         public string? Artikel { get; set; }
-        public string? WareneingangCharge { get; set; }
     }
 
     public class AnalyseSummary
@@ -43,7 +42,6 @@ namespace QIN_Production_Web.Data
         public string FA_Nr { get; set; } = "";
         public string Artikel { get; set; } = "";
         public DateTime? WareneingangDatum { get; set; }
-        public string WareneingangCharge { get; set; } = "";
     }
 
     public class ThermoRow
@@ -188,15 +186,27 @@ namespace QIN_Production_Web.Data
 
             if (!string.IsNullOrWhiteSpace(f.Charge))
             {
-                wh.Add($@"(
-                    c.[Charge] LIKE '%' + @pCharge + '%' OR 
-                    EXISTS (
-                        SELECT 1 FROM dbo.[Wareneingang] we_charge_search 
-                        WHERE we_charge_search.[ID] = c.[Wareneingang_ID] 
-                          AND we_charge_search.[Palette] LIKE '%' + @pCharge + '%'
-                    )
-                )");
-                args.Add("@pCharge", f.Charge);
+                var chargeParts = f.Charge.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+                                          .Select(p => p.Trim())
+                                          .Where(p => !string.IsNullOrEmpty(p))
+                                          .ToList();
+
+                if (chargeParts.Count == 1)
+                {
+                    wh.Add("c.[Charge] LIKE '%' + @pCharge + '%'");
+                    args.Add("@pCharge", chargeParts[0]);
+                }
+                else if (chargeParts.Count > 1)
+                {
+                    var orConditions = new List<string>();
+                    for (int i = 0; i < chargeParts.Count; i++)
+                    {
+                        string pName = $"@pCharge{i}";
+                        orConditions.Add($"c.[Charge] LIKE '%' + {pName} + '%'");
+                        args.Add(pName, chargeParts[i]);
+                    }
+                    wh.Add($"({string.Join(" OR ", orConditions)})");
+                }
             }
 
             if (!string.IsNullOrWhiteSpace(f.FANr))
@@ -263,8 +273,7 @@ namespace QIN_Production_Web.Data
             sb.AppendLine("SELECT bc.[Charge] AS Charge,");
             sb.AppendLine($"  (SELECT TOP 1 cfa.[FA_Nr] FROM dbo.[Chargen] cfa WHERE cfa.[Charge] = bc.[Charge]) AS FA_Nr,");
             sb.AppendLine($"  (SELECT TOP 1 we.[Artikel] FROM dbo.[Wareneingang] we WHERE we.[ID] IN (SELECT DISTINCT c.[Wareneingang_ID] FROM dbo.[Chargen] c WHERE c.[Charge] = bc.[Charge] AND c.[Wareneingang_ID] IS NOT NULL) ORDER BY we.[Eingangsdatum] DESC) AS Artikel,");
-            sb.AppendLine($"  (SELECT TOP 1 we2.[Eingangsdatum] FROM dbo.[Wareneingang] we2 WHERE we2.[ID] IN (SELECT DISTINCT c2.[Wareneingang_ID] FROM dbo.[Chargen] c2 WHERE c2.[Charge] = bc.[Charge] AND c2.[Wareneingang_ID] IS NOT NULL) ORDER BY we2.[Eingangsdatum] DESC) AS WareneingangDatum,");
-            sb.AppendLine($"  (SELECT TOP 1 we3.[Palette] FROM dbo.[Wareneingang] we3 WHERE we3.[ID] IN (SELECT DISTINCT c3.[Wareneingang_ID] FROM dbo.[Chargen] c3 WHERE c3.[Charge] = bc.[Charge] AND c3.[Wareneingang_ID] IS NOT NULL) ORDER BY we3.[Eingangsdatum] DESC) AS WareneingangCharge");
+            sb.AppendLine($"  (SELECT TOP 1 we2.[Eingangsdatum] FROM dbo.[Wareneingang] we2 WHERE we2.[ID] IN (SELECT DISTINCT c2.[Wareneingang_ID] FROM dbo.[Chargen] c2 WHERE c2.[Charge] = bc.[Charge] AND c2.[Wareneingang_ID] IS NOT NULL) ORDER BY we2.[Eingangsdatum] DESC) AS WareneingangDatum");
             sb.AppendLine("FROM @BaseCharges bc ORDER BY WareneingangDatum DESC, bc.[Charge];");
 
             // Summary Query
@@ -366,7 +375,18 @@ namespace QIN_Production_Web.Data
             {
                 await conn.OpenAsync();
                 var loc = await conn.QueryFirstOrDefaultAsync<string>("SELECT TOP 1 QRCode FROM Lagerorte WHERE AktuelleCharge LIKE '%' + @c + '%'", new { c = selectedCharge.Trim() });
-                hero.Standort = loc ?? "-";
+                
+                string parsedLoc = loc ?? "-";
+                if (parsedLoc.StartsWith("H") && parsedLoc.Contains("R") && parsedLoc.Contains("P"))
+                {
+                    try {
+                        var match = System.Text.RegularExpressions.Regex.Match(parsedLoc, @"^H(\d+)R(\d+)P(\d+)$");
+                        if(match.Success) {
+                            parsedLoc = $"Halle: {match.Groups[1].Value} Regal: {match.Groups[2].Value} Platz: {match.Groups[3].Value}";
+                        }
+                    } catch { }
+                }
+                hero.Standort = parsedLoc;
 
                 var ekExists = await conn.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM dbo.Table1 WHERE Charge = @c", new { c = selectedCharge });
                 hero.Endkontrolle_Status = (ekExists > 0) ? "Fertig" : "Offen";

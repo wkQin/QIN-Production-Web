@@ -16,35 +16,48 @@ namespace QIN_Production_Web.Helpers
             return baseFontSize;
         }
 
-        public bool PrintChargeAndDate(string KundenName, string GCharge, string KCharge, string eingangsDatum)
+        public bool PrintSingleChargeQr(string charge, string menge, string material, string eingangsdatum)
         {
-            string FEingangsDatum = string.IsNullOrEmpty(eingangsDatum) ? DateTime.Now.ToString("dd.MM.yyyy") : eingangsDatum;
-            string FProduktionDatum = DateTime.Now.ToString("dd.MM.yyyy");
+            if (string.IsNullOrWhiteSpace(charge))
+                return false;
 
-            int baseFontSize = 36;
-            int maxLength = 10;
-            int chargeNameFontSize = CalculateAdjustedFontSize(KundenName, baseFontSize, maxLength);
-            int chargeIDFontSize = CalculateAdjustedFontSize(GCharge, baseFontSize, maxLength);
+            int dpi = 203;                 
+            double labelWidthMm = 55.0;   
+            double labelHeightMm = 28.0;   
 
-            string zplCommand = $"^XA" +
-                                $"^FO20,60^A0N,{chargeNameFontSize},{chargeNameFontSize}^FB245,2,,L^FD{KundenName}^FS" +
-                                $"^FO250,60^A0N,{chargeIDFontSize},{chargeIDFontSize}^FD{GCharge}^FS" +
-                                $"^FO0,12^A0N,95,1005^FD_________________________________________^FS" +
-                                $"^FO30,120^A0N,30,30^FDFolieneingang^FS" +
-                                $"^FO50,150^A0N,30,30^FD{FEingangsDatum}^FS" +
-                                $"^FO255,120^A0N,30,30^FDFolienproduktion^FS" +
-                                $"^FO285,150^A0N,30,30^FD{FProduktionDatum}^FS" +
-                                $"^FO100,200^A0N,30,40^FD{KCharge}^FS" +
-                                $"^XZ";
-
-            string defaultPrinterName = new PrintDocument().PrinterSettings.PrinterName;
-            if (string.IsNullOrEmpty(defaultPrinterName))
+            string targetPrinter = new PrintDocument().PrinterSettings.PrinterName;
+            if (string.IsNullOrWhiteSpace(targetPrinter))
             {
-                Console.WriteLine("Fehler: Kein Standarddrucker gefunden.");
+                Console.WriteLine("Fehler: Kein Drucker verfügbar.");
                 return false;
             }
 
-            return RawPrinterHelper.SendStringToPrinter(defaultPrinterName, zplCommand);
+            double dpm = dpi / 25.4; 
+
+            int PW = (int)Math.Round(labelWidthMm * dpm);
+            int LL = (int)Math.Round(labelHeightMm * dpm);
+
+            // Data format for QR
+            string qrData = $"{charge}|{menge}|{material}|{eingangsdatum}";
+
+            string zpl = 
+                "^XA" +
+                "^CI28" +                 
+                $"^PW{PW}" +              
+                $"^LL{LL}" +              
+                "^LH0,0" +
+                $"^FO10,15^BQN,2,5^FDQA,{qrData}^FS" +
+                $"^FO170,10^A0N,20,20^FDCharge:^FS" +
+                $"^FO170,30^A0N,25,25^FD{charge}^FS" +
+                $"^FO170,70^A0N,20,20^FDMenge:^FS" +
+                $"^FO170,90^A0N,24,24^FD{menge} LM/STK^FS" +
+                $"^FO170,130^A0N,20,20^FDMaterial:^FS" +
+                $"^FO170,150^A0N,22,22^FB260,2,,L^FD{material}^FS" +
+                $"^FO170,195^A0N,20,20^FDDatum: {eingangsdatum}^FS" +
+                $"^PQ1,0,1,N" +
+                "^XZ";
+
+            return RawPrinterHelper.SendStringToPrinter(targetPrinter, zpl);
         }
 
         public bool PrintPalettenChargeQr(string charge, string ebe)

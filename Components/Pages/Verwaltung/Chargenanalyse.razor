@@ -86,7 +86,6 @@
                                 <th class="resizable-th" @onclick='() => SortTable("FA_Nr")'>FA_Nr @SortIcon("FA_Nr")</th>
                                 <th class="resizable-th" @onclick='() => SortTable("Artikel")'>Artikel @SortIcon("Artikel")</th>
                                 <th class="resizable-th" @onclick='() => SortTable("WareneingangDatum")'>WE-Datum @SortIcon("WareneingangDatum")</th>
-                                <th class="resizable-th" @onclick='() => SortTable("WareneingangCharge")'>WE-Charge @SortIcon("WareneingangCharge")</th>
                                 <th class="text-center">Aktion</th>
                             </tr>
                         </thead>
@@ -94,7 +93,6 @@
                             @foreach (var result in Ergebnisse) {
                                 <tr>
                                     <td class="fw-bold">@result.Charge</td><td>@result.FA_Nr</td><td>@result.Artikel</td><td>@result.WareneingangDatum?.ToString("dd.MM.yyyy")</td>
-                                    <td class="text-secondary">@result.WareneingangCharge</td>
                                     <td class="text-center">
                                         <button class="btn btn-sm btn-glass text-info" @onclick="() => ExpandDetails(result)">
                                             <i class="fa-solid fa-up-right-from-square me-1"></i> Details
@@ -426,7 +424,6 @@
         else if (column == "FA_Nr") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.FA_Nr).ToList() : Ergebnisse.OrderByDescending(x => x.FA_Nr).ToList();
         else if (column == "Artikel") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.Artikel).ToList() : Ergebnisse.OrderByDescending(x => x.Artikel).ToList();
         else if (column == "WareneingangDatum") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.WareneingangDatum).ToList() : Ergebnisse.OrderByDescending(x => x.WareneingangDatum).ToList();
-        else if (column == "WareneingangCharge") Ergebnisse = sortAscending ? Ergebnisse.OrderBy(x => x.WareneingangCharge).ToList() : Ergebnisse.OrderByDescending(x => x.WareneingangCharge).ToList();
     }
 
     private void SetTab(string tab) {
@@ -466,8 +463,7 @@
             if (!string.IsNullOrWhiteSpace(ChargeQuery) && Ergebnisse.Count > 0)
             {
                 var match = Ergebnisse.FirstOrDefault(x => 
-                    string.Equals(x.Charge, ChargeQuery, StringComparison.OrdinalIgnoreCase) || 
-                    string.Equals(x.WareneingangCharge, ChargeQuery, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(x.Charge, ChargeQuery, StringComparison.OrdinalIgnoreCase))
                     ?? Ergebnisse.FirstOrDefault();
                     
                 if (match != null)

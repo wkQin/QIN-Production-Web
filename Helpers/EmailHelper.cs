@@ -8,7 +8,7 @@ namespace QIN_Production_Web.Helpers
 {
     public static class EmailHelper
     {
-        public static async Task<bool> SendQSEmailAsync(string lsnr, string ebe, string lieferant, string material, string bemerkung, string username, string recipientEmails)
+        public static async Task<bool> SendQSEmailAsync(string lsnr, string ebe, string lieferant, string material, string bemerkung, string username, string recipientEmails, string zustand)
         {
             try
             {
@@ -21,20 +21,37 @@ namespace QIN_Production_Web.Helpers
                     message.To.Add(new MailboxAddress("", recipient.Trim()));
                 }
                 
-                message.Subject = $"WICHTIG: Schlechter Zustand bei Wareneingang (EBE: {ebe})";
+                bool isBad = zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase);
+                string subjectPrefix = isBad ? "WICHTIG: " : "Info: ";
+                string titleColor = isBad ? "#d9534f" : "#2ca02c";
+                string titleText = isBad ? "Wareneingang mit mangelhaftem Zustand" : "Neuer Wareneingang erfasst";
+                string alertHtml = isBad ? "<p style='font-size: 15px; color: #d9534f; font-weight: bold;'>⚠️ Bitte prüfen Sie diesen Vorgang zeitnah, da der Zustand als 'Schlecht' markiert wurde.</p>" : "";
 
-                message.Body = new TextPart("plain")
+                message.Subject = $"{subjectPrefix}Wareneingang erfasst - Zustand: {zustand} (EBE: {ebe})";
+
+                string htmlBody = $@"
+                <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;'>
+                    <h2 style='color: {titleColor}; border-bottom: 2px solid {titleColor}; padding-bottom: 5px;'>{titleText}</h2>
+                    <p style='font-size: 14px;'>Hallo QS-Team,</p>
+                    <p style='font-size: 14px;'>im Wareneingang wurde soeben ein neuer Eintrag mit dem Zustand <strong>{zustand}</strong> erfasst.</p>
+                    {alertHtml}
+                    
+                    <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 130px;'>EBE-Nummer:</td><td style='padding: 8px; border: 1px solid #ddd;'>{ebe}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Lieferschein:</td><td style='padding: 8px; border: 1px solid #ddd;'>{lsnr}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Lieferant:</td><td style='padding: 8px; border: 1px solid #ddd;'>{lieferant}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Material/Artikel:</td><td style='padding: 8px; border: 1px solid #ddd;'>{material}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold; color: {titleColor};'>Zustand:</td><td style='padding: 8px; border: 1px solid #ddd; color: {titleColor}; font-weight: bold;'>{zustand}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Bemerkung:</td><td style='padding: 8px; border: 1px solid #ddd;'>{bemerkung}</td></tr>
+                        <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Erfasst von:</td><td style='padding: 8px; border: 1px solid #ddd;'>{username}</td></tr>
+                    </table>
+
+                    <p style='font-size: 12px; color: #777; margin-top: 30px;'>Dies ist eine systemgenerierte Benachrichtigung aus dem QIN-Production Web-Tool. Bitte antworten Sie nicht auf diese E-Mail.</p>
+                </div>";
+
+                message.Body = new TextPart("html")
                 {
-                    Text =
-                           $"------------------------------------------------------\n\n" +
-                           $"Es wurde ein Wareneingang mit schlechtem Zustand erfasst:\n" +
-                           $"- EBE: {ebe}\n" +
-                           $"- Lieferschein: {lsnr}\n" +
-                           $"- Lieferant: {lieferant}\n" +
-                           $"- Material: {material}\n" +
-                           $"- Bemerkung: {bemerkung}\n" +
-                           $"- Bearbeitet von: {username}\n\n" +
-                           $"Bitte prüfen.\n\nDies ist eine automatisch generierte Nachricht."
+                    Text = htmlBody
                 };
 
                 using (var client = new SmtpClient())
@@ -59,7 +76,7 @@ namespace QIN_Production_Web.Helpers
             catch (Exception ex)
             {
                 Console.WriteLine($"Fehler beim Senden der QS Email via MailKit: {ex.Message}");
-                return false;
+                throw; // Rethrow to allow UI to catch and alert
             }
         }
     }

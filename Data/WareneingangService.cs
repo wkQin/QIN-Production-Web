@@ -150,11 +150,11 @@ namespace QIN_Production_Web.Data
             return chargen;
         }
 
-        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, string personalnummer, bool eintragBearbeiten, string? ebe, string? material, string? palletencharge)
+        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, string personalnummer, bool eintragBearbeiten, string? ebe, string? material)
         {
             string query = eintragBearbeiten ? 
-                @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE, Palette=@PalettenCharge WHERE ID=@ID" :
-                @"INSERT INTO Wareneingang (Lieferant, LS_Nr, Pos, Zustand, Palettentausch, Artikel, Eingangsdatum, Benutzer, Bemerkung, EBE_Nr, Palette) VALUES (@Lieferant, @LSNr, @Pos, @Zustand, @Palettentausch, @Artikel, @Eingangsdatum, @Benutzer, @Bemerkung, @EBE, @PalettenCharge); SELECT SCOPE_IDENTITY();";
+                @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE WHERE ID=@ID" :
+                @"INSERT INTO Wareneingang (Lieferant, LS_Nr, Pos, Zustand, Palettentausch, Artikel, Eingangsdatum, Benutzer, Bemerkung, EBE_Nr) VALUES (@Lieferant, @LSNr, @Pos, @Zustand, @Palettentausch, @Artikel, @Eingangsdatum, @Benutzer, @Bemerkung, @EBE); SELECT SCOPE_IDENTITY();";
 
             try
             {
@@ -173,7 +173,6 @@ namespace QIN_Production_Web.Data
                         command.Parameters.AddWithValue("@Benutzer", personalnummer);
                         command.Parameters.AddWithValue("@Bemerkung", (object?)bemerkung ?? DBNull.Value);
                         command.Parameters.AddWithValue("@EBE", (object?)ebe ?? DBNull.Value);
-                        command.Parameters.AddWithValue("@PalettenCharge", (object?)palletencharge ?? DBNull.Value);
                         
                         if (eintragBearbeiten && int.TryParse(id, out int idInt)) command.Parameters.AddWithValue("@ID", idInt);
 
@@ -223,46 +222,6 @@ namespace QIN_Production_Web.Data
             }
         }
 
-        public static async Task<string> DoesWEChargeExist(string ebe, string id)
-        {
-            using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
-            {
-                await connection.OpenAsync();
-                string query = "SELECT Palette FROM Wareneingang WHERE [EBE_Nr] = @ebe AND ID = @id";
-                using (SqlCommand command = new SqlCommand(query, connection))
-                {
-                    command.Parameters.AddWithValue("@ebe", ebe);
-                    command.Parameters.AddWithValue("@id", id);
-                    var result = await command.ExecuteScalarAsync();
-                    return result?.ToString() ?? string.Empty;
-                }
-            }
-        }
-
-        public static async Task UpdateWEChargeAsync(string id, string Palettencharge)
-        {
-            if (int.TryParse(id, out int parsedId))
-            {
-                using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
-                {
-                    await connection.OpenAsync();
-                    string query = "UPDATE Wareneingang SET Palette = @Palettencharge, Eingangsdatum = @Eingangsdatum WHERE ID = @id";
-                    using (SqlCommand command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@id", parsedId);
-                        command.Parameters.AddWithValue("@Palettencharge", Palettencharge);
-                        command.Parameters.AddWithValue("@Eingangsdatum", DateTime.Now);
-                        int affected = await command.ExecuteNonQueryAsync();
-
-                        if (affected > 0)
-                        {
-                            string userName = await ActivityLogService.GetUserNameByPersonalnummerAsync("100"); // Fallback, UpdateWECharge lacks user context
-                            await ActivityLogService.InsertLogAsync(userName, $"[Wareneingang] Palettencharge für ID {parsedId} auf '{Palettencharge}' aktualisiert.");
-                        }
-                    }
-                }
-            }
-        }
 
         public static async Task<string> GetEingangsDatumForChargeAsync(string charge)
         {

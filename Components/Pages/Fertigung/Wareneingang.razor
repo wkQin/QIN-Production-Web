@@ -2,8 +2,9 @@
 @rendermode InteractiveServer
 @using QIN_Production_Web.Data
 @using QIN_Production_Web.Helpers
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IJSRuntime JS
-
+@inject AuthenticationStateProvider AuthStateProvider
 <PageTitle>Wareneingang - Fertigung</PageTitle>
 
 <div class="wareneingang-dashboard pb-5">
@@ -40,7 +41,7 @@
     <div class="row g-4 mb-4 align-items-stretch">
         
         <!-- LEFT: STAMMDATEN -->
-        <div class="col-xl-4 col-lg-4">
+        <div class="col-xl-6 col-lg-6">
             <div class="glass-card d-flex flex-column h-100">
                 <div class="card-title-modern">
                     <i class="fa-solid fa-clipboard-list text-primary me-2"></i> Stammdaten
@@ -52,13 +53,6 @@
                         <select class="form-select modern-select fw-bold" value="@SelectedLieferant" @onchange="OnLieferantChanged">
                             <option value="">Bitte wählen...</option>
                             @foreach(var l in Lieferanten) { <option value="@l">@l</option> }
-                        </select>
-                    </div>
-                    <div class="col-12">
-                        <label class="modern-label">Material / Artikel</label>
-                        <select class="form-select modern-select fw-bold" @bind="Material">
-                            <option value="">Bitte wählen...</option>
-                            @foreach(var m in Materialien) { <option value="@m">@m</option> }
                         </select>
                     </div>
                 </div>
@@ -102,8 +96,8 @@
             </div>
         </div>
 
-        <!-- MIDDLE: CHARGENERFASSUNG -->
-        <div class="col-xl-4 col-lg-4">
+        <!-- RIGHT: CHARGENERFASSUNG -->
+        <div class="col-xl-6 col-lg-6">
             <div class="glass-card d-flex flex-column h-100" style="border-top: 4px solid #3b82f6;">
                 <div class="card-title-modern d-flex justify-content-between align-items-center">
                     <div><i class="fa-solid fa-barcode text-primary me-2"></i> Chargen Erfassung</div>
@@ -134,7 +128,7 @@
                     </div>
                 </div>
 
-                <div class="modern-table-container flex-grow-1" style="min-height: 200px; max-height: 350px; overflow-y: auto;">
+                <div class="modern-table-container flex-grow-1 mb-4" style="min-height: 200px; max-height: 350px; overflow-y: auto;">
                     <table class="modern-table">
                         <thead style="position: sticky; top:0; z-index:1;">
                             <tr>
@@ -164,37 +158,17 @@
                         </tbody>
                     </table>
                 </div>
-            </div>
-        </div>
 
-        <!-- RIGHT: DRUCKEN / SYSTEM OUTPUT -->
-        <div class="col-xl-4 col-lg-4">
-            <div class="glass-card d-flex flex-column h-100">
-                <div class="card-title-modern">
-                    <i class="fa-solid fa-print text-primary me-2"></i> PalettenCharge   
-                </div>
-
-                <div class="mb-4">
-                    <label class="modern-label">WE-Charge (Palette)</label>
-                    <input type="text" class="form-control modern-input text-center text-info fw-bold fs-5 mb-3 p-3" 
-                           @bind="PalettenCharge" readonly placeholder="Noch nicht generiert..." style="letter-spacing: 2px; font-family: monospace;" />
-                    
-                    <button class="btn btn-glass w-100 mb-2 py-3 fw-bold text-white border-primary" style="background: rgba(59, 130, 246, 0.1);" @onclick="GenerateCharge" disabled="@(!CanGenerateCharge)">
-                        <i class="fa-solid fa-cogs me-2"></i> System Palette generieren
-                    </button>
-                    <button class="btn btn-gradient-primary w-100 py-3 mt-2 fw-bold" disabled="@(!CanPrintCharge)" @onclick="PrintPalettenCharge">
-                        <i class="fa-solid fa-print me-2 fs-5"></i> Palette Drucken
-                    </button>
-                </div>
-
-                <hr style="border-color: var(--border-color); margin: 1.5rem 0;" />
-                
-                <div class="mt-auto">
-                    <label class="modern-label text-warning mb-2"><i class="fa-solid fa-tags me-1"></i> Lieferanten-Charge</label>
-                    <p class="text-secondary small mb-3">Wählen Sie links eine Charge aus der Liste, um ein Einzeletikett zu drucken.</p>
-                    <button class="btn btn-glass w-100 py-3 fw-bold text-white" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
-                        <i class="fa-solid fa-print me-2 text-warning"></i> Auswahl Drucken
-                    </button>
+                <div class="mt-auto border-top pt-3" style="border-color: var(--border-color) !important;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <label class="modern-label text-warning mb-1"><i class="fa-solid fa-print me-1"></i> Chargen-Etikett</label>
+                            <p class="text-secondary small mb-0">Selektierte Charge aus der Liste drucken</p>
+                        </div>
+                        <button class="btn btn-glass px-4 py-2 fw-bold text-white border-primary" style="background: rgba(59, 130, 246, 0.1);" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
+                            <i class="fa-solid fa-print text-warning me-2"></i> Auswahl Drucken
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -261,14 +235,11 @@
     private string Material = "";
     private string Bemerkung = "";
     private bool Palettentausch = false;
-    private string PalettenCharge = "";
     
     private string NewCharge = "";
     private string NewMenge = "";
     private int GesamtLaufmeter = 0;
     
-    private bool CanGenerateCharge = true;
-    private bool CanPrintCharge = false;
     private bool IsEditMode = false;
     
     private List<string> Lieferanten = new();
@@ -340,28 +311,48 @@
 
     private async Task SaveEintrag()
     {
+
         if(string.IsNullOrEmpty(Lieferschein) || string.IsNullOrEmpty(SelectedLieferant)) 
         {
             await JS.InvokeVoidAsync("alert", "Bitte Lieferschein und Lieferant angeben.");
             return;
         }
 
-        if (Zustand == "Schlecht" && !IsEditMode)
+        if (Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(Bemerkung))
         {
-            await JS.InvokeVoidAsync("alert", "Wichtig! Zustand ist schlecht, QS wird über automatische Email kontaktiert!");
-            string empfaenger = "selim.koese@qin-form.de, samuel.beiner@qin-form.de, klaus.mauck@qin-form.de, patrick.kolbus@qin-form.de, werner.klein@qin-form.de"; 
-            _ = Task.Run(async () => {
-                await EmailHelper.SendQSEmailAsync(Lieferschein, EBE, SelectedLieferant, Material, Bemerkung, "Blazor User", empfaenger);
-            });
+            await JS.InvokeVoidAsync("alert", "Begründung erforderlich: Da der Zustand 'Schlecht' ist, muss eine Bemerkung hinterlegt werden!");
+            return;
         }
 
         bool ok = await WareneingangService.InsertWareneingangAsync(
             SelectedEntry?.ID.ToString(), SelectedLieferant, Lieferschein, Pos, ChargenList, 
-            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, "100", IsEditMode, EBE, Material, PalettenCharge);
+            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, "100", IsEditMode, EBE, Material);
             
         if (ok)
         {
             await JS.InvokeVoidAsync("alert", "Erfolgreich gespeichert!");
+
+            // Send Email for every Wareneingang (Temporarily including Edits for debugging)
+            // Capture data to avoid disposal issues
+            string savedLieferschein = Lieferschein;
+            string savedEBE = EBE;
+            string savedLieferant = SelectedLieferant;
+            string savedMaterial = Material ?? "N/A";
+            string savedBemerkung = Bemerkung;
+            string savedZustand = Zustand;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            string actualUserName = authState.User?.Identity?.Name ?? "Unbekannt";
+
+            _ = Task.Run(async () => {
+                try {
+                    string empfaenger = "selim.koese@qin-form.de"; //qsintern@qin-form.de,
+                    await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, savedBemerkung, actualUserName, empfaenger, savedZustand);
+                } 
+                catch (Exception ex) {
+                    Console.WriteLine($"Fire-and-forget Email failed: {ex.Message}");
+                }
+            });
+
             WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
             RefreshForm();
         }
@@ -379,7 +370,7 @@
         {
             var printerHelper = new ZebraPrinterHelper();
             string eingangsDatum = await WareneingangService.GetEingangsDatumForChargeAsync(SelectedCharge.Charge);
-            bool ok = printerHelper.PrintChargeAndDate(SelectedLieferant, SelectedCharge.Charge, PalettenCharge, eingangsDatum);
+            bool ok = printerHelper.PrintSingleChargeQr(SelectedCharge.Charge, SelectedCharge.Menge, Material, eingangsDatum);
             if (ok)
                 await JS.InvokeVoidAsync("alert", "Etikett erfolgreich gesendet!");
             else
@@ -391,28 +382,7 @@
         }
     }
 
-    private async Task PrintPalettenCharge()
-    {
-        if (string.IsNullOrWhiteSpace(PalettenCharge) || string.IsNullOrWhiteSpace(EBE))
-        {
-            await JS.InvokeVoidAsync("alert", "Bitte EBE Nummer eingeben und Palette generieren.");
-            return;
-        }
 
-        try
-        {
-            var printerHelper = new ZebraPrinterHelper();
-            bool ok = printerHelper.PrintPalettenChargeQr(PalettenCharge, EBE);
-            if (ok)
-                await JS.InvokeVoidAsync("alert", "Etikett erfolgreich gesendet!");
-            else
-                await JS.InvokeVoidAsync("alert", "Druck fehlgeschlagen! Kontrolliere den Drucker.");
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", "Druckerfehler: " + ex.Message);
-        }
-    }
 
     private async Task EditSelected(WareneingangEntry w)
     {
@@ -431,21 +401,6 @@
         
         ChargenList = await WareneingangService.FindChargenAsync(SelectedEntry.ID);
         UpdateGesamtLaufmeter();
-        
-        PalettenCharge = await WareneingangService.DoesWEChargeExist(EBE, SelectedEntry.ID.ToString());
-        CanGenerateCharge = string.IsNullOrEmpty(PalettenCharge);
-        CanPrintCharge = !string.IsNullOrEmpty(PalettenCharge);
-    }
-
-    private async Task GenerateCharge()
-    {
-        PalettenCharge = $"PAL{DateTime.Now:ddMMyyyy}{new Random().Next(0, 10000):D4}";
-        if (SelectedEntry != null && SelectedEntry.ID > 0)
-        {
-            await WareneingangService.UpdateWEChargeAsync(SelectedEntry.ID.ToString(), PalettenCharge);
-        }
-        CanGenerateCharge = false;
-        CanPrintCharge = true;
     }
 
     private void RefreshForm()
@@ -454,8 +409,7 @@
         SelectedEntry = null;
         SelectedCharge = null;
         Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Bemerkung = "";
-        Palettentausch = false; PalettenCharge = ""; ChargenList.Clear(); GesamtLaufmeter = 0;
-        CanGenerateCharge = true; CanPrintCharge = false;
+        Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
     }
 
     private async Task RefreshHistorie()

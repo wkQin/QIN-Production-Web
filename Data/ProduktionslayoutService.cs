@@ -16,7 +16,6 @@ namespace QIN_Production_Web.Data
     public class PlatzInfo
     {
         public string QRCode { get; set; } = "";
-        public string? PaletteCharge { get; set; }
         public List<string> Charges { get; set; } = new();
         public long SumAktuelleMenge { get; set; }
         public long SumEchteMenge { get; set; }
@@ -49,14 +48,23 @@ namespace QIN_Production_Web.Data
                 }
             }
 
-            // 2. Hole den Artikelname aus dem Wareneingang
+            // 2. Hole den Artikelname über die Charge (aus Chargen -> Wareneingang)
             string? artikel = null;
             if (!string.IsNullOrWhiteSpace(aktuelleCharge))
             {
+                var firstCharge = aktuelleCharge.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
                 using (var conn = new SqlConnection(SqlManager.FertigungConnectionString))
                 {
-                    var query = "SELECT TOP 1 Artikel FROM dbo.Wareneingang WHERE Palette = @palette";
-                    artikel = await conn.QueryFirstOrDefaultAsync<string>(query, new { palette = aktuelleCharge });
+                    var query = @"
+                        SELECT TOP 1 w.Artikel 
+                        FROM dbo.Wareneingang w
+                        JOIN dbo.Chargen c ON c.Wareneingang_ID = w.ID
+                        WHERE c.Charge = @charge";
+                    if (!string.IsNullOrWhiteSpace(firstCharge))
+                    {
+                        artikel = await conn.QueryFirstOrDefaultAsync<string>(query, new { charge = firstCharge });
+                        aktuelleCharge = firstCharge; // Ensure only the single charge is sent to the UI
+                    }
                 }
             }
 
@@ -77,8 +85,8 @@ namespace QIN_Production_Web.Data
             foreach (var qr in qrList)
                 result[qr] = new PlatzInfo { QRCode = qr };
 
-            var paletteToPlaces = new Dictionary<string, List<PlatzInfo>>(StringComparer.OrdinalIgnoreCase);
-            var palettes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var chargeToPlaces = new Dictionary<string, List<PlatzInfo>>(StringComparer.OrdinalIgnoreCase);
+            var activeCharges = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             using (var conn = new SqlConnection(SqlManager.connectionString))
             {
@@ -103,142 +111,81 @@ namespace QIN_Production_Web.Data
                     while (await reader.ReadAsync())
                     {
                         var qr = reader.GetString(0);
-                        var palette = reader.IsDBNull(1) ? null : reader.GetString(1);
+                        var chargeRaw = reader.IsDBNull(1) ? null : reader.GetString(1);
 
                         if (!result.TryGetValue(qr, out var info)) continue;
-                        info.PaletteCharge = palette;
 
-                        if (!string.IsNullOrWhiteSpace(palette))
+                        if (!string.IsNullOrWhiteSpace(chargeRaw))
                         {
-                            palettes.Add(palette);
-                            if (!paletteToPlaces.TryGetValue(palette, out var list))
+                            var parts = chargeRaw.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+                            foreach (var part in parts)
                             {
-                                list = new List<PlatzInfo>();
-                                paletteToPlaces[palette] = list;
+                                var charge = part.Trim();
+                                if (string.IsNullOrWhiteSpace(charge)) continue;
+
+                                activeCharges.Add(charge);
+                                if (!chargeToPlaces.TryGetValue(charge, out var list))
+                                {
+                                    list = new List<PlatzInfo>();
+                                    chargeToPlaces[charge] = list;
+                                }
+                                list.Add(info);
                             }
-                            list.Add(info);
                         }
                     }
                 }
             }
 
-            if (palettes.Count == 0) return result;
-            var paletteList = palettes.ToList();
-
-            var paletteToWE = new Dictionary<string, List<(int id, string artikel, DateTime eingang)>>(StringComparer.OrdinalIgnoreCase);
-            var weIdToChargeData = new Dictionary<int, List<(string Charge, int Aktuelle, int Echte)>>();
+            if (activeCharges.Count == 0) return result;
+            var chargeList = activeCharges.ToList();
 
             using (var conn = new SqlConnection(SqlManager.FertigungConnectionString))
             {
                 await conn.OpenAsync();
-                var weIds = new HashSet<int>();
-
                 using (var cmd = conn.CreateCommand())
                 {
                     var pNames = new List<string>();
-                    for (int i = 0; i < paletteList.Count; i++)
+                    for (int i = 0; i < chargeList.Count; i++)
                     {
-                        string p = "@pal" + i;
+                        string p = "@c" + i;
                         pNames.Add(p);
-                        cmd.Parameters.AddWithValue(p, paletteList[i]);
+                        cmd.Parameters.AddWithValue(p, chargeList[i]);
                     }
 
                     cmd.CommandText = $@"
-                        SELECT ID, Palette, Artikel, Eingangsdatum
-                        FROM dbo.Wareneingang
-                        WHERE Palette IN ({string.Join(", ", pNames)});
+                        SELECT c.Charge, c.Aktuelle_Menge, c.Echte_Menge, w.Artikel, w.Eingangsdatum
+                        FROM dbo.Chargen c
+                        LEFT JOIN dbo.Wareneingang w ON w.ID = c.Wareneingang_ID
+                        WHERE c.Charge IN ({string.Join(", ", pNames)});
                     ";
 
                     using var reader = await cmd.ExecuteReaderAsync();
                     while (await reader.ReadAsync())
                     {
-                        int id = reader.GetInt32(0);
-                        string palette = reader.GetString(1);
-                        string artikel = reader.IsDBNull(2) ? "" : reader.GetString(2);
-                        DateTime eingang = reader.GetDateTime(3);
+                        string charge = reader.GetString(0);
+                        int aktMenge = reader.IsDBNull(1) ? 0 : reader.GetInt32(1);
+                        int echteMenge = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+                        string artikel = reader.IsDBNull(3) ? "" : reader.GetString(3);
+                        DateTime eingangsdatum = reader.IsDBNull(4) ? DateTime.MinValue : reader.GetDateTime(4);
 
-                        weIds.Add(id);
-                        if (!paletteToWE.TryGetValue(palette, out var list))
+                        if (chargeToPlaces.TryGetValue(charge, out var places))
                         {
-                            list = new List<(int, string, DateTime)>();
-                            paletteToWE[palette] = list;
-                        }
-                        list.Add((id, artikel, eingang));
-                    }
-                }
-
-                if (weIds.Count > 0)
-                {
-                    var weIdList = weIds.ToList();
-                    using (var cmd = conn.CreateCommand())
-                    {
-                        var pNames = new List<string>();
-                        for (int i = 0; i < weIdList.Count; i++)
-                        {
-                            string p = "@we" + i;
-                            pNames.Add(p);
-                            cmd.Parameters.AddWithValue(p, weIdList[i]);
-                        }
-
-                        cmd.CommandText = $@"
-                            SELECT Wareneingang_ID, Charge, Aktuelle_Menge, Echte_Menge
-                            FROM dbo.Chargen
-                            WHERE Wareneingang_ID IN ({string.Join(", ", pNames)});
-                        ";
-
-                        using var reader = await cmd.ExecuteReaderAsync();
-                        while (await reader.ReadAsync())
-                        {
-                            int weId = reader.GetInt32(0);
-                            string charge = reader.IsDBNull(1) ? "" : reader.GetString(1);
-                            int akt = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
-                            int echt = reader.IsDBNull(3) ? 0 : reader.GetInt32(3);
-
-                            if (string.IsNullOrWhiteSpace(charge) || akt <= 0) continue;
-
-                            if (!weIdToChargeData.TryGetValue(weId, out var list))
+                            foreach (var pi in places)
                             {
-                                list = new List<(string, int, int)>();
-                                weIdToChargeData[weId] = list;
-                            }
-                            list.Add((charge, akt, echt));
-                        }
-                    }
-                }
-            }
-
-            foreach (var kvp in paletteToPlaces)
-            {
-                var palette = kvp.Key;
-                var places = kvp.Value;
-                if (paletteToWE.TryGetValue(palette, out var weRows))
-                {
-                    foreach (var pi in places)
-                    {
-                        foreach (var we in weRows.OrderByDescending(x => x.eingang))
-                        {
-                            pi.Wareneingaenge.Add(new WareneingangInfo { Artikel = we.artikel, Eingangsdatum = we.eingang });
-                        }
-
-                        var chargeSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                        long sumAkt = 0, sumEcht = 0;
-
-                        foreach (var we in weRows)
-                        {
-                            if (weIdToChargeData.TryGetValue(we.id, out var cDataList))
-                            {
-                                foreach (var item in cDataList)
+                                if (!pi.Charges.Contains(charge))
                                 {
-                                    chargeSet.Add(item.Charge);
-                                    sumAkt += item.Aktuelle;
-                                    sumEcht += item.Echte;
+                                    pi.Charges.Add(charge);
+                                    pi.SumAktuelleMenge += aktMenge;
+                                    pi.SumEchteMenge += echteMenge;
+                                }
+
+                                // Avoid duplicate Wareneingang info for same article/date if multiple charges exist
+                                if (!string.IsNullOrWhiteSpace(artikel) && !pi.Wareneingaenge.Any(w => w.Artikel == artikel && w.Eingangsdatum.Date == eingangsdatum.Date))
+                                {
+                                    pi.Wareneingaenge.Add(new WareneingangInfo { Artikel = artikel, Eingangsdatum = eingangsdatum });
                                 }
                             }
                         }
-
-                        pi.Charges.AddRange(chargeSet.OrderBy(c => c));
-                        pi.SumAktuelleMenge = sumAkt;
-                        pi.SumEchteMenge = sumEcht;
                     }
                 }
             }
