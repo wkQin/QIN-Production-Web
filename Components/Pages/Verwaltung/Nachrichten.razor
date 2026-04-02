@@ -495,7 +495,7 @@
             if (silent && Messages.Count > oldCount)
             {
                 shouldScrollToBottom = true;
-                InvokeAsync(StateHasChanged);
+                await InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception ex)

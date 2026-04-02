@@ -140,7 +140,7 @@ namespace QIN_Production_Web.Data
             return (chargen, material, nummer, anweisung, auftraege);
         }
 
-        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<UVAuftrag> auftraege, List<UVCharge> chargen, string userName = "Unbekannt")
+        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<UVAuftrag> auftraege, List<UVCharge> chargen, UserSession session)
         {
             try
             {
@@ -163,7 +163,7 @@ namespace QIN_Production_Web.Data
                                 cmd.Parameters.AddWithValue("@Pausenzeit", auftrag.Pausenzeit);
                                 cmd.Parameters.AddWithValue("@Ausfallzeit", auftrag.Ausfallzeit);
                                 cmd.Parameters.AddWithValue("@Bemerkung", string.IsNullOrWhiteSpace(auftrag.Bemerkung) ? DBNull.Value : auftrag.Bemerkung);
-                                cmd.Parameters.AddWithValue("@Benutzer", "100"); // Standard Benutzer
+                                cmd.Parameters.AddWithValue("@Benutzer", session.Personalnummer ?? "100"); 
                                 cmd.Parameters.AddWithValue("@Abgesendet", abgesendet ? 1 : 0);
                                 await cmd.ExecuteNonQueryAsync();
                             }
@@ -199,7 +199,7 @@ namespace QIN_Production_Web.Data
                     }
                 }
                 
-                await ActivityLogService.InsertLogAsync(userName, abgesendet 
+                await ActivityLogService.InsertLogAsync(session.Name ?? "Unbekannt", abgesendet 
                     ? $"[UV Härte] Auftrag {faNr} erfolgreich abgeschlossen." 
                     : $"[UV Härte] Auftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
                     

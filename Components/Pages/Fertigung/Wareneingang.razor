@@ -340,9 +340,15 @@
             return;
         }
 
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        string actualUserName = user.Identity?.Name ?? "Unbekannt";
+        string pNummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? "100";
+        var userSession = new UserSession { Name = actualUserName, Personalnummer = pNummer };
+
         bool ok = await WareneingangService.InsertWareneingangAsync(
             SelectedEntry?.ID.ToString(), SelectedLieferant, Lieferschein, Pos, ChargenList, 
-            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, "100", IsEditMode, EBE, Material);
+            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, userSession, IsEditMode, EBE, Material);
             
         if (ok)
         {
@@ -356,12 +362,10 @@
             string savedMaterial = Material ?? "N/A";
             string savedBemerkung = Bemerkung;
             string savedZustand = Zustand;
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            string actualUserName = authState.User?.Identity?.Name ?? "Unbekannt";
 
             _ = Task.Run(async () => {
                 try {
-                    string empfaenger = "selim.koese@qin-form.de"; //qsintern@qin-form.de,
+                    string empfaenger = "qsintern@qin-form.de";
                     await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, savedBemerkung, actualUserName, empfaenger, savedZustand);
                 } 
                 catch (Exception ex) {

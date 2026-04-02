@@ -187,7 +187,7 @@ namespace QIN_Production_Web.Data
             return list;
         }
 
-        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<EingabeDaten> eingaben, List<FChargeDaten> chargen, string material, string personalNr, string userName)
+        public static async Task<bool> SaveDataAsync(string faNr, bool abgesendet, List<EingabeDaten> eingaben, List<FChargeDaten> chargen, string material, UserSession session)
         {
             Console.WriteLine($"SaveDataAsync started for {faNr}. Eingaben: {eingaben?.Count}, Chargen: {chargen?.Count}");
             try
@@ -236,7 +236,7 @@ namespace QIN_Production_Web.Data
                             cmd.Parameters.AddWithValue("@Pausenzeit", row.Pausen ?? "");
                             cmd.Parameters.AddWithValue("@Ausfallzeit", row.Ausfall ?? "");
                             cmd.Parameters.AddWithValue("@Bemerkung", row.Bemerkung ?? "");
-                            cmd.Parameters.AddWithValue("@PersonalNr", personalNr ?? "0"); 
+                            cmd.Parameters.AddWithValue("@PersonalNr", session.Personalnummer ?? "100"); 
                             cmd.Parameters.AddWithValue("@Erstellungsdatum", DateTime.Now);
                             cmd.Parameters.AddWithValue("@Abgesendet", abgesendet ? 1 : 0);
                             cmd.Parameters.AddWithValue("@Material", material ?? "");
@@ -251,11 +251,11 @@ namespace QIN_Production_Web.Data
                             cmd.Parameters.AddWithValue("@FANr", faNr);
                             await cmd.ExecuteNonQueryAsync();
                         }
-                        await ActivityLogService.InsertLogAsync(userName, $"[Thermoformung] Auftrag {faNr} erfolgreich abgeschlossen.");
+                        await ActivityLogService.InsertLogAsync(session.Name ?? "Unbekannt", $"[Thermoformung] Auftrag {faNr} erfolgreich abgeschlossen.");
                     }
                     else
                     {
-                        await ActivityLogService.InsertLogAsync(userName, $"[Thermoformung] Auftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
+                        await ActivityLogService.InsertLogAsync(session.Name ?? "Unbekannt", $"[Thermoformung] Auftrag {faNr} wurde für weitere Bearbeitungen gespeichert.");
                     }
 
                     // Chargen

@@ -140,7 +140,7 @@
                              <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Oelflecken" />
                         </div>
                          <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Tiefziehfehler</span>
+                             <span class="text-light">Tiefziehfehler/Blasen</span>
                              <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Tiefziehfehler" />
                         </div>
                          <div class="d-flex justify-content-between align-items-center mb-2">
@@ -310,6 +310,7 @@
     private List<string> DekorListe = new();
     private List<EndkontrolleEintrag> RecentEintraege = new();
     private string UserPersonalnummer = "100";
+    private string ActualUserName = "Unbekannt";
     private EndkontrolleEintrag NeuerEintrag = new EndkontrolleEintrag();
 
     protected override async Task OnInitializedAsync()
@@ -317,6 +318,8 @@
         // Proper await for auth state to ensure we have the correct user
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
+        
+        ActualUserName = user?.Identity?.Name ?? "Unbekannt";
         
         // Extract Personalnummer from "UserId" claim, fallback to UserService default if not found
         UserPersonalnummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? UserService.Personalnummer;
@@ -366,7 +369,7 @@
             return;
         }
 
-        var res = await EndkontrolleService.InsertEintragAsync(NeuerEintrag, UserService.Name);
+        var res = await EndkontrolleService.InsertEintragAsync(NeuerEintrag, ActualUserName);
         if(res.Success)
         {
             await JS.InvokeVoidAsync("alert", "Eintrag erfolgreich.");
@@ -397,7 +400,7 @@
         bool confirm = await JS.InvokeAsync<bool>("confirm", "Diesen Eintrag wirklich löschen?");
         if(confirm)
         {
-            await EndkontrolleService.DeleteEintragAsync(id, UserService.Name);
+            await EndkontrolleService.DeleteEintragAsync(id, ActualUserName);
             await LoadRecentEintraege();
         }
     }
@@ -429,7 +432,7 @@
     {
         if (editingId == id && editingField == field)
         {
-            await EndkontrolleService.UpdateEintragFieldAsync(id, field, newValue ?? "", UserService.Name);
+            await EndkontrolleService.UpdateEintragFieldAsync(id, field, newValue ?? "", ActualUserName);
             editingId = null;
             editingField = null;
             await LoadRecentEintraege();

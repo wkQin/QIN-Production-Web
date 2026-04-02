@@ -150,7 +150,7 @@ namespace QIN_Production_Web.Data
             return chargen;
         }
 
-        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, string personalnummer, bool eintragBearbeiten, string? ebe, string? material)
+        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material)
         {
             string query = eintragBearbeiten ? 
                 @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE WHERE ID=@ID" :
@@ -170,7 +170,7 @@ namespace QIN_Production_Web.Data
                         command.Parameters.AddWithValue("@Palettentausch", (palettentausch ?? false) ? 1 : 0);
                         command.Parameters.AddWithValue("@Artikel", (object?)material ?? DBNull.Value);
                         command.Parameters.AddWithValue("@Eingangsdatum", DateTime.Now);
-                        command.Parameters.AddWithValue("@Benutzer", personalnummer);
+                        command.Parameters.AddWithValue("@Benutzer", session.Personalnummer ?? "100");
                         command.Parameters.AddWithValue("@Bemerkung", (object?)bemerkung ?? DBNull.Value);
                         command.Parameters.AddWithValue("@EBE", (object?)ebe ?? DBNull.Value);
                         
@@ -182,11 +182,10 @@ namespace QIN_Production_Web.Data
 
                         if (activeId > 0 && chargenList != null) await InsertChargenAsync(activeId, chargenList, connection, liefermenge ?? "0");
 
-                        string userName = await ActivityLogService.GetUserNameByPersonalnummerAsync(personalnummer);
                         string actionText = eintragBearbeiten 
                             ? $"[Wareneingang] Eintrag ID {activeId} aktualisiert (Material: {material ?? "Unbekannt"})"
                             : $"[Wareneingang] Neuer Eintrag ID {activeId} erstellt (Lieferant: {lieferant ?? "Unbekannt"}, Material: {material ?? "Unbekannt"})";
-                        await ActivityLogService.InsertLogAsync(userName, actionText);
+                        await ActivityLogService.InsertLogAsync(session.Name ?? "Unbekannt", actionText);
                     }
                 }
                 return true;

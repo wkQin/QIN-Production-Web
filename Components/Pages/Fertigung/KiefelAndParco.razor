@@ -1,6 +1,8 @@
 @page "/fertigung/kiefel"
 @inject IJSRuntime JS
 @inject UserService UserService
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Kiefel & Parco - Thermoformung</PageTitle>
 
@@ -392,7 +394,13 @@
             statusMessage = "Speichere Daten...";
             StateHasChanged();
 
-            bool success = await ThermoformungService.SaveDataAsync(SelectedFaNr, Abgesendet, Eingaben, Chargen, Material, UserService.Personalnummer, UserService.Name);
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            string actualUserName = user?.Identity?.Name ?? "Unbekannt";
+            string pNummer = user?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? "100";
+            var userSession = new UserSession { Name = actualUserName, Personalnummer = pNummer };
+
+            bool success = await ThermoformungService.SaveDataAsync(SelectedFaNr, Abgesendet, Eingaben, Chargen, Material, userSession);
             
             if (success)
             {

@@ -230,7 +230,10 @@ namespace QIN_Production_Web.Data.Zeiterfassung
                 if (!isNightShiftKommen && missingMark == "?") addedQuestionMark = true;
             }
 
-            return (string.Join(Environment.NewLine, starts), string.Join(Environment.NewLine, ends), addedQuestionMark);
+            var finalStarts = starts.Where(s => !string.IsNullOrEmpty(s));
+            var finalEnds = ends.Where(s => !string.IsNullOrEmpty(s));
+
+            return (string.Join(Environment.NewLine, finalStarts), string.Join(Environment.NewLine, finalEnds), addedQuestionMark);
         }
 
         private static string GetGermanMonthName(int month)

@@ -1,6 +1,8 @@
 @page "/fertigung/uv-haerten"
 @using QIN_Production_Web.Data
 @inject IJSRuntime JS
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>UV-Härten Produktion</PageTitle>
 
@@ -251,7 +253,13 @@
     {
         if(string.IsNullOrEmpty(SelectedFaNr)) return;
 
-        bool success = await UVHarteService.SaveDataAsync(SelectedFaNr, Abgesendet, Auftraege, Chargen);
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        string actualUserName = user?.Identity?.Name ?? "Unbekannt";
+        string pNummer = user?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? "100";
+        var userSession = new UserSession { Name = actualUserName, Personalnummer = pNummer };
+
+        bool success = await UVHarteService.SaveDataAsync(SelectedFaNr, Abgesendet, Auftraege, Chargen, userSession);
         if (success)
         {
             await JS.InvokeVoidAsync("alert", "Daten erfolgreich gespeichert.");
