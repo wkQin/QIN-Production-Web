@@ -74,17 +74,17 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             ws.Cell("A5").Value = "Datum";
             ws.Cell("B5").Value = "Kommen";
             ws.Cell("C5").Value = "Gehen";
-            ws.Cell("D5").Value = "Arbeitszeit";
-            ws.Cell("E5").Value = "Abwesenheit";
-            ws.Cell("F5").Value = "Homeoffice";
-            ws.Cell("G5").Value = "Bemerkung";
+            ws.Cell("D5").Value = "Abwesenheit";
+            ws.Cell("E5").Value = "Homeoffice";
+            ws.Cell("F5").Value = "Bemerkung";
 
-            var header = ws.Range("A5:G5");
+            var header = ws.Range("A5:F5");
             header.Style.Font.Bold = true;
             header.Style.Fill.BackgroundColor = XLColor.LightGray;
 
             int row = 6;
             var absences = _calendarRepo.LoadAbwesenheiten(year, month, benutzer);
+            var holidays = _calendarRepo.LoadFeiertage(year, month);
 
             for (int i = 0; i < results.Count; i++)
             {
@@ -129,55 +129,60 @@ namespace QIN_Production_Web.Data.Zeiterfassung
                 ws.Cell(row, 3).Value = endStr;
                 ws.Cell(row, 3).Style.Alignment.WrapText = true;
 
-                if (day.WorkedMinutes > 0)
+                var dateOnly = DateOnly.FromDateTime(date);
+                string absenceText = absences.TryGetValue(dateOnly, out var abs) ? abs : "";
+                if (string.IsNullOrWhiteSpace(absenceText) && holidays.TryGetValue(dateOnly, out var holiday))
+                    absenceText = holiday;
+                ws.Cell(row, 4).Value = absenceText;
+
+                var dayBookings = bookings
+                    .Where(b => DateOnly.FromDateTime(b.Timestamp) == dateOnly)
+                    .OrderBy(b => b.Timestamp)
+                    .ToList();
+
+                ws.Cell(row, 5).Value = dayBookings.Any(b => b.IsHomeOffice) ? "Ja" : "";
+
+                var notes = dayBookings
+                    .Select(b => b.Note?.Trim())
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct()
+                    .ToList();
+
+                if (notes.Count > 0)
                 {
-                    ws.Cell(row, 4).Value = day.WorkedMinutes / 60.0;
-                    ws.Cell(row, 4).Style.NumberFormat.Format = "0.00";
+                    ws.Cell(row, 6).Value = string.Join(Environment.NewLine, notes);
+                    ws.Cell(row, 6).Style.Alignment.WrapText = true;
                 }
                 else
                 {
-                    ws.Cell(row, 4).Value = "";
-                }
-
-                var dateOnly = DateOnly.FromDateTime(date);
-
-                ws.Cell(row, 5).Value = absences.TryGetValue(dateOnly, out var abs) ? abs : "";
-
-                ws.Cell(row, 6).Value = day.Bookings.Any(b => b.IsHomeOffice) ? "Ja" : "";
-
-                var notes = day.Bookings.Where(b => !string.IsNullOrWhiteSpace(b.Note)).Select(b => b.Note).ToList();
-                if (notes.Count > 0)
-                {
-                    ws.Cell(row, 7).Value = string.Join(Environment.NewLine, notes);
-                    ws.Cell(row, 7).Style.Alignment.WrapText = true;
+                    ws.Cell(row, 6).Value = "";
                 }
 
                 if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                 {
-                    ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.LightGray;
                 }
 
                 if (hasQuestionMark)
                 {
-                    ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.FromHtml("#33F44336");
+                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#33F44336");
                 }
 
                 row++;
             }
 
-            ws.Range(5, 1, row - 1, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-            ws.Range(5, 1, row - 1, 7).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(5, 1, row - 1, 6).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(5, 1, row - 1, 6).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
             ws.Column(1).Width = 22;
             ws.Column(2).Width = 15;
             ws.Column(3).Width = 15;
-            ws.Column(4).Width = 14;
-            ws.Column(5).Width = 18;
-            ws.Column(6).Width = 14;
-            ws.Column(7).Width = 30;
+            ws.Column(4).Width = 18;
+            ws.Column(5).Width = 14;
+            ws.Column(6).Width = 30;
 
             ws.SheetView.FreezeRows(5);
-            ws.Range(5, 1, row - 1, 7).SetAutoFilter();
+            ws.Range(5, 1, row - 1, 6).SetAutoFilter();
         }
 
         private static (string Start, string End, bool HasMissingMark) GetStartEndStrings(

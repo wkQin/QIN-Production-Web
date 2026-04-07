@@ -48,7 +48,7 @@
                 </div>
             </div>
             <div class="col-md-2 text-end">
-                <button class="btn btn-outline-light w-100 fw-bold" @onclick="LoadWEAsync">
+                <button class="btn btn-outline-light w-100 fw-bold" @onclick="() => LoadWEAsync()">
                     <i class="fa-solid fa-rotate-right me-1"></i> Refresh
                 </button>
             </div>
@@ -79,18 +79,18 @@
             else
             {
                 <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
+                    <table id="weVerwaltungTable" class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
                         <thead class="table-dark sticky-top" style="background-color: var(--bg-hover);">
                             <tr>
                                 <th class="text-center" style="width: 100px;">Aktionen</th>
-                                <th>Gebucht</th>
-                                <th>Lieferant</th>
-                                <th>Artikel</th>
-                                <th class="text-info">LS Nr</th>
-                                <th>Menge</th>
-                                <th>Chargen</th>
-                                <th>Datum</th>
-                                <th>Palettentausch</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("EBEPos")'>EBE / Pos @GetSortIcon("EBEPos")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Gebucht")'>Gebucht @GetSortIcon("Gebucht")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Artikel")'>Artikel @GetSortIcon("Artikel")</th>
+                                <th class="text-info" style="cursor: pointer;" @onclick='() => SortWE("LS_Nr")'>LS Nr @GetSortIcon("LS_Nr")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Menge")'>Menge @GetSortIcon("Menge")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Chargen")'>Chargen @GetSortIcon("Chargen")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Datum")'>Datum @GetSortIcon("Datum")</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,6 +101,18 @@
                                     style="cursor: pointer;" @onclick="() => SelectWEAsync(row)">
                                     <td class="text-center" @onclick:stopPropagation="true">
                                         <div class="btn-group">
+                                            @if (row.Gebucht != true)
+                                            {
+                                                <button class="btn btn-sm btn-outline-success text-white" @onclick="() => ToggleBuchungAsync(row)" title="Buchen">
+                                                    <i class="fa-solid fa-check"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-sm btn-outline-warning text-white" @onclick="() => ToggleBuchungAsync(row)" title="Buchung stornieren">
+                                                    <i class="fa-solid fa-rotate-left"></i>
+                                                </button>
+                                            }
                                             <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenWEModal(row)" title="Bearbeiten">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
@@ -109,6 +121,7 @@
                                             </button>
                                         </div>
                                     </td>
+                                    <td class="fw-bold text-warning">@FormatEbePos(row)</td>
                                     <td>
                                         @if (row.Gebucht == true)
                                         {
@@ -127,12 +140,6 @@
                                         <span class="badge bg-secondary rounded-pill px-2">@row.Chargen</span>
                                     </td>
                                     <td>@row.Eingangsdatum</td>
-                                    <td class="text-center">
-                                        @if(row.Palettentausch == true)
-                                        {
-                                            <i class="fa-solid fa-check text-success"></i>
-                                        }
-                                    </td>
                                 </tr>
                             }
                         </tbody>
@@ -150,9 +157,14 @@
                 <span>
                     <i class="fa-solid fa-boxes-stacked me-2 text-info"></i> Chargen für Lieferschein: <span class="text-info">@SelectedWE.LS_Nr</span>
                 </span>
-                <button class="btn btn-sm btn-info fw-bold text-dark" @onclick="OpenAddChargeModal">
-                    <i class="fa-solid fa-plus me-1"></i> Neue Charge
-                </button>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-secondary rounded-pill px-3 py-2">
+                        Gesamt Laufmeter/Stk: @ChargenRows.Sum(x => x.MengeAnzeige)
+                    </span>
+                    <button class="btn btn-sm btn-info fw-bold text-dark" @onclick="OpenAddChargeModal">
+                        <i class="fa-solid fa-plus me-1"></i> Neue Charge
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 @if (IsLoadingChargen)
@@ -170,12 +182,12 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table class="table table-dark table-hover mb-0 text-nowrap align-middle">
+                        <table id="weChargenTable" class="table table-dark table-hover mb-0 text-nowrap align-middle">
                             <thead class="table-dark" style="background-color: var(--bg-hover);">
                                 <tr>
                                     <th style="width: 80px;">Aktionen</th>
-                                    <th>Charge Text</th>
-                                    <th>Echte Menge</th>
+                                    <th style="cursor: pointer;" @onclick='() => SortChargen("Charge")'>Charge Text @GetChargeSortIcon("Charge")</th>
+                                    <th style="cursor: pointer;" @onclick='() => SortChargen("Menge")'>Laufmeter/Stk @GetChargeSortIcon("Menge")</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -193,7 +205,7 @@
                                             </div>
                                         </td>
                                         <td class="fw-bold text-white">@charge.Charge</td>
-                                        <td class="text-info fw-bold">@charge.Echte_Menge</td>
+                                        <td class="text-info fw-bold">@charge.MengeAnzeige</td>
                                     </tr>
                                 }
                             </tbody>
@@ -211,6 +223,10 @@
 @code {
     private string ActiveFilter = "Alle";
     private string SearchQuery = "";
+    private string SortColumn = "Datum";
+    private bool SortAscending = false;
+    private string ChargeSortColumn = "Charge";
+    private bool ChargeSortAscending = true;
     
     private bool IsLoadingWE = false;
     private bool IsLoadingChargen = false;
@@ -227,6 +243,16 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadWEAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await JS.InvokeVoidAsync("makeTableResizable", "weVerwaltungTable");
+
+        if (SelectedWE != null && ChargenRows.Any())
+        {
+            await JS.InvokeVoidAsync("makeTableResizable", "weChargenTable");
+        }
     }
 
     private async Task ChangeFilter(string filter)
@@ -248,15 +274,22 @@
             FilteredWERows = AllWERows.Where(x => 
                 (x.LS_Nr != null && x.LS_Nr.ToLower().Contains(q)) ||
                 (x.Lieferant != null && x.Lieferant.ToLower().Contains(q)) ||
-                (x.Artikel != null && x.Artikel.ToLower().Contains(q))
+                (x.Artikel != null && x.Artikel.ToLower().Contains(q)) ||
+                (x.Eingangsdatum != null && x.Eingangsdatum.ToLower().Contains(q)) ||
+                FormatEbePos(x).ToLower().Contains(q)
             ).ToList();
         }
+
+        ApplyWESort();
     }
 
-    private async Task LoadWEAsync()
+    private async Task LoadWEAsync(int? preserveSelectedId = null)
     {
         IsLoadingWE = true;
-        SelectedWE = null;
+        if (preserveSelectedId == null)
+        {
+            SelectedWE = null;
+        }
         StateHasChanged();
 
         try
@@ -264,6 +297,12 @@
             var raw = await WEService.GetWareneingangsAsync(ActiveFilter);
             AllWERows = raw.ToList();
             FilterLocally();
+
+            if (preserveSelectedId.HasValue)
+            {
+                SelectedWE = FilteredWERows.FirstOrDefault(x => x.ID == preserveSelectedId.Value)
+                    ?? AllWERows.FirstOrDefault(x => x.ID == preserveSelectedId.Value);
+            }
         }
         catch (Exception ex)
         {
@@ -290,6 +329,7 @@
         {
             var res = await WEService.GetChargenForWareneingangAsync(weId);
             ChargenRows = res.ToList();
+            ApplyChargeSort();
         }
         catch (Exception ex)
         {
@@ -303,6 +343,28 @@
     }
 
     // --- Wareneingang Actions ---
+
+    private async Task ToggleBuchungAsync(WareneingangEntry row)
+    {
+        try
+        {
+            IsLoadingWE = true;
+            row.Gebucht = (row.Gebucht == true) ? false : true;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            string userName = authState.User.Identity?.Name ?? "Verwaltung";
+            bool succ = await WEService.UpdateWareneingangAsync(row, userName);
+             
+            if (succ) {
+                await LoadWEAsync(row.ID);
+                if (SelectedWE != null) await LoadChargenAsync(SelectedWE.ID);
+            }
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Fehler beim Verbuchen/Stornieren:\n{ex.Message}");
+            IsLoadingWE = false;
+        }
+    }
 
     private void OpenWEModal(WareneingangEntry row)
     {
@@ -319,8 +381,8 @@
             bool succ = await WEService.UpdateWareneingangAsync(updated, userName);
             if (succ)
             {
-                await LoadWEAsync(); // Refresh
-                if (SelectedWE?.ID == updated.ID) await SelectWEAsync(updated);
+                await LoadWEAsync(updated.ID);
+                if (SelectedWE != null) await LoadChargenAsync(SelectedWE.ID);
             }
         }
         catch (Exception ex)
@@ -390,6 +452,7 @@
             if (succ && SelectedWE != null)
             {
                 await LoadChargenAsync(SelectedWE.ID);
+                await LoadWEAsync();
             }
         }
         catch(Exception ex)
@@ -415,7 +478,11 @@
                 string userName = authState.User.Identity?.Name ?? "Verwaltung";
                 
                 bool succ = await WEService.DeleteChargeAsync(chargeId, userName);
-                if (succ && SelectedWE != null) await LoadChargenAsync(SelectedWE.ID);
+                if (succ && SelectedWE != null)
+                {
+                    await LoadChargenAsync(SelectedWE.ID);
+                    await LoadWEAsync(SelectedWE.ID);
+                }
             }
             catch (Exception ex)
             {
@@ -423,6 +490,157 @@
                 IsLoadingChargen = false;
             }
         }
+    }
+
+    private string FormatEbePos(WareneingangEntry row)
+    {
+        var ebe = row.EBE_NR?.Trim();
+        var pos = row.Pos?.Trim();
+
+        if (string.IsNullOrWhiteSpace(ebe) && string.IsNullOrWhiteSpace(pos)) return "-";
+        if (string.IsNullOrWhiteSpace(pos)) return ebe ?? "-";
+        if (string.IsNullOrWhiteSpace(ebe)) return pos ?? "-";
+
+        return $"{ebe}-{pos}";
+    }
+
+    private void SortWE(string column)
+    {
+        if (SortColumn == column)
+        {
+            SortAscending = !SortAscending;
+        }
+        else
+        {
+            SortColumn = column;
+            SortAscending = column is "Lieferant" or "Artikel" or "LS_Nr" or "EBEPos";
+        }
+
+        ApplyWESort();
+    }
+
+    private void ApplyWESort()
+    {
+        IEnumerable<WareneingangEntry> sorted = SortColumn switch
+        {
+            "Gebucht" => SortAscending ? FilteredWERows.OrderBy(x => x.Gebucht == true) : FilteredWERows.OrderByDescending(x => x.Gebucht == true),
+            "Lieferant" => SortAscending ? FilteredWERows.OrderBy(x => x.Lieferant) : FilteredWERows.OrderByDescending(x => x.Lieferant),
+            "Artikel" => SortAscending ? FilteredWERows.OrderBy(x => x.Artikel) : FilteredWERows.OrderByDescending(x => x.Artikel),
+            "LS_Nr" => SortAscending ? FilteredWERows.OrderBy(x => x.LS_Nr) : FilteredWERows.OrderByDescending(x => x.LS_Nr),
+            "EBEPos" => SortAscending ? FilteredWERows.OrderBy(x => FormatEbePos(x)) : FilteredWERows.OrderByDescending(x => FormatEbePos(x)),
+            "Menge" => SortAscending ? FilteredWERows.OrderBy(x => ParseInt(x.Menge)) : FilteredWERows.OrderByDescending(x => ParseInt(x.Menge)),
+            "Chargen" => SortAscending ? FilteredWERows.OrderBy(x => x.Chargen) : FilteredWERows.OrderByDescending(x => x.Chargen),
+            _ => SortAscending
+                ? FilteredWERows.OrderBy(x => HasValidDate(x.Eingangsdatum) ? 0 : 1).ThenBy(x => ParseDate(x.Eingangsdatum))
+                : FilteredWERows.OrderBy(x => HasValidDate(x.Eingangsdatum) ? 0 : 1).ThenByDescending(x => ParseDate(x.Eingangsdatum))
+        };
+
+        FilteredWERows = sorted.ToList();
+    }
+
+    private void SortChargen(string column)
+    {
+        if (ChargeSortColumn == column)
+        {
+            ChargeSortAscending = !ChargeSortAscending;
+        }
+        else
+        {
+            ChargeSortColumn = column;
+            ChargeSortAscending = column == "Charge";
+        }
+
+        ApplyChargeSort();
+    }
+
+    private void ApplyChargeSort()
+    {
+        IEnumerable<ChargeEntry> sorted = ChargeSortColumn switch
+        {
+            "Menge" => ChargeSortAscending ? ChargenRows.OrderBy(x => x.MengeAnzeige) : ChargenRows.OrderByDescending(x => x.MengeAnzeige),
+            _ => ChargeSortAscending ? ChargenRows.OrderBy(x => x.Charge) : ChargenRows.OrderByDescending(x => x.Charge)
+        };
+
+        ChargenRows = sorted.ToList();
+    }
+
+    private MarkupString GetSortIcon(string column)
+    {
+        if (SortColumn != column) return (MarkupString)"<i class=\"fa-solid fa-sort ms-1 text-secondary\"></i>";
+        return SortAscending
+            ? (MarkupString)"<i class=\"fa-solid fa-sort-up ms-1 text-info\"></i>"
+            : (MarkupString)"<i class=\"fa-solid fa-sort-down ms-1 text-info\"></i>";
+    }
+
+    private MarkupString GetChargeSortIcon(string column)
+    {
+        if (ChargeSortColumn != column) return (MarkupString)"<i class=\"fa-solid fa-sort ms-1 text-secondary\"></i>";
+        return ChargeSortAscending
+            ? (MarkupString)"<i class=\"fa-solid fa-sort-up ms-1 text-info\"></i>"
+            : (MarkupString)"<i class=\"fa-solid fa-sort-down ms-1 text-info\"></i>";
+    }
+
+    private static int ParseInt(string? value) => int.TryParse(value, out var parsed) ? parsed : 0;
+
+    private static DateTime ParseDate(string? value)
+    {
+        if (TryParseWareneingangDate(value, out var parsed))
+        {
+            return parsed;
+        }
+
+        return DateTime.MinValue;
+    }
+
+    private static bool HasValidDate(string? value) => TryParseWareneingangDate(value, out _);
+
+    private static bool TryParseWareneingangDate(string? value, out DateTime parsed)
+    {
+        parsed = DateTime.MinValue;
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var text = value.Trim();
+        string[] formats =
+        {
+            "MM/dd/yyyy HH:mm:ss",
+            "M/d/yyyy HH:mm:ss",
+            "MM/dd/yyyy HH:mm",
+            "M/d/yyyy HH:mm",
+            "MM/dd/yyyy",
+            "M/d/yyyy",
+            "dd.MM.yyyy HH:mm:ss",
+            "d.M.yyyy HH:mm:ss",
+            "dd.MM.yyyy HH:mm",
+            "d.M.yyyy HH:mm",
+            "dd.MM.yyyy",
+            "d.M.yyyy",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd"
+        };
+
+        return DateTime.TryParseExact(
+                   text,
+                   formats,
+                   System.Globalization.CultureInfo.InvariantCulture,
+                   System.Globalization.DateTimeStyles.AllowWhiteSpaces,
+                   out parsed)
+               || DateTime.TryParseExact(
+                   text,
+                   formats,
+                   new System.Globalization.CultureInfo("en-US"),
+                   System.Globalization.DateTimeStyles.AllowWhiteSpaces,
+                   out parsed)
+               || DateTime.TryParseExact(
+                   text,
+                   formats,
+                   new System.Globalization.CultureInfo("de-DE"),
+                   System.Globalization.DateTimeStyles.AllowWhiteSpaces,
+                   out parsed);
     }
 }
 

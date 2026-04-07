@@ -78,7 +78,7 @@ public class VerwaltungWareneingangService
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        string query = "SELECT ID, Charge, Echte_Menge, Wareneingang_ID FROM Chargen WHERE Wareneingang_ID = @ID ORDER BY ID";
+        string query = "SELECT ID, Charge, Echte_Menge, Aktuelle_Menge, Wareneingang_ID FROM Chargen WHERE Wareneingang_ID = @ID ORDER BY ID";
         return await connection.QueryAsync<ChargeEntry>(query, new { ID = wareneingangId });
     }
 
@@ -125,5 +125,7 @@ public class ChargeEntry
     public int ID { get; set; }
     public string? Charge { get; set; }
     public int? Echte_Menge { get; set; }
+    public int? Aktuelle_Menge { get; set; }
     public int Wareneingang_ID { get; set; }
+    public int MengeAnzeige => Echte_Menge ?? Aktuelle_Menge ?? 0;
 }

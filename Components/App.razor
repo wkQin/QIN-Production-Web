@@ -118,6 +118,17 @@
                 element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
         };
+
+        window.scrollToChildInContainer = (containerId, childId) => {
+            const container = document.getElementById(containerId);
+            const child = document.getElementById(childId);
+            if (!container || !child) return;
+
+            const containerRect = container.getBoundingClientRect();
+            const childRect = child.getBoundingClientRect();
+            const offset = childRect.top - containerRect.top + container.scrollTop - 12;
+            container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+        };
     </script>
     <script src="_content/Blazor-ApexCharts/js/apex-charts.min.js"></script>
     <script src="_content/Blazor-ApexCharts/js/blazor-apex-charts.js"></script>

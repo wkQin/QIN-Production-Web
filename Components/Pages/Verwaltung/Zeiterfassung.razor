@@ -201,48 +201,57 @@
 
 <!-- SUMMARY CARDS -->
 <div class="row g-3 mb-4">
-    <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
-            <div class="text-secondary small">Arbeitszeit (Monat)</div>
-            <div class="fs-4 fw-bold text-white mt-1">@SummaryTotalWorked</div>
-            <div class="text-secondary small mt-1">@SollText</div>
+    @if (CanViewSensitiveTimes)
+    {
+        <div class="col-xl-3 col-lg-6">
+            <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
+                <div class="text-secondary small">Arbeitszeit (Monat)</div>
+                <div class="fs-4 fw-bold text-white mt-1">@SummaryTotalWorked</div>
+                <div class="text-secondary small mt-1">@SollText</div>
+            </div>
         </div>
-    </div>
+    }
     <div class="col-xl-3 col-lg-6">
         <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Fehlzeiten</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryMissingDays</div>
-            <div class="text-secondary small mt-1">Tage ohne vollständige Buchung</div>
+            <div class="text-secondary small mt-1">Tage ohne vollstaendige Buchung</div>
         </div>
     </div>
     <div class="col-xl-3 col-lg-6">
         <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
             <div class="text-secondary small">Manuell erfasst</div>
             <div class="fs-4 fw-bold text-white mt-1">@SummaryManualCount</div>
-            <div class="text-secondary small mt-1">Einträge über Verwaltung</div>
+            <div class="text-secondary small mt-1">Eintraege ueber Verwaltung</div>
         </div>
     </div>
-    <div class="col-xl-3 col-lg-6">
-        <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
-            <div class="text-secondary small">Überstunden (tgl.)</div>
-            <div class="fs-4 fw-bold text-white mt-1">@SummaryDailyOvertime</div>
-            <div class="text-secondary small mt-1">Täglich berechnet</div>
+    @if (CanViewSensitiveTimes)
+    {
+        <div class="col-xl-3 col-lg-6">
+            <div class="p-3 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
+                <div class="text-secondary small">Ueberstunden (tgl.)</div>
+                <div class="fs-4 fw-bold text-white mt-1">@SummaryDailyOvertime</div>
+                <div class="text-secondary small mt-1">Taeglich berechnet</div>
+            </div>
         </div>
-    </div>
+    }
 </div>
 
 <!-- DATA GRID (Cards Layout matching WPF) -->
 <div class="p-4 rounded-4" style="background: var(--border-color); border: 1px solid var(--border-color);">
     
     <!-- Shared Column Headers -->
-    <div class="zf-row text-secondary px-3 pb-2 mb-2 border-bottom border-dark small fw-bold">
+    <div class="zf-row text-secondary px-3 pb-2 mb-2 border-bottom border-dark small fw-bold" style="@GetDayRowGridStyle()">
         <div></div>
         <div>Tag</div>
         <div>Kommen</div>
         <div>Gehen</div>
         <div>Status / Notiz</div>
-        <div class="text-end">Arbeitszeit (HH:mm)</div>
-        <div class="text-end pe-3">Überstd. (tgl.)</div>
+        @if (CanViewSensitiveTimes)
+        {
+            <div class="text-end">Arbeitszeit (HH:mm)</div>
+            <div class="text-end pe-3">Uberstd. (tgl.)</div>
+        }
     </div>
 
     <!-- Scrollable Items Area -->
@@ -256,9 +265,9 @@
                 </div>
             }
 
-            <div class="zf-card">
+            <div class="zf-card" id="@GetDayElementId(day.Date)">
                 <!-- Outer Row Header -->
-                <div class="zf-row px-3" style="cursor: pointer;" @onclick="() => day.IsExpanded = !day.IsExpanded">
+                <div class="zf-row px-3" style="cursor: pointer; @GetDayRowGridStyle()" @onclick="() => day.IsExpanded = !day.IsExpanded">
                     <div class="d-flex justify-content-center">
                         @if(day.HasBookings) {
                             <div class="zf-btn-toggle">
@@ -283,8 +292,11 @@
                             <span class="text-secondary small ms-1 text-truncate" style="max-width: 180px;">@day.Note</span>
                         </div>
                     </div>
-                    <div class="text-end fw-bold text-white fs-6">@day.WorkedText</div>
-                    <div class="text-end fw-bold text-white fs-6 pe-3">@day.DailyOvertimeText</div>
+                    @if (CanViewSensitiveTimes)
+                    {
+                        <div class="text-end fw-bold text-white fs-6">@day.WorkedText</div>
+                        <div class="text-end fw-bold text-white fs-6 pe-3">@day.DailyOvertimeText</div>
+                    }
                 </div>
 
                 <!-- Expanded Content -->
@@ -307,7 +319,7 @@
                                     </div>
                                     
                                     <AuthorizeView Roles="Admin, Verwaltung">
-                                        <button class="btn btn-sm btn-outline-danger ms-3 px-3 rounded-pill d-flex align-items-center" @onclick="@(async () => await DeleteBookingAsync(b.Id))">
+                                        <button class="btn btn-sm btn-outline-danger ms-3 px-3 rounded-pill d-flex align-items-center" @onclick="@(async () => await DeleteBookingAsync(b.Id, day.Date))">
                                             <i class="fa-solid fa-xmark me-2"></i> Löschen
                                         </button>
                                     </AuthorizeView>
@@ -319,13 +331,15 @@
             </div>
         }
     </div>
+    }
 </div>
 
 @code {
     private string CurrentUserName = "";
     private bool CanViewOtherUsers = false;
     private bool CanManualBook = false;
-    private bool _shouldScrollToBottom = false;
+    private bool CanViewSensitiveTimes = false;
+    private string? _scrollTargetId;
 
     // Pickers
     private List<string> Months = CultureInfo.CurrentCulture.DateTimeFormat.MonthNames.Where(m => !string.IsNullOrWhiteSpace(m)).ToList();
@@ -368,6 +382,7 @@
         
         CanViewOtherUsers = await ZeiterfassungService.LoadCanViewOtherUsersAsync(CurrentUserName);
         CanManualBook = user.IsInRole("Admin") || user.IsInRole("Verwaltung");
+        CanViewSensitiveTimes = user.IsInRole("Admin") || user.IsInRole("Verwaltung") || CanViewOtherUsers;
 
         if (CanViewOtherUsers)
         {
@@ -464,9 +479,6 @@
         // QoL 1: Auto-select Action (Kommen/Gehen) based on last booking
         AutoSelectAction(results);
 
-        // QoL 2: Set flag for auto-scroll
-        _shouldScrollToBottom = true;
-    
         // Apply Week Headers
         ApplyWeekHeaders();
 
@@ -513,12 +525,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (_shouldScrollToBottom)
+        if (!string.IsNullOrWhiteSpace(_scrollTargetId))
         {
-            _shouldScrollToBottom = false;
+            var targetId = _scrollTargetId;
+            _scrollTargetId = null;
             try
             {
-                await JS.InvokeVoidAsync("scrollToBottom", "zeiterfassung-scroll-container");
+                await JS.InvokeVoidAsync("scrollToChildInContainer", "zeiterfassung-scroll-container", targetId);
             }
             catch { /* Catch errors like being disconnected */ }
         }
@@ -657,6 +670,7 @@
         if (!CanManualBook || SelectedUser == null) return;
 
         var ts = new DateTime(ManualDate.Year, ManualDate.Month, ManualDate.Day, ManualTime.Hour, ManualTime.Minute, 0);
+        _scrollTargetId = GetDayElementId(ts);
 
         await ZeiterfassungService.InsertManualBookingAsync(CurrentUserName, ts, ManualAction, ManualIsHomeOffice, ManualNote);
 
@@ -665,9 +679,10 @@
         await ReloadDataAsync();
     }
 
-    private async Task DeleteBookingAsync(int id)
+    private async Task DeleteBookingAsync(int id, DateTime bookingDate)
     {
         if (!CanManualBook) return;
+        _scrollTargetId = GetDayElementId(bookingDate);
         await ZeiterfassungService.DeleteBookingAsync(id);
         await ReloadDataAsync();
     }
@@ -676,6 +691,7 @@
     {
         if (!CanSaveAbsence || SelectedUser == null) return;
         var day = DateOnly.FromDateTime(ManualDate);
+        _scrollTargetId = GetDayElementId(ManualDate);
         await ZeiterfassungService.UpsertAbsenceAsync(SelectedUser.Benutzer, day, SelectedAbsenceType);
         await ReloadDataAsync();
     }
@@ -691,7 +707,12 @@
         await JS.InvokeVoidAsync("downloadFileFromStream", fileName, streamRef);
     }
 
+    private string GetDayRowGridStyle() => CanViewSensitiveTimes
+        ? "grid-template-columns: 46px 160px 140px 140px 1fr 140px 120px;"
+        : "grid-template-columns: 46px 160px 140px 140px 1fr;";
+
     private static int MonthFromName(string monthName) => DateTime.ParseExact(monthName, "MMMM", CultureInfo.CurrentCulture).Month;
+    private static string GetDayElementId(DateTime date) => $"zeiterfassung-day-{date:yyyyMMdd}";
     private static string ToHHmm(int minutes) => minutes <= 0 ? "—" : $"{minutes / 60:00}:{minutes % 60:00}";
     private static bool TryParseHHmm(string text, out TimeSpan time)
     {
@@ -706,4 +727,5 @@
         return true;
     }
 }
+
 

@@ -46,14 +46,14 @@ namespace QIN_Production_Web.Helpers
                 $"^PW{PW}" +              
                 $"^LL{LL}" +              
                 "^LH0,0" +
-                $"^FO10,15^BQN,2,5^FDQA,{qrData}^FS" +
-                $"^FO170,10^A0N,20,20^FDCharge:^FS" +
-                $"^FO170,30^A0N,25,25^FD{charge}^FS" +
-                $"^FO170,70^A0N,20,20^FDMenge:^FS" +
-                $"^FO170,90^A0N,24,24^FD{menge} LM/STK^FS" +
-                $"^FO170,130^A0N,20,20^FDMaterial:^FS" +
-                $"^FO170,150^A0N,22,22^FB260,2,,L^FD{material}^FS" +
-                $"^FO170,195^A0N,20,20^FDDatum: {eingangsdatum}^FS" +
+                $"^FO10,15^BQN,2,4^FDQA,{qrData}^FS" +
+                $"^FO210,15^A0N,20,20^FDCharge:^FS" +
+                $"^FO210,35^A0N,25,25^FD{charge}^FS" +
+                $"^FO210,75^A0N,20,20^FDMenge:^FS" +
+                $"^FO210,95^A0N,24,24^FD{menge} LM/STK^FS" +
+                $"^FO210,135^A0N,20,20^FDMaterial:^FS" +
+                $"^FO210,155^A0N,22,22^FB220,2,,L^FD{material}^FS" +
+                $"^FO210,200^A0N,20,20^FDDatum: {eingangsdatum}^FS" +
                 $"^PQ1,0,1,N" +
                 "^XZ";
 
