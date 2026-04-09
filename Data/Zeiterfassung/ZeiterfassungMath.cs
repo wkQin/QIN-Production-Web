@@ -37,10 +37,10 @@ namespace QIN_Production_Web.Data.Zeiterfassung
     public sealed class ZeiterfassungPolicy
     {
         public int StepMinutes { get; init; } = 15;
-        public RoundingMode KommenRounding { get; init; } = RoundingMode.RoundUp;
-        public RoundingMode GehenRounding { get; init; } = RoundingMode.RoundDown;
+        public RoundingMode KommenRounding { get; init; } = RoundingMode.None;
+        public RoundingMode GehenRounding { get; init; } = RoundingMode.None;
         public int GraceMinutes { get; init; } = 0;
-        public bool EnableRounding { get; set; } = true;
+        public bool EnableRounding { get; set; } = false;
         public DayOfWeek WeekStart { get; init; } = DayOfWeek.Monday;
         public bool EnableAutoBreak { get; init; } = true;
         public int Break15ThresholdMinutes { get; init; } = 4 * 60;
