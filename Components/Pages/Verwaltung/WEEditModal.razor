@@ -38,6 +38,10 @@
                             <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Artikel" />
                         </div>
                         <div class="col-md-6 mb-2">
+                            <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Dickenmessung" />
+                        </div>
+                        <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Zustand</label>
                             <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Zustand" />
                         </div>
@@ -99,6 +103,7 @@
             Pos = originalRow.Pos,
             Menge = originalRow.Menge,
             Artikel = originalRow.Artikel,
+            Dickenmessung = originalRow.Dickenmessung,
             Bemerkung = originalRow.Bemerkung,
             Zustand = originalRow.Zustand,
             Benutzer = originalRow.Benutzer,

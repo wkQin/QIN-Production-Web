@@ -10,24 +10,39 @@ public class VerwaltungWareneingangService
 
     // --- Wareneingang CRUD ---
 
-    public async Task<IEnumerable<WareneingangEntry>> GetWareneingangsAsync(string statusFilter)
+    public async Task<IEnumerable<WareneingangEntry>> GetWareneingangsAsync(string statusFilter, DateTime? datumVon = null, DateTime? datumBis = null)
     {
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
 
         string query = @"
-            SELECT ID, Lieferant, LS_Nr, EBE_NR, Pos, Artikel, Zustand, Menge, Bemerkung, Benutzer, Eingangsdatum, Palettentausch, Gebucht,
+            SELECT ID, Lieferant, LS_Nr, EBE_NR, Pos, Artikel, Zustand, Menge, Bemerkung, Benutzer, Eingangsdatum, Palettentausch, Gebucht, Dickenmessung,
                    (SELECT COUNT(*) FROM Chargen c WHERE c.Wareneingang_ID = w.ID) AS Chargen
             FROM Wareneingang w";
 
+        var whereParts = new List<string>();
+
         if (statusFilter == "Gebucht")
-            query += " WHERE w.Gebucht = 1";
+            whereParts.Add("w.Gebucht = 1");
         else if (statusFilter == "Nicht Gebucht")
-            query += " WHERE w.Gebucht = 0 OR w.Gebucht IS NULL";
+            whereParts.Add("(w.Gebucht = 0 OR w.Gebucht IS NULL)");
+
+        if (datumVon.HasValue)
+            whereParts.Add("CAST(w.Eingangsdatum AS date) >= @DatumVon");
+
+        if (datumBis.HasValue)
+            whereParts.Add("CAST(w.Eingangsdatum AS date) <= @DatumBis");
+
+        if (whereParts.Count > 0)
+            query += " WHERE " + string.Join(" AND ", whereParts);
 
         query += " ORDER BY w.ID DESC";
 
-        return await connection.QueryAsync<WareneingangEntry>(query);
+        return await connection.QueryAsync<WareneingangEntry>(query, new
+        {
+            DatumVon = datumVon?.Date,
+            DatumBis = datumBis?.Date
+        });
     }
 
     public async Task<bool> UpdateWareneingangAsync(WareneingangEntry row, string userName = "Unbekannt")
@@ -44,7 +59,8 @@ public class VerwaltungWareneingangService
                 Bemerkung = @Bemerkung,
                 Gebucht = @Gebucht,
                 Palettentausch = @Palettentausch,
-                Artikel = @Artikel
+                Artikel = @Artikel,
+                Dickenmessung = @Dickenmessung
             WHERE ID = @ID";
 
         using var connection = new SqlConnection(_connectionString);

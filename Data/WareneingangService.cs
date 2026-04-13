@@ -22,6 +22,7 @@ namespace QIN_Production_Web.Data
         public string? Eingangsdatum { get; set; }
         public bool? Palettentausch { get; set; }
         public bool? Gebucht { get; set; }
+        public string? Dickenmessung { get; set; }
     }
 
     public class ChargenEntry
@@ -63,7 +64,7 @@ namespace QIN_Production_Web.Data
             var result = new List<WareneingangEntry>();
             try
             {
-                string query = "SELECT w.ID, w.Lieferant, w.LS_Nr, w.EBE_NR, w.Pos, w.Artikel, w.Zustand, w.Menge, w.Bemerkung, (SELECT COUNT(*) FROM Chargen c WHERE c.Wareneingang_ID = w.ID) AS ChargenCount FROM Wareneingang w WHERE w.Gebucht = 0" + (lieferant != null ? " AND w.Lieferant = @Lieferant" : "") + " ORDER BY w.ID DESC;";
+                string query = "SELECT w.ID, w.Lieferant, w.LS_Nr, w.EBE_NR, w.Pos, w.Artikel, w.Zustand, w.Menge, w.Bemerkung, w.Dickenmessung, (SELECT COUNT(*) FROM Chargen c WHERE c.Wareneingang_ID = w.ID) AS ChargenCount FROM Wareneingang w WHERE w.Gebucht = 0" + (lieferant != null ? " AND w.Lieferant = @Lieferant" : "") + " ORDER BY w.ID DESC;";
                 using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
                 {
                     await connection.OpenAsync();
@@ -84,6 +85,7 @@ namespace QIN_Production_Web.Data
                                     Menge = reader["Menge"]?.ToString(),
                                     Artikel = reader["Artikel"]?.ToString(),
                                     Bemerkung = reader["Bemerkung"]?.ToString(),
+                                    Dickenmessung = reader["Dickenmessung"]?.ToString(),
                                     Zustand = reader["Zustand"]?.ToString(),
                                     Chargen = reader["ChargenCount"] != DBNull.Value ? Convert.ToInt32(reader["ChargenCount"]) : 0
                                 });
@@ -150,11 +152,11 @@ namespace QIN_Production_Web.Data
             return chargen;
         }
 
-        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material)
+        public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material, string? dickenmessung)
         {
             string query = eintragBearbeiten ? 
-                @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE WHERE ID=@ID" :
-                @"INSERT INTO Wareneingang (Lieferant, LS_Nr, Pos, Zustand, Palettentausch, Artikel, Eingangsdatum, Benutzer, Bemerkung, EBE_Nr) VALUES (@Lieferant, @LSNr, @Pos, @Zustand, @Palettentausch, @Artikel, @Eingangsdatum, @Benutzer, @Bemerkung, @EBE); SELECT SCOPE_IDENTITY();";
+                @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE, Dickenmessung=@Dickenmessung WHERE ID=@ID" :
+                @"INSERT INTO Wareneingang (Lieferant, LS_Nr, Pos, Zustand, Palettentausch, Artikel, Eingangsdatum, Benutzer, Bemerkung, EBE_Nr, Dickenmessung) VALUES (@Lieferant, @LSNr, @Pos, @Zustand, @Palettentausch, @Artikel, @Eingangsdatum, @Benutzer, @Bemerkung, @EBE, @Dickenmessung); SELECT SCOPE_IDENTITY();";
 
             try
             {
@@ -173,6 +175,7 @@ namespace QIN_Production_Web.Data
                         command.Parameters.AddWithValue("@Benutzer", session.Personalnummer ?? "100");
                         command.Parameters.AddWithValue("@Bemerkung", (object?)bemerkung ?? DBNull.Value);
                         command.Parameters.AddWithValue("@EBE", (object?)ebe ?? DBNull.Value);
+                        command.Parameters.AddWithValue("@Dickenmessung", (object?)dickenmessung ?? DBNull.Value);
                         
                         if (eintragBearbeiten && int.TryParse(id, out int idInt)) command.Parameters.AddWithValue("@ID", idInt);
 

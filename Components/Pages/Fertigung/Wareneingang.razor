@@ -3,6 +3,7 @@
 @using QIN_Production_Web.Data
 @using QIN_Production_Web.Helpers
 @using Microsoft.AspNetCore.Components.Authorization
+@using System.Globalization
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 <PageTitle>Wareneingang - Fertigung</PageTitle>
@@ -97,6 +98,20 @@
                                 </label>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <label class="modern-label">Dickenmessung</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control modern-input fw-bold text-white"
+                                   @bind="Dickenmessung"
+                                   placeholder="z.B. 0,23"
+                                   inputmode="decimal" />
+                            <span class="input-group-text border-0 text-secondary fw-bold px-3" style="background: rgba(15, 23, 42, 0.8);">mm</span>
+                        </div>
+                        <small class="text-secondary">Pflichtfeld. Erlaubt sind nur Werte zwischen 0,23 und 1,2 mm.</small>
                     </div>
                 </div>
 
@@ -249,6 +264,7 @@
     private string SelectedLieferant = "";
     private string Zustand = "Gut";
     private string Material = "";
+    private string Dickenmessung = "";
     private string Bemerkung = "";
     private bool Palettentausch = false;
     
@@ -340,6 +356,14 @@
             return;
         }
 
+        if (!TryNormalizeDickenmessung(Dickenmessung, out var normalizedDickenmessung))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte eine gÃ¼ltige Dickenmessung zwischen 0,23 mm und 1,2 mm eingeben.");
+            return;
+        }
+
+        Dickenmessung = normalizedDickenmessung;
+
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         string actualUserName = user.Identity?.Name ?? "Unbekannt";
@@ -348,7 +372,7 @@
 
         bool ok = await WareneingangService.InsertWareneingangAsync(
             SelectedEntry?.ID.ToString(), SelectedLieferant, Lieferschein, Pos, ChargenList, 
-            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, userSession, IsEditMode, EBE, Material);
+            Zustand, GesamtLaufmeter.ToString(), Palettentausch, Bemerkung, userSession, IsEditMode, EBE, Material, normalizedDickenmessung);
             
         if (ok)
         {
@@ -415,6 +439,7 @@
         EBE = SelectedEntry.EBE_NR ?? "";
         SelectedLieferant = SelectedEntry.Lieferant ?? "";
         Zustand = SelectedEntry.Zustand ?? "Gut";
+        Dickenmessung = SelectedEntry.Dickenmessung ?? "";
         
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
         Material = SelectedEntry.Artikel ?? "";
@@ -428,8 +453,36 @@
         IsEditMode = false;
         SelectedEntry = null;
         SelectedCharge = null;
-        Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Bemerkung = "";
+        Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Dickenmessung = ""; Bemerkung = "";
         Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
+    }
+
+    private static bool TryNormalizeDickenmessung(string? input, out string normalized)
+    {
+        normalized = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        var cleaned = input.Trim()
+            .Replace("mm", "", StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", "")
+            .Replace(',', '.');
+
+        if (!decimal.TryParse(cleaned, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var value))
+        {
+            return false;
+        }
+
+        if (value < 0.23m || value > 1.2m)
+        {
+            return false;
+        }
+
+        normalized = value.ToString("0.##", new CultureInfo("de-DE"));
+        return true;
     }
 
     private async Task RefreshHistorie()

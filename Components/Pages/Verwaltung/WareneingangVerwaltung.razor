@@ -53,6 +53,27 @@
                 </button>
             </div>
         </div>
+
+        <div class="row g-3 align-items-end mt-1">
+            <div class="col-md-4 col-lg-3">
+                <label class="form-label text-secondary small fw-bold mb-1">Datum von</label>
+                <input type="date" class="form-control border-secondary text-white bg-dark"
+                       @bind-value="FilterVon" @bind-value:format="yyyy-MM-dd" />
+            </div>
+            <div class="col-md-4 col-lg-3">
+                <label class="form-label text-secondary small fw-bold mb-1">Datum bis</label>
+                <input type="date" class="form-control border-secondary text-white bg-dark"
+                       @bind-value="FilterBis" @bind-value:format="yyyy-MM-dd" />
+            </div>
+            <div class="col-md-4 col-lg-3 d-flex gap-2">
+                <button class="btn btn-outline-info fw-bold flex-fill" @onclick="ApplyDateFilterAsync">
+                    <i class="fa-solid fa-filter me-1"></i> Anwenden
+                </button>
+                <button class="btn btn-outline-secondary fw-bold flex-fill" @onclick="ResetDateFilterAsync">
+                    Reset
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Main Wareneingang Table -->
@@ -90,6 +111,7 @@
                                 <th class="text-info" style="cursor: pointer;" @onclick='() => SortWE("LS_Nr")'>LS Nr @GetSortIcon("LS_Nr")</th>
                                 <th style="cursor: pointer;" @onclick='() => SortWE("Menge")'>Menge @GetSortIcon("Menge")</th>
                                 <th style="cursor: pointer;" @onclick='() => SortWE("Chargen")'>Chargen @GetSortIcon("Chargen")</th>
+                                <th style="cursor: pointer;" @onclick='() => SortWE("Dickenmessung")'>Dickenmessung @GetSortIcon("Dickenmessung")</th>
                                 <th style="cursor: pointer;" @onclick='() => SortWE("Datum")'>Datum @GetSortIcon("Datum")</th>
                             </tr>
                         </thead>
@@ -139,6 +161,7 @@
                                     <td>
                                         <span class="badge bg-secondary rounded-pill px-2">@row.Chargen</span>
                                     </td>
+                                    <td class="text-info fw-bold">@FormatDickenmessung(row.Dickenmessung)</td>
                                     <td>@row.Eingangsdatum</td>
                                 </tr>
                             }
@@ -223,6 +246,8 @@
 @code {
     private string ActiveFilter = "Alle";
     private string SearchQuery = "";
+    private DateTime? FilterVon;
+    private DateTime? FilterBis;
     private string SortColumn = "Datum";
     private bool SortAscending = false;
     private string ChargeSortColumn = "Charge";
@@ -276,6 +301,7 @@
                 (x.Lieferant != null && x.Lieferant.ToLower().Contains(q)) ||
                 (x.Artikel != null && x.Artikel.ToLower().Contains(q)) ||
                 (x.Eingangsdatum != null && x.Eingangsdatum.ToLower().Contains(q)) ||
+                (x.Dickenmessung != null && x.Dickenmessung.ToLower().Contains(q)) ||
                 FormatEbePos(x).ToLower().Contains(q)
             ).ToList();
         }
@@ -294,7 +320,7 @@
 
         try
         {
-            var raw = await WEService.GetWareneingangsAsync(ActiveFilter);
+            var raw = await WEService.GetWareneingangsAsync(ActiveFilter, FilterVon, FilterBis);
             AllWERows = raw.ToList();
             FilterLocally();
 
@@ -504,6 +530,28 @@
         return $"{ebe}-{pos}";
     }
 
+    private static string FormatDickenmessung(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        return value.Contains("mm", StringComparison.OrdinalIgnoreCase) ? value : $"{value} mm";
+    }
+
+    private async Task ApplyDateFilterAsync()
+    {
+        await LoadWEAsync();
+    }
+
+    private async Task ResetDateFilterAsync()
+    {
+        FilterVon = null;
+        FilterBis = null;
+        await LoadWEAsync();
+    }
+
     private void SortWE(string column)
     {
         if (SortColumn == column)
@@ -530,6 +578,7 @@
             "EBEPos" => SortAscending ? FilteredWERows.OrderBy(x => FormatEbePos(x)) : FilteredWERows.OrderByDescending(x => FormatEbePos(x)),
             "Menge" => SortAscending ? FilteredWERows.OrderBy(x => ParseInt(x.Menge)) : FilteredWERows.OrderByDescending(x => ParseInt(x.Menge)),
             "Chargen" => SortAscending ? FilteredWERows.OrderBy(x => x.Chargen) : FilteredWERows.OrderByDescending(x => x.Chargen),
+            "Dickenmessung" => SortAscending ? FilteredWERows.OrderBy(x => ParseDecimal(x.Dickenmessung)) : FilteredWERows.OrderByDescending(x => ParseDecimal(x.Dickenmessung)),
             _ => SortAscending
                 ? FilteredWERows.OrderBy(x => HasValidDate(x.Eingangsdatum) ? 0 : 1).ThenBy(x => ParseDate(x.Eingangsdatum))
                 : FilteredWERows.OrderBy(x => HasValidDate(x.Eingangsdatum) ? 0 : 1).ThenByDescending(x => ParseDate(x.Eingangsdatum))
@@ -581,6 +630,23 @@
     }
 
     private static int ParseInt(string? value) => int.TryParse(value, out var parsed) ? parsed : 0;
+
+    private static decimal ParseDecimal(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return decimal.MinValue;
+        }
+
+        var cleaned = value.Trim()
+            .Replace("mm", "", StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", "")
+            .Replace(',', '.');
+
+        return decimal.TryParse(cleaned, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : decimal.MinValue;
+    }
 
     private static DateTime ParseDate(string? value)
     {
