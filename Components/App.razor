@@ -115,7 +115,11 @@
         window.scrollToId = (id) => {
             const element = document.getElementById(id);
             if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                });
             }
         };
 
@@ -124,10 +128,24 @@
             const child = document.getElementById(childId);
             if (!container || !child) return;
 
-            const containerRect = container.getBoundingClientRect();
-            const childRect = child.getBoundingClientRect();
-            const offset = childRect.top - containerRect.top + container.scrollTop - 12;
-            container.scrollTo({ top: Math.max(0, offset), behavior: 'smooth' });
+            const getRelativeTop = (element, ancestor) => {
+                let top = 0;
+                let current = element;
+
+                while (current && current !== ancestor) {
+                    top += current.offsetTop;
+                    current = current.offsetParent;
+                }
+
+                return top;
+            };
+
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    const targetTop = Math.max(0, getRelativeTop(child, container) - 12);
+                    container.scrollTo({ top: targetTop, behavior: 'smooth' });
+                });
+            });
         };
     </script>
     <script src="_content/Blazor-ApexCharts/js/apex-charts.min.js"></script>

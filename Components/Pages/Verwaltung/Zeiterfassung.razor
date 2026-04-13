@@ -254,8 +254,8 @@
         }
     </div>
 
-    <!-- Scrollable Items Area -->
-    <div id="zeiterfassung-scroll-container" style="max-height: 60vh; overflow-y: auto; overflow-x: hidden; padding-right: 8px;">
+    <!-- Items Area -->
+    <div id="zeiterfassung-scroll-container" style="padding-right: 8px;">
         @foreach (var day in Days)
         {
             @if (day.IsWeekStart)
@@ -331,7 +331,6 @@
             </div>
         }
     </div>
-    }
 </div>
 
 @code {
@@ -531,7 +530,7 @@
             _scrollTargetId = null;
             try
             {
-                await JS.InvokeVoidAsync("scrollToChildInContainer", "zeiterfassung-scroll-container", targetId);
+                await JS.InvokeVoidAsync("scrollToId", targetId);
             }
             catch { /* Catch errors like being disconnected */ }
         }
@@ -672,7 +671,7 @@
         var ts = new DateTime(ManualDate.Year, ManualDate.Month, ManualDate.Day, ManualTime.Hour, ManualTime.Minute, 0);
         _scrollTargetId = GetDayElementId(ts);
 
-        await ZeiterfassungService.InsertManualBookingAsync(CurrentUserName, ts, ManualAction, ManualIsHomeOffice, ManualNote);
+        await ZeiterfassungService.InsertManualBookingAsync(SelectedUser.Benutzer, ts, ManualAction, ManualIsHomeOffice, ManualNote);
 
         ManualNote = "";
         ManualIsHomeOffice = false;
