@@ -2,13 +2,12 @@
 
 ## Zweck
 
-Diese Dokumentation beschreibt, wie die Erfassung der Fehlersammelkarte im Bereich Endkontrolle / Sauberraum technisch aufgebaut ist.
+Diese Dokumentation beschreibt den aktuellen technischen Stand der Endkontrolle im Sauberraum.
 
 Relevante Dateien:
 
 - [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
 - [EndkontrolleService.cs](/Data/EndkontrolleService.cs:1)
-- [FehleranalyseService.cs](/Data/FehleranalyseService.cs:1)
 
 ## Route und Seite
 
@@ -28,7 +27,7 @@ Definiert in:
 
 - [EndkontrolleService.cs](/Data/EndkontrolleService.cs:14)
 
-Enthaltene Felder:
+Wichtige Felder:
 
 - `ID`
 - `Charge`
@@ -39,30 +38,30 @@ Enthaltene Felder:
 - `Dekor`
 - `Datum`
 - `Gutteile`
-- `Fusseln`
-- `Nadelstiche`
-- `Pickel`
-- `Dekorfehler`
-- `Farbfehler`
-- `Flecken`
-- `Nebel`
-- `Vertiefung`
-- `Oelflecken`
-- `Tiefziehfehler`
-- `Fraesfehler`
-- `Knicke`
-- `Kratzer`
+- Fehlerfelder wie `Fusseln`, `Nadelstiche`, `Pickel`, `Dekorfehler`, `Farbfehler`
+- interne Fehler wie `Oelflecken`, `Tiefziehfehler`, `Fraesfehler`, `Knicke`, `Kratzer`
 - `Bemerkung`
 - `Personalnummer`
 
-Standardwerte:
+## Aktueller UI-Aufbau
 
-- `Datum = DateTime.Today`
-- `Personalnummer = "100"` als Fallback
+Die Seite ist jetzt in vier klar sichtbare Bereiche gegliedert:
 
-## UI-State in der Razor-Seite
+1. Seitenkopf mit Status
+2. Hinweisbereich `So funktioniert es`
+3. Formular mit `Auftragsdaten` und `Fehlersammelkarte`
+4. Historie `Letzte Eintraege`
 
-Wichtige State-Variablen:
+Neu gegenueber der alten Version:
+
+- deutlicher sichtbarer Bearbeitungsmodus
+- klare Bedienhinweise direkt auf der Seite
+- Bearbeiten ueber Button statt Inline-Zellenbearbeitung
+- Drag-Scroll fuer die Historientabelle
+
+## Wichtiger UI-State
+
+Wichtige State-Variablen in [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1):
 
 - `Kunden`
 - `Projekte`
@@ -72,12 +71,8 @@ Wichtige State-Variablen:
 - `UserPersonalnummer`
 - `ActualUserName`
 - `NeuerEintrag`
-- `editingId`
-- `editingField`
-
-Definiert in:
-
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:306)
+- `IsEditMode`
+- `SelectedEintragId`
 
 ## Initialisierung
 
@@ -87,28 +82,17 @@ Beim Laden der Seite passiert in `OnInitializedAsync()`:
 2. Benutzername wird aus `user.Identity.Name` gelesen.
 3. Die Personalnummer wird aus dem Claim `UserId` gelesen.
 4. Falls der Claim fehlt, wird `UserService.Personalnummer` als Fallback verwendet.
-5. `NeuerEintrag.Personalnummer` wird gesetzt.
+5. Das Formular wird per `ResetForm()` vorbereitet.
 6. Kundenliste wird geladen.
 7. Die letzten Eintraege werden geladen.
 
-Siehe:
-
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:316)
+Danach initialisiert `OnAfterRenderAsync()` die Drag-Scroll-Hilfe fuer die Seite und fuer den Tabellenbereich.
 
 ## Laden der Auswahldaten
 
 ### Kunden
 
 Die Kundenliste kommt aus `dbo.Kunden`.
-
-Query:
-
-- `SELECT Kunde, MAX(CAST(IstAktiv AS INT)) ... GROUP BY Kunde`
-
-Ziel:
-
-- Anzeige des Kundennamens
-- Kennzeichnung, ob ein Kunde aktiv oder inaktiv ist
 
 Siehe:
 
@@ -120,223 +104,125 @@ Nach Kundenauswahl werden die Projekte des Kunden geladen.
 
 Siehe:
 
-- UI-Handler: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:333)
+- UI-Handler: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
 - Service: [EndkontrolleService.cs](/Data/EndkontrolleService.cs:69)
 
 ### Artikel und Dekore
 
 Nach Projektauswahl werden Artikel und Dekore geladen.
 
-Technik:
-
-- Quelle ist ebenfalls `dbo.Kunden`
-- `Artikel` und `Dekor` werden aus den Datensaetzen gelesen
-- mehrwertige Inhalte werden per `Split(", ")` getrennt
-- Rueckgabe erfolgt als deduplizierte Listen ueber `HashSet<string>`
-
 Siehe:
 
-- UI-Handler: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:345)
+- UI-Handler: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
 - Service: [EndkontrolleService.cs](/Data/EndkontrolleService.cs:88)
 
-## Speichern eines Eintrags
+## Speichern neuer Eintraege
 
-Das Speichern wird in `SaveEintrag()` ausgelost.
+Das Speichern wird in `SaveEintrag()` ausgeloest.
 
-Siehe:
-
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:363)
-
-### Validierung in der UI
-
-Vor dem Insert werden diese Felder auf `IsNullOrWhiteSpace` geprueft:
+Vor dem Speichern werden diese Felder geprueft:
 
 - `Charge`
 - `FANr`
 - `Artikel`
 - `Dekor`
 
-Wenn ein Pflichtfeld fehlt:
+Wenn `IsEditMode == false`, wird aufgerufen:
 
-- JavaScript-`alert()` wird angezeigt
-- der Insert wird abgebrochen
+- `EndkontrolleService.InsertEintragAsync(...)`
 
-### DB-Insert
-
-Der Insert passiert in:
-
-- [EndkontrolleService.cs](/Data/EndkontrolleService.cs:114)
-
-Zieltabelle:
+DB-Zieltabelle:
 
 - `dbo.Table1`
 
-Verwendete DB-Spalten:
+## Bearbeiten bestehender Eintraege
 
-- `Kunde`
-- `Projekt`
-- `Artikel`
-- `Dekor`
-- `Charge`
-- `FSKdate`
-- `Gutteile`
-- `Fusseln`
-- `Nadelstiche`
-- `Pickel`
-- `Dekorfehler`
-- `Color`
-- `Flecken`
-- `Nebel`
-- `Vertiefung`
-- `Oelflecken`
-- `Tiefziehfehler`
-- `Fraesfehler`
-- `Knicke`
-- `Kratzer`
-- `Personalnummer`
-- `[FA-Nr]`
-- `Bemerkungen`
+Die alte Inline-Bearbeitung pro Tabellenzelle wurde ersetzt.
 
-Mapping Modell -> DB:
+Neuer Ablauf:
 
-- `FANr` -> `[FA-Nr]`
-- `Datum` -> `FSKdate`
-- `Farbfehler` -> `Color`
-- `Bemerkung` -> `Bemerkungen`
+1. Unten wird auf `Bearbeiten` geklickt.
+2. `EditEintrag(...)` kopiert den Datensatz in `NeuerEintrag`.
+3. `IsEditMode` wird auf `true` gesetzt.
+4. `SelectedEintragId` markiert die gewaehlte Zeile.
+5. Das Formular oben zeigt den Datensatz im Bearbeitungsmodus.
+6. `SaveEintrag()` ruft beim Speichern `UpdateEintragAsync(...)` auf.
 
-Nach erfolgreichem Insert:
+Damit wird nur genau ein Datensatz aktualisiert:
 
-- es wird ein Activity-Log mit `[Sauberraum]` geschrieben
-- die UI setzt Charge, FA-Nummer, Bemerkung und alle Fehlerzaehler zurueck
-- Auswahldaten wie Kunde, Projekt, Artikel und Dekor bleiben erhalten
-
-## Laden der letzten Eintraege
-
-Die letzten Eintraege werden personalnummerbezogen geladen.
+- `UPDATE dbo.Table1 ... WHERE ID = @ID`
 
 Siehe:
 
-- UI: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:393)
-- Service: [EndkontrolleService.cs](/Data/EndkontrolleService.cs:158)
+- UI: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
+- Service: [EndkontrolleService.cs](/Data/EndkontrolleService.cs:237)
 
-Query-Verhalten:
+## Verhalten nach erfolgreichem Update
 
-- `SELECT TOP 10 ... FROM dbo.Table1 WHERE Personalnummer = @Personalnummer ORDER BY ID DESC`
+Wenn ein Update erfolgreich ist:
 
-Das bedeutet:
+- erscheint eine Erfolgsmeldung
+- die bearbeitete Zeile wird in `RecentEintraege` lokal ersetzt
+- das Formular wird per `ResetForm()` wieder auf Neueingabe gesetzt
+- der Bearbeitungsmodus wird beendet
 
-- jede Person sieht standardmaessig nur die eigenen letzten 10 Eintraege
+Vorteil:
 
-## Inline-Bearbeitung
+- kein doppelter Eintrag
+- kein Voll-Reload der kompletten Liste noetig
 
-Die Tabelle unten verwendet ein einfaches Inline-Editing mit zwei State-Feldern:
+## Historie und Loeschen
 
-- `editingId`
-- `editingField`
+Die letzten Eintraege werden weiterhin personalnummerbezogen geladen:
 
-Siehe:
+- `SELECT TOP 10 ... WHERE Personalnummer = @Personalnummer ORDER BY ID DESC`
 
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:408)
+Loeschen erfolgt weiter ueber:
 
-Ablauf:
+- `DeleteEintragAsync(id, userName)`
 
-1. Klick auf eine Zelle ruft `StartEdit(id, field)` auf.
-2. Das Feld wechselt von Text zu Input.
-3. `onchange` ruft `SaveField(...)` auf.
-4. `SaveField(...)` ruft `UpdateEintragFieldAsync(...)`.
-5. Danach wird die Tabelle neu geladen.
+## Drag-Scroll
 
-Update-Service:
+Fuer die Bedienung auf Notebooks wurde eine Drag-Scroll-Hilfe eingebaut.
 
-- [EndkontrolleService.cs](/Data/EndkontrolleService.cs:212)
+Technisch umgesetzt in:
 
-Delete-Service:
+- `OnAfterRenderAsync()`
+- per `JS.InvokeVoidAsync("eval", ...)`
 
-- [EndkontrolleService.cs](/Data/EndkontrolleService.cs:237)
+Zwei Ebenen werden beruecksichtigt:
 
-## Analyse und Weiterverwendung der Daten
+1. Die Historientabelle selbst
+2. Die uebergeordnete Seite innerhalb des Layout-Scrollcontainers `.content-scrollable`
 
-Die in `dbo.Table1` gespeicherten Endkontrolle-Daten werden spaeter fuer Auswertungen wiederverwendet.
+Ziel:
 
-Technische Stelle:
+- Scrollen ohne exaktes Treffen des Scrollbalkens
+- Ziehen mit gedrueckter Maus statt nur Scrollrad
+- keine Aktivierung auf echten Eingabeelementen wie `input`, `select`, `textarea`, `button`
 
-- [FehleranalyseService.cs](/Data/FehleranalyseService.cs:129)
+## Design-Anpassungen
 
-Dort werden geladen:
+Die aktuelle Version enthaelt bewusst mehr Bedienhilfe und Abstand:
 
-- Fehlerwerte
-- Gutteile
-- Charge
-- Kunde
-- Projekt
-- Artikel
-- Dekor
-- Personalnummer
-- Benutzername aus `LoginDaten`
+- groessere Innenabstaende fuer Eingabefelder
+- Kartenkopf mit eigenem Padding
+- klarere Trennung zwischen Titel und Inhalt
+- besser sichtbarer Bearbeitungsstatus
+- deutlicherer `Bearbeiten`- und `Aktualisieren`-Ablauf
 
-Berechnete Kennzahlen:
+## Historische Hinweise
 
-- `SchlechtIntern`
-- `SchlechtExtern`
-- `Schlechtteile`
-- `Gesamt`
-
-Definiert in:
-
-- [FehleranalyseService.cs](/Data/FehleranalyseService.cs:13)
-
-## Wichtige Besonderheiten
-
-### Historische DB-Namen
-
-Einige DB-Feldnamen sind historisch und nicht 1:1 identisch mit den UI-Begriffen:
+Die Datenbank verwendet weiterhin einige historische Feldnamen:
 
 - `Color` statt `Farbfehler`
 - `Bemerkungen` statt `Bemerkung`
 - `[FA-Nr]` statt `FANr`
 - `FSKdate` statt `Datum`
 
-### Vertauschte Ueberschriften in der UI
+## Relevante technische Besonderheiten
 
-In der Eingabemaske steht links `Externe Fehler` und rechts `Interne Fehler`.
-Inhaltlich wirkt die Zuordnung im Code jedoch umgekehrt:
-
-- links stehen eher interne optische Fehler wie `Fusseln`, `Pickel`, `Dekorfehler`
-- rechts stehen eher externe bzw. prozessbezogene Fehler wie `Oelflecken`, `Tiefziehfehler`, `Fraesfehler`
-
-Siehe:
-
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:97)
-- [FehleranalyseService.cs](/Data/FehleranalyseService.cs:32)
-
-### Feldname bei Farbfehler
-
-Beim Inline-Edit wird fuer Farbfehler der Feldname `Color` direkt verwendet.
-Das ist korrekt fuer die DB, aber in der UI weniger selbsterklaerend.
-
-Siehe:
-
-- [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:258)
-
-### Update per Feldname
-
-`UpdateEintragFieldAsync()` baut das SQL mit dem Feldnamen direkt zusammen:
-
-```csharp
-string q = $"UPDATE dbo.Table1 SET [{field}] = @value WHERE ID = @ID";
-```
-
-Aktuell funktioniert das, weil die UI feste Feldnamen uebergibt.
-Technisch bleibt das aber nur sicher, solange keine freien oder unkontrollierten Feldnamen uebergeben werden.
-
-Siehe:
-
-- [EndkontrolleService.cs](/Data/EndkontrolleService.cs:220)
-
-## Empfehlenswerte Erweiterungen fuer spaeter
-
-- Feldnamen zentral als Mapping definieren statt als freie Strings
-- Interne und externe Fehler in der UI eindeutig und fachlich korrekt beschriften
-- Pflichtfelder serverseitig zusaetzlich validieren
-- Erfolgsmeldungen im UI moderner statt ueber `alert()` anzeigen
-- Optional Summen fuer Schlecht intern, Schlecht extern und Gesamt direkt in der Eingabeseite anzeigen
+- Die Seite scrollt im Layout nicht ueber `body`, sondern ueber `.content-scrollable` in [MainLayout.razor](/Components/Layout/MainLayout.razor:1).
+- Deshalb muss auch die Drag-Scroll-Logik an den Layout-Scrollcontainer gebunden werden.
+- Die Tabellenzeile bleibt lokal markiert ueber `SelectedEintragId`.
+- Das Formular arbeitet im Edit-Fall mit einer geklonten Instanz ueber `CloneEintrag(...)`.

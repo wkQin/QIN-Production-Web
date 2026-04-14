@@ -22,14 +22,19 @@ Mit dieser Maske wird dokumentiert:
 
 ## Aufbau der Seite
 
-Die Seite besteht aus zwei Bereichen:
+Die Seite besteht aus mehreren klar getrennten Bereichen:
 
 1. Auftragsdaten
 2. Fehlersammelkarte
+3. Hinweise zur Bedienung
+4. Letzte Eintraege
 
-Unterhalb davon gibt es noch eine Tabelle:
+Neu in der aktuellen Version:
 
-- Letzte Eintraege bearbeiten
+- Die Seite ist optisch einfacher und besser lesbar aufgebaut.
+- Oben gibt es direkte Hinweise, wie neue Eintraege gespeichert oder alte Eintraege bearbeitet werden.
+- Unten koennen Eintraege ueber einen klaren `Bearbeiten`-Button geoeffnet werden.
+- In grossen Listen kann jetzt mit gedrueckter Maustaste gezogen werden, damit nicht genau der Scrollbalken getroffen werden muss.
 
 ## Auftragsdaten ausfuellen
 
@@ -80,6 +85,25 @@ Wenn ein Fehler nicht vorhanden ist:
 
 - Feld auf `0` lassen
 
+## Hinweise direkt in der Seite
+
+Im oberen Bereich steht jetzt eine kurze Anleitung.
+
+Damit ist sofort sichtbar:
+
+- wie neue Eintraege gespeichert werden
+- wie bestehende Eintraege bearbeitet werden
+- wann gerade ein Bearbeitungsmodus aktiv ist
+
+Wenn ein alter Eintrag bearbeitet wird, erscheint oben ein deutlich sichtbarer Hinweis:
+
+- `Bearbeitungsmodus aktiv`
+
+Zusatz:
+
+- Der ausgewaehlte Eintrag wird unten markiert.
+- Oben kann dann weitergearbeitet werden.
+
 ## Speichern
 
 Zum Speichern unten auf `Speichern` klicken.
@@ -98,9 +122,8 @@ Wenn eine dieser Angaben fehlt, erscheint eine Meldung und der Eintrag wird nich
 Wenn das Speichern erfolgreich war:
 
 - erscheint eine kurze Erfolgsmeldung
-- Charge, FA-Nummer und Bemerkung werden geleert
-- alle Fehlerzahlen und Gutteile werden auf `0` gesetzt
-- die Liste der letzten Eintraege wird neu geladen
+- das Formular wird wieder fuer eine neue Erfassung vorbereitet
+- die Liste der letzten Eintraege wird aktualisiert
 
 Kunde, Projekt, Artikel und Dekor bleiben dabei erhalten. Das ist praktisch, wenn mehrere Karten fuer denselben Auftrag erfasst werden.
 
@@ -111,13 +134,20 @@ Im unteren Bereich werden die letzten 10 Eintraege der angemeldeten Personalnumm
 Moeglich ist dort:
 
 - Eintrag loeschen
-- Werte direkt in der Tabelle aendern
+- Eintrag zum Bearbeiten oben laden
 
-So funktioniert das Aendern:
+So funktioniert das Bearbeiten jetzt:
 
-1. Auf die gewuenschte Zelle klicken.
-2. Den neuen Wert eingeben.
-3. Mit `Enter` oder durch Verlassen des Feldes speichern.
+1. Unten auf `Bearbeiten` klicken.
+2. Der Eintrag wird oben in das Formular geladen.
+3. Werte oben anpassen.
+4. Auf `Aktualisieren` klicken.
+
+Wichtig:
+
+- Es wird nur der ausgewaehlte Eintrag aktualisiert.
+- Es wird kein neuer doppelter Eintrag erzeugt.
+- Mit `Abbrechen` oder `Neue Erfassung starten` kann der Bearbeitungsmodus verlassen werden.
 
 ## Loeschen
 
@@ -138,15 +168,38 @@ Vor dem Loeschen kommt eine Sicherheitsabfrage.
 9. Speichern.
 10. Falls noetig den Eintrag unten noch einmal kontrollieren oder korrigieren.
 
+Wenn ein alter Eintrag geaendert werden soll:
+
+1. Unten auf `Bearbeiten` klicken.
+2. Oben die noetigen Felder aendern.
+3. Auf `Aktualisieren` klicken.
+
+## Scrollen mit der Maus
+
+Vor allem auf Notebooks ist der Scrollbalken oft schwer zu treffen.
+
+Darum gilt jetzt:
+
+- Im unteren Tabellenbereich kann mit gedrueckter linker Maustaste gezogen werden.
+- Dabei bewegt sich die Liste mit der Maus.
+- So kann leichter nach unten oder zur Seite gescrollt werden.
+
+Das ist hilfreich:
+
+- wenn viele Spalten sichtbar sind
+- wenn der Scrollbalken zu klein ist
+- wenn mit Touchpad oder Notebook-Maus gearbeitet wird
+
 ## Hinweise fuer den Betrieb
 
 - Zahlen immer als Stueckzahl eintragen.
 - Leere Fehlerfelder am besten als `0` belassen.
 - Bei unklaren Zuordnungen zuerst Kunde, Projekt, Artikel und Dekor pruefen.
 - Wenn mehrere Karten nacheinander fuer denselben Auftrag erfasst werden, spart die bestehende Vorauswahl Zeit.
+- Fuer Korrekturen immer den `Bearbeiten`-Button unten verwenden.
 
 ## Relevante Code-Stellen
 
-- Seitenaufbau und Eingabefelder: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:20)
-- Speichern und Pflichtfeld-Pruefung: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:363)
-- Letzte Eintraege und Inline-Bearbeitung: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:169)
+- Seitenaufbau und Bedienhinweise: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
+- Speichern und Aktualisieren: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)
+- Letzte Eintraege und Bearbeiten-Button: [Endkontrolle.razor](/Components/Pages/Fertigung/Endkontrolle.razor:1)

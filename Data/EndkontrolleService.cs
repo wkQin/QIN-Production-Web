@@ -234,6 +234,80 @@ namespace QIN_Production_Web.Data
             } catch (Exception ex) { return (false, ex.Message); }
         }
 
+        public static async Task<(bool Success, string Message)> UpdateEintragAsync(EndkontrolleEintrag e, string userName)
+        {
+            try
+            {
+                using (var con = new SqlConnection(SqlManager.connectionString))
+                {
+                    await con.OpenAsync();
+                    string q = @"UPDATE dbo.Table1 SET
+                                    Kunde = @kunde,
+                                    Projekt = @projekt,
+                                    Artikel = @artikel,
+                                    Dekor = @dekor,
+                                    Charge = @charge,
+                                    FSKdate = @FSKdate,
+                                    Gutteile = @gutteile,
+                                    Fusseln = @fusseln,
+                                    Nadelstiche = @nadelstiche,
+                                    Pickel = @pickel,
+                                    Dekorfehler = @dekorfehler,
+                                    Color = @color,
+                                    Flecken = @flecken,
+                                    Nebel = @nebel,
+                                    Vertiefung = @vertiefung,
+                                    Oelflecken = @oelflecken,
+                                    Tiefziehfehler = @tiefziehfehler,
+                                    Fraesfehler = @fraesfehler,
+                                    Knicke = @knicke,
+                                    Kratzer = @kratzer,
+                                    Personalnummer = @personalnummer,
+                                    [FA-Nr] = @FANr,
+                                    Bemerkungen = @bemerkungen
+                                 WHERE ID = @ID";
+
+                    using (var cmd = new SqlCommand(q, con))
+                    {
+                        cmd.Parameters.AddWithValue("@ID", e.ID);
+                        cmd.Parameters.AddWithValue("@kunde", e.Kunde);
+                        cmd.Parameters.AddWithValue("@projekt", e.Projekt);
+                        cmd.Parameters.AddWithValue("@artikel", e.Artikel);
+                        cmd.Parameters.AddWithValue("@dekor", e.Dekor);
+                        cmd.Parameters.AddWithValue("@charge", e.Charge);
+                        cmd.Parameters.AddWithValue("@FSKdate", e.Datum.ToString("yyyy-MM-dd"));
+                        cmd.Parameters.AddWithValue("@gutteile", e.Gutteile);
+                        cmd.Parameters.AddWithValue("@fusseln", e.Fusseln);
+                        cmd.Parameters.AddWithValue("@nadelstiche", e.Nadelstiche);
+                        cmd.Parameters.AddWithValue("@pickel", e.Pickel);
+                        cmd.Parameters.AddWithValue("@dekorfehler", e.Dekorfehler);
+                        cmd.Parameters.AddWithValue("@color", e.Farbfehler);
+                        cmd.Parameters.AddWithValue("@flecken", e.Flecken);
+                        cmd.Parameters.AddWithValue("@nebel", e.Nebel);
+                        cmd.Parameters.AddWithValue("@vertiefung", e.Vertiefung);
+                        cmd.Parameters.AddWithValue("@oelflecken", e.Oelflecken);
+                        cmd.Parameters.AddWithValue("@tiefziehfehler", e.Tiefziehfehler);
+                        cmd.Parameters.AddWithValue("@fraesfehler", e.Fraesfehler);
+                        cmd.Parameters.AddWithValue("@knicke", e.Knicke);
+                        cmd.Parameters.AddWithValue("@kratzer", e.Kratzer);
+                        cmd.Parameters.AddWithValue("@personalnummer", e.Personalnummer);
+                        cmd.Parameters.AddWithValue("@FANr", e.FANr);
+                        cmd.Parameters.AddWithValue("@bemerkungen", e.Bemerkung);
+
+                        int affected = await cmd.ExecuteNonQueryAsync();
+                        if (affected > 0)
+                        {
+                            await ActivityLogService.InsertLogAsync(userName, $"[Sauberraum] Fehlersammelkarte ID {e.ID} wurde aktualisiert. Charge: {e.Charge}");
+                            return (true, "Aktualisiert");
+                        }
+
+                        return (false, "Eintrag nicht gefunden.");
+                    }
+                }
+            }
+            catch (Exception ex) { return (false, ex.Message); }
+        }
+
         public static async Task<(bool Success, string Message)> DeleteEintragAsync(int id, string userName)
         {
             try

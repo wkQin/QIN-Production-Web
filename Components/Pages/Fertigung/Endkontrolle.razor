@@ -7,299 +7,297 @@
 
 <PageTitle>Endkontrolle Erfassung - Sauberraum</PageTitle>
 
-<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
-    <div>
-        <div class="d-flex align-items-center gap-2">
-            <h2 class="mb-0">Endkontrolle Erfassung</h2>
-            <span class="badge bg-info text-dark fw-bold px-3 py-2" style="font-size: 0.75rem; letter-spacing: 1px;">SAUBERRAUM</span>
-        </div>
-        <p class="text-secondary mt-1">Fehlersammelkarte & Auftragsdaten</p>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <!-- Left Column: Metadata & Quick Select -->
-    <div class="col-md-4">
-
-
-        <div class="content-card">
-            <div class="card-header-flex">
-                <h4>Auftragsdaten</h4>
+<div id="endkontrollePageDragSurface" class="endkontrolle-page">
+    <div class="dashboard-header end-header mb-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+        <div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <h2 class="mb-0">Endkontrolle Erfassung</h2>
+                <span class="badge end-badge-room">SAUBERRAUM</span>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Charge</label>
-                    <input type="text" class="form-control dark-input" @bind="NeuerEintrag.Charge" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-secondary">FA-Nummer</label>
-                    <input type="text" class="form-control dark-input" @bind="NeuerEintrag.FANr" />
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Kunde</label>
-                    <select class="form-select dark-input" value="@NeuerEintrag.Kunde" @onchange="OnKundeChanged">
-                         <option value=""></option>
-                         @foreach(var k in Kunden) {
-                             <option value="@k.Name" style="@(k.IsActive ? "" : "color: var(--color15); font-style: italic;")">
-                                 @k.Name @(k.IsActive ? "" : "(Inaktiv)")
-                             </option>
-                         }
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Projekt</label>
-                    <select class="form-select dark-input" value="@NeuerEintrag.Projekt" @onchange="OnProjektChanged">
-                         <option value=""></option>
-                         @foreach(var p in Projekte) { <option value="@p">@p</option> }
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Artikel</label>
-                    <select class="form-select dark-input" @bind="NeuerEintrag.Artikel">
-                         <option value=""></option>
-                         @foreach(var a in ArtikelListe) { <option value="@a">@a</option> }
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Dekor</label>
-                    <select class="form-select dark-input" @bind="NeuerEintrag.Dekor">
-                         <option value=""></option>
-                         @foreach(var d in DekorListe) { <option value="@d">@d</option> }
-                    </select>
-                </div>
-                 <div class="mb-4">
-                    <label class="form-label text-secondary">Bemerkung</label>
-                    <input type="text" class="form-control dark-input" @bind="NeuerEintrag.Bemerkung" />
-                </div>
-            </div>
+            <p class="text-secondary mt-2 mb-0">Fehlersammelkarte schnell und verst&auml;ndlich erfassen oder vorhandene Eintr&auml;ge &auml;ndern.</p>
         </div>
+
+        @if (IsEditMode)
+        {
+            <div class="edit-mode-pill">
+                <div class="fw-bold">Bearbeitungsmodus aktiv</div>
+                <div class="small text-secondary">Sie bearbeiten gerade Eintrag ID @NeuerEintrag.ID.</div>
+                <button class="btn btn-light btn-sm mt-2" @onclick="ResetForm">Neue Erfassung starten</button>
+            </div>
+        }
     </div>
 
-    <!-- Right Column: Fehlersammelkarte -->
-    <div class="col-md-8">
-        <div class="content-card h-100 d-flex flex-column">
-             <div class="card-header-flex">
-                <h4>Fehlersammelkarte</h4>
+    <div class="end-hint-card mb-4">
+        <div class="end-hint-title">So funktioniert es</div>
+        @if (IsEditMode)
+        {
+            <div class="end-hint-text">
+                1. Unten ist der ausgew&auml;hlte Eintrag markiert.
+                2. Oben Werte anpassen.
+                3. Auf <strong>Aktualisieren</strong> klicken.
             </div>
-            <div class="card-body">
-                
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Datum</label>
-                        <input type="date" class="form-control dark-input form-control-lg" @bind="NeuerEintrag.Datum" />
-                    </div>
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary fw-bold text-success">Gutteile</label>
-                        <input type="number" class="form-control dark-input form-control-lg text-success fw-bold" @bind="NeuerEintrag.Gutteile" />
-                    </div>
+        }
+        else
+        {
+            <div class="end-hint-text">
+                1. F&uuml;r neuen Eintrag Formular oben ausf&uuml;llen und <strong>Speichern</strong> klicken.
+                2. F&uuml;r &Auml;nderungen unten auf <strong>Bearbeiten</strong> klicken.
+            </div>
+        }
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-4">
+            <div class="content-card end-card h-100">
+                <div class="card-header-flex end-card-header">
+                    <h4>Auftragsdaten</h4>
                 </div>
-
-                <div class="row g-4">
-                    <!-- Interne Fehler -->
-                    <div class="col-md-6">
-                        <h5 class="text-secondary mb-3 border-bottom border-secondary pb-2">Externe Fehler</h5>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Fusseln</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Fusseln" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Nadelstiche</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Nadelstiche" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Pickel</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Pickel" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Dekorfehler</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Dekorfehler" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Farbfehler</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Farbfehler" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Flecken</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Flecken" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Nebel</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Nebel" />
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Vertiefung</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Vertiefung" />
-                        </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label end-label">Charge</label>
+                        <input type="text" class="form-control dark-input end-input" @bind="NeuerEintrag.Charge" placeholder="Charge eingeben" />
                     </div>
-
-                    <!-- Externe Fehler -->
-                    <div class="col-md-6">
-                         <h5 class="text-secondary mb-3 border-bottom border-secondary pb-2">Interne Fehler</h5>
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Ölflecken</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Oelflecken" />
-                        </div>
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Tiefziehfehler/Blasen</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Tiefziehfehler" />
-                        </div>
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Fräs-/Stanzfehler</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Fraesfehler" />
-                        </div>
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Knicke/Weißbr.</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Knicke" />
-                        </div>
-                         <div class="d-flex justify-content-between align-items-center mb-2">
-                             <span class="text-light">Kratzer</span>
-                             <input type="number" class="form-control text-center dark-input w-25" @bind="NeuerEintrag.Kratzer" />
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label end-label">FA-Nummer</label>
+                        <input type="text" class="form-control dark-input end-input" @bind="NeuerEintrag.FANr" placeholder="FA-Nummer eingeben" />
                     </div>
-                </div>
-
-                <div class="mt-4 pt-4 border-top border-secondary text-end">
-                     <button class="btn btn-primary px-5 py-2 fw-bold" @onclick="SaveEintrag"><i class="fa-solid fa-save me-2"></i>Speichern</button>
+                    <div class="mb-3">
+                        <label class="form-label end-label">Kunde</label>
+                        <select class="form-select dark-input end-input" value="@NeuerEintrag.Kunde" @onchange="OnKundeChanged">
+                            <option value="">Bitte ausw&auml;hlen</option>
+                            @foreach (var k in Kunden)
+                            {
+                                <option value="@k.Name" style="@(k.IsActive ? "" : "color: var(--color15); font-style: italic;")">
+                                    @k.Name @(k.IsActive ? "" : "(Inaktiv)")
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label end-label">Projekt</label>
+                        <select class="form-select dark-input end-input" value="@NeuerEintrag.Projekt" @onchange="OnProjektChanged">
+                            <option value="">Bitte ausw&auml;hlen</option>
+                            @foreach (var p in Projekte)
+                            {
+                                <option value="@p">@p</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label end-label">Artikel</label>
+                        <select class="form-select dark-input end-input" @bind="NeuerEintrag.Artikel">
+                            <option value="">Bitte ausw&auml;hlen</option>
+                            @foreach (var a in ArtikelListe)
+                            {
+                                <option value="@a">@a</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label end-label">Dekor</label>
+                        <select class="form-select dark-input end-input" @bind="NeuerEintrag.Dekor">
+                            <option value="">Bitte ausw&auml;hlen</option>
+                            @foreach (var d in DekorListe)
+                            {
+                                <option value="@d">@d</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label end-label">Bemerkung</label>
+                        <input type="text" class="form-control dark-input end-input" @bind="NeuerEintrag.Bemerkung" placeholder="Optionaler Hinweis" />
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="content-card mb-4">
-    <div class="card-header-flex">
-        <h4>Letzte Einträge bearbeiten</h4>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="LoadRecentEintraege"><i class="fa-solid fa-arrows-rotate"></i></button>
+        <div class="col-lg-8">
+            <div class="content-card end-card h-100 d-flex flex-column">
+                <div class="card-header-flex end-card-header">
+                    <h4>Fehlersammelkarte</h4>
+                    <span class="end-section-note">Bitte alle Werte sorgf&auml;ltig pr&uuml;fen</span>
+                </div>
+
+                <div class="card-body">
+                    @if (IsEditMode)
+                    {
+                        <div class="edit-banner mb-4">
+                            <div class="fw-bold">Eintrag wird bearbeitet</div>
+                            <div>Nach der Anpassung bitte unten auf <strong>Aktualisieren</strong> klicken.</div>
+                        </div>
+                    }
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label end-label">Datum</label>
+                            <input type="date" class="form-control dark-input end-input end-input-lg" @bind="NeuerEintrag.Datum" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label end-label text-success">Gutteile</label>
+                            <input type="number" class="form-control dark-input end-input end-input-lg end-good-input" @bind="NeuerEintrag.Gutteile" />
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="error-box">
+                                <h5>Externe Fehler</h5>
+                                <div class="error-row">
+                                    <span>Fusseln</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Fusseln" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Nadelstiche</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Nadelstiche" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Pickel</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Pickel" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Dekorfehler</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Dekorfehler" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Farbfehler</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Farbfehler" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Flecken</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Flecken" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Nebel</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Nebel" />
+                                </div>
+                                <div class="error-row mb-0">
+                                    <span>Vertiefung</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Vertiefung" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="error-box">
+                                <h5>Interne Fehler</h5>
+                                <div class="error-row">
+                                    <span>&Ouml;lflecken</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Oelflecken" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Tiefziehfehler / Blasen</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Tiefziehfehler" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Fr&auml;s- / Stanzfehler</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Fraesfehler" />
+                                </div>
+                                <div class="error-row">
+                                    <span>Knicke / Wei&szlig;bruch</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Knicke" />
+                                </div>
+                                <div class="error-row mb-0">
+                                    <span>Kratzer</span>
+                                    <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Kratzer" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-4 border-top border-secondary text-end d-flex flex-column flex-sm-row justify-content-end gap-2">
+                        @if (IsEditMode)
+                        {
+                            <button class="btn btn-outline-light px-4 py-2 fw-bold" @onclick="ResetForm">Abbrechen</button>
+                        }
+                        <button class="btn end-save-btn px-5 py-2 fw-bold" @onclick="SaveEintrag">
+                            <i class="fa-solid fa-save me-2"></i>@(IsEditMode ? "Aktualisieren" : "Speichern")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="table-responsive" style="max-height: 400px; overflow-y:auto;">
-        <table class="table table-dark table-hover custom-table mb-0">
-            <thead style="position: sticky; top:0; background: var(--panel-color); z-index: 1;">
-                <tr>
-                    <th>ID</th>
-                    <th>Löschen</th>
-                    <th style="min-width: 100px;">Charge</th>
-                    <th style="min-width: 100px;">FA-Nr</th>
-                    <th>Kunde</th>
-                    <th>Projekt</th>
-                    <th style="min-width: 200px;">Artikel</th>
-                    <th>Dekor</th>
-                    <th class="text-success">Gutteile</th>
-                    <th>Fusseln</th>
-                    <th>Nadelst.</th>
-                    <th>Pickel</th>
-                    <th>Dekorf.</th>
-                    <th>Farbf.</th>
-                    <th>Flecken</th>
-                    <th>Nebel</th>
-                    <th>Vertief.</th>
-                    <th>Ölfleck.</th>
-                    <th>Tiefzieh.</th>
-                    <th>Fräs.</th>
-                    <th>Knicke</th>
-                    <th>Kratzer</th>
-                    <th>Bemerkung</th>
-                </tr>
-            </thead>
-            <tbody>
-                @if(RecentEintraege.Count == 0) {
-                    <tr><td colspan="23" class="text-muted text-center py-3">Keine Datensätze vorhanden</td></tr>
-                }
-                @foreach(var e in RecentEintraege)
-                {
+
+    <div class="content-card end-card mb-4">
+        <div class="card-header-flex end-card-header flex-column flex-lg-row align-items-lg-center gap-2">
+            <div>
+                <h4 class="mb-1">Letzte Eintr&auml;ge</h4>
+                <div class="text-secondary small">Zum Bearbeiten bitte auf den Button <strong>Bearbeiten</strong> klicken.</div>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="LoadRecentEintraege"><i class="fa-solid fa-arrows-rotate me-1"></i>Neu laden</button>
+        </div>
+
+        <div id="endkontrolleScrollArea" class="table-responsive drag-scroll-area" style="max-height: 420px; overflow-y:auto;">
+            <table class="table table-dark table-hover custom-table mb-0 end-table">
+                <thead style="position: sticky; top:0; z-index: 1;">
                     <tr>
-                        <td>@e.ID</td>
-                        <td>
-                            <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteEintrag(e.ID)"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Charge")'>
-                            @if(IsEditing(e.ID, "Charge")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Charge" @onchange='(args) => SaveField(e.ID, "Charge", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Charge")' autofocus /> }
-                            else { <span>@e.Charge</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "FA-Nr")'>
-                            @if(IsEditing(e.ID, "FA-Nr")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.FANr" @onchange='(args) => SaveField(e.ID, "FA-Nr", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "FA-Nr")' autofocus /> }
-                            else { <span>@e.FANr</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Kunde")'>
-                            @if(IsEditing(e.ID, "Kunde")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Kunde" @onchange='(args) => SaveField(e.ID, "Kunde", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Kunde")' autofocus /> }
-                            else { <span>@e.Kunde</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Projekt")'>
-                            @if(IsEditing(e.ID, "Projekt")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Projekt" @onchange='(args) => SaveField(e.ID, "Projekt", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Projekt")' autofocus /> }
-                            else { <span>@e.Projekt</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Artikel")'>
-                            @if(IsEditing(e.ID, "Artikel")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Artikel" @onchange='(args) => SaveField(e.ID, "Artikel", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Artikel")' autofocus /> }
-                            else { <span>@e.Artikel</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Dekor")'>
-                            @if(IsEditing(e.ID, "Dekor")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Dekor" @onchange='(args) => SaveField(e.ID, "Dekor", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Dekor")' autofocus /> }
-                            else { <span>@e.Dekor</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Gutteile")' class="text-success fw-bold">
-                            @if(IsEditing(e.ID, "Gutteile")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Gutteile" @onchange='(args) => SaveField(e.ID, "Gutteile", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Gutteile")' autofocus /> }
-                            else { <span>@e.Gutteile</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Fusseln")'>
-                            @if(IsEditing(e.ID, "Fusseln")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Fusseln" @onchange='(args) => SaveField(e.ID, "Fusseln", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Fusseln")' autofocus /> }
-                            else { <span>@e.Fusseln</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Nadelstiche")'>
-                            @if(IsEditing(e.ID, "Nadelstiche")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Nadelstiche" @onchange='(args) => SaveField(e.ID, "Nadelstiche", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Nadelstiche")' autofocus /> }
-                            else { <span>@e.Nadelstiche</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Pickel")'>
-                            @if(IsEditing(e.ID, "Pickel")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Pickel" @onchange='(args) => SaveField(e.ID, "Pickel", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Pickel")' autofocus /> }
-                            else { <span>@e.Pickel</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Dekorfehler")'>
-                            @if(IsEditing(e.ID, "Dekorfehler")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Dekorfehler" @onchange='(args) => SaveField(e.ID, "Dekorfehler", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Dekorfehler")' autofocus /> }
-                            else { <span>@e.Dekorfehler</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Color")'>
-                            @if(IsEditing(e.ID, "Color")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Farbfehler" @onchange='(args) => SaveField(e.ID, "Color", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Color")' autofocus /> }
-                            else { <span>@e.Farbfehler</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Flecken")'>
-                            @if(IsEditing(e.ID, "Flecken")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Flecken" @onchange='(args) => SaveField(e.ID, "Flecken", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Flecken")' autofocus /> }
-                            else { <span>@e.Flecken</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Nebel")'>
-                            @if(IsEditing(e.ID, "Nebel")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Nebel" @onchange='(args) => SaveField(e.ID, "Nebel", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Nebel")' autofocus /> }
-                            else { <span>@e.Nebel</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Vertiefung")'>
-                            @if(IsEditing(e.ID, "Vertiefung")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Vertiefung" @onchange='(args) => SaveField(e.ID, "Vertiefung", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Vertiefung")' autofocus /> }
-                            else { <span>@e.Vertiefung</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Oelflecken")'>
-                            @if(IsEditing(e.ID, "Oelflecken")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Oelflecken" @onchange='(args) => SaveField(e.ID, "Oelflecken", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Oelflecken")' autofocus /> }
-                            else { <span>@e.Oelflecken</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Tiefziehfehler")'>
-                            @if(IsEditing(e.ID, "Tiefziehfehler")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Tiefziehfehler" @onchange='(args) => SaveField(e.ID, "Tiefziehfehler", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Tiefziehfehler")' autofocus /> }
-                            else { <span>@e.Tiefziehfehler</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Fraesfehler")'>
-                            @if(IsEditing(e.ID, "Fraesfehler")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Fraesfehler" @onchange='(args) => SaveField(e.ID, "Fraesfehler", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Fraesfehler")' autofocus /> }
-                            else { <span>@e.Fraesfehler</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Knicke")'>
-                            @if(IsEditing(e.ID, "Knicke")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Knicke" @onchange='(args) => SaveField(e.ID, "Knicke", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Knicke")' autofocus /> }
-                            else { <span>@e.Knicke</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Kratzer")'>
-                            @if(IsEditing(e.ID, "Kratzer")) { <input type="number" class="form-control form-control-sm border-primary" value="@e.Kratzer" @onchange='(args) => SaveField(e.ID, "Kratzer", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Kratzer")' autofocus /> }
-                            else { <span>@e.Kratzer</span> }
-                        </td>
-                        <td @onclick='() => StartEdit(e.ID, "Bemerkungen")'>
-                            @if(IsEditing(e.ID, "Bemerkungen")) { <input type="text" class="form-control form-control-sm border-primary" value="@e.Bemerkung" @onchange='(args) => SaveField(e.ID, "Bemerkungen", args.Value)' @onkeypress='(args) => HandleKeyPress(args, e.ID, "Bemerkungen")' autofocus /> }
-                            else { <span>@e.Bemerkung</span> }
-                        </td>
+                        <th>ID</th>
+                        <th>Aktion</th>
+                        <th>L&ouml;schen</th>
+                        <th style="min-width: 100px;">Charge</th>
+                        <th style="min-width: 100px;">FA-Nr</th>
+                        <th>Kunde</th>
+                        <th>Projekt</th>
+                        <th style="min-width: 200px;">Artikel</th>
+                        <th>Dekor</th>
+                        <th class="text-success">Gutteile</th>
+                        <th>Fusseln</th>
+                        <th>Nadelst.</th>
+                        <th>Pickel</th>
+                        <th>Dekorf.</th>
+                        <th>Farbf.</th>
+                        <th>Flecken</th>
+                        <th>Nebel</th>
+                        <th>Vertief.</th>
+                        <th>&Ouml;lfleck.</th>
+                        <th>Tiefzieh.</th>
+                        <th>Fr&auml;s.</th>
+                        <th>Knicke</th>
+                        <th>Kratzer</th>
+                        <th>Bemerkung</th>
                     </tr>
-                }
-            </tbody>
-        </table>
-         <p class="text-muted small mt-2"><i class="fa-solid fa-circle-info me-1"></i>Klicken Sie auf eine Zelle, um diese direkt zu bearbeiten. Änderungen werden beim Verlassen oder mit [Enter] gespeichert.</p>
+                </thead>
+                <tbody>
+                    @if (RecentEintraege.Count == 0)
+                    {
+                        <tr><td colspan="24" class="text-muted text-center py-3">Keine Datens&auml;tze vorhanden</td></tr>
+                    }
+                    @foreach (var e in RecentEintraege)
+                    {
+                        <tr class="@(SelectedEintragId == e.ID ? "end-row-selected" : "")">
+                            <td class="fw-bold">#@e.ID</td>
+                            <td>
+                                <button class="btn btn-sm end-edit-btn" @onclick="() => EditEintrag(e)">Bearbeiten</button>
+                            </td>
+                            <td>
+                                <button class="btn btn-sm btn-link text-danger" @onclick="() => DeleteEintrag(e.ID)"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                            <td>@e.Charge</td>
+                            <td>@e.FANr</td>
+                            <td>@e.Kunde</td>
+                            <td>@e.Projekt</td>
+                            <td>@e.Artikel</td>
+                            <td>@e.Dekor</td>
+                            <td class="text-success fw-bold">@e.Gutteile</td>
+                            <td>@e.Fusseln</td>
+                            <td>@e.Nadelstiche</td>
+                            <td>@e.Pickel</td>
+                            <td>@e.Dekorfehler</td>
+                            <td>@e.Farbfehler</td>
+                            <td>@e.Flecken</td>
+                            <td>@e.Nebel</td>
+                            <td>@e.Vertiefung</td>
+                            <td>@e.Oelflecken</td>
+                            <td>@e.Tiefziehfehler</td>
+                            <td>@e.Fraesfehler</td>
+                            <td>@e.Knicke</td>
+                            <td>@e.Kratzer</td>
+                            <td>@e.Bemerkung</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -311,82 +309,238 @@
     private List<EndkontrolleEintrag> RecentEintraege = new();
     private string UserPersonalnummer = "100";
     private string ActualUserName = "Unbekannt";
-    private EndkontrolleEintrag NeuerEintrag = new EndkontrolleEintrag();
+    private EndkontrolleEintrag NeuerEintrag = new();
+    private bool IsEditMode;
+    private int? SelectedEintragId;
 
     protected override async Task OnInitializedAsync()
     {
-        // Proper await for auth state to ensure we have the correct user
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
-        
-        ActualUserName = user?.Identity?.Name ?? "Unbekannt";
-        
-        // Extract Personalnummer from "UserId" claim, fallback to UserService default if not found
-        UserPersonalnummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? UserService.Personalnummer;
-        
-        NeuerEintrag.Personalnummer = UserPersonalnummer;
 
+        ActualUserName = user?.Identity?.Name ?? "Unbekannt";
+        UserPersonalnummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? UserService.Personalnummer;
+
+        ResetForm();
         Kunden = await EndkontrolleService.GetCustomersAsync();
         await LoadRecentEintraege();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                window.endkontrolleDragScroll = window.endkontrolleDragScroll || {
+                    initPage: function (rootId) {
+                        const root = document.getElementById(rootId);
+                        if (!root || root.dataset.pageDragReady === '1') return;
+
+                        root.dataset.pageDragReady = '1';
+
+                        let isDown = false;
+                        let startX = 0;
+                        let startY = 0;
+                        let scrollLeft = 0;
+                        let scrollTop = 0;
+
+                        const blockedSelector = 'button, input, select, textarea, a, label, option';
+                        const scroller = root.closest('.content-scrollable') || document.scrollingElement || document.documentElement;
+
+                        const stop = () => {
+                            isDown = false;
+                            root.classList.remove('page-dragging');
+                            document.body.classList.remove('drag-scroll-lock');
+                        };
+
+                        const preventSelection = (e) => {
+                            if (isDown) e.preventDefault();
+                        };
+
+                        const onMove = (e) => {
+                            if (!isDown) return;
+                            e.preventDefault();
+                            scroller.scrollTop = scrollTop - (e.pageY - startY);
+                        };
+
+                        root.addEventListener('mousedown', (e) => {
+                            if (e.button !== 0) return;
+                            if (e.target.closest(blockedSelector)) return;
+                            if (e.target.closest('.drag-scroll-area')) return;
+
+                            isDown = true;
+                            startX = e.pageX;
+                            startY = e.pageY;
+                            scrollLeft = scroller.scrollLeft;
+                            scrollTop = scroller.scrollTop;
+                            root.classList.add('page-dragging');
+                            document.body.classList.add('drag-scroll-lock');
+                            e.preventDefault();
+                        });
+
+                        document.addEventListener('mousemove', onMove);
+                        document.addEventListener('mouseup', stop);
+                        document.addEventListener('selectstart', preventSelection);
+                    },
+
+                    init: function (elementId) {
+                        const el = document.getElementById(elementId);
+                        if (!el || el.dataset.dragScrollReady === '1') return;
+
+                        el.dataset.dragScrollReady = '1';
+
+                        let isDown = false;
+                        let startX = 0;
+                        let startY = 0;
+                        let scrollLeft = 0;
+                        let scrollTop = 0;
+                        let moved = false;
+
+                        const blockedSelector = 'button, input, select, textarea, a, label';
+
+                        const preventSelection = (e) => {
+                            if (isDown) {
+                                e.preventDefault();
+                            }
+                        };
+
+                        const stop = () => {
+                            isDown = false;
+                            moved = false;
+                            el.classList.remove('dragging');
+                            document.body.classList.remove('drag-scroll-lock');
+                        };
+
+                        const onPointerMove = (e) => {
+                            if (!isDown) return;
+                            e.preventDefault();
+                            moved = true;
+                            const pageX = e.pageX ?? (e.touches && e.touches[0] ? e.touches[0].pageX : 0);
+                            const pageY = e.pageY ?? (e.touches && e.touches[0] ? e.touches[0].pageY : 0);
+                            el.scrollLeft = scrollLeft - (pageX - startX);
+                            el.scrollTop = scrollTop - (pageY - startY);
+                        };
+
+                        const startDrag = (pageX, pageY, target) => {
+                            if (target && target.closest && target.closest(blockedSelector)) return;
+                            isDown = true;
+                            moved = false;
+                            startX = pageX;
+                            startY = pageY;
+                            scrollLeft = el.scrollLeft;
+                            scrollTop = el.scrollTop;
+                            el.classList.add('dragging');
+                            document.body.classList.add('drag-scroll-lock');
+                        };
+
+                        el.addEventListener('mousedown', (e) => {
+                            if (e.button !== 0) return;
+                            startDrag(e.pageX, e.pageY, e.target);
+                            if (isDown) {
+                                e.preventDefault();
+                            }
+                        });
+
+                        document.addEventListener('mousemove', onPointerMove);
+                        document.addEventListener('mouseup', stop);
+                        document.addEventListener('selectstart', preventSelection);
+                        el.addEventListener('dragstart', preventSelection);
+
+                        el.addEventListener('touchstart', (e) => {
+                            const touch = e.touches && e.touches[0];
+                            if (!touch) return;
+                            startDrag(touch.pageX, touch.pageY, e.target);
+                        }, { passive: true });
+
+                        document.addEventListener('touchmove', onPointerMove, { passive: false });
+                        document.addEventListener('touchend', stop, { passive: true });
+
+                        el.addEventListener('click', (e) => {
+                            if (moved) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            }
+                        }, true);
+                    }
+                };
+                window.endkontrolleDragScroll.initPage('endkontrollePageDragSurface');
+                window.endkontrolleDragScroll.init('endkontrolleScrollArea');
+            ");
+        }
     }
 
     private async Task OnKundeChanged(ChangeEventArgs e)
     {
         NeuerEintrag.Kunde = e.Value?.ToString() ?? "";
-        NeuerEintrag.Projekt = ""; NeuerEintrag.Artikel = ""; NeuerEintrag.Dekor = "";
-        Projekte.Clear(); ArtikelListe.Clear(); DekorListe.Clear();
+        NeuerEintrag.Projekt = "";
+        NeuerEintrag.Artikel = "";
+        NeuerEintrag.Dekor = "";
+        Projekte.Clear();
+        ArtikelListe.Clear();
+        DekorListe.Clear();
 
-        if(!string.IsNullOrEmpty(NeuerEintrag.Kunde)) {
+        if (!string.IsNullOrEmpty(NeuerEintrag.Kunde))
+        {
             Projekte = await EndkontrolleService.GetProjectsAsync(NeuerEintrag.Kunde);
-            if(Projekte.Count == 1) await OnProjektChanged(new ChangeEventArgs { Value = Projekte[0] });
+            if (Projekte.Count == 1)
+            {
+                await OnProjektChanged(new ChangeEventArgs { Value = Projekte[0] });
+            }
         }
     }
 
     private async Task OnProjektChanged(ChangeEventArgs e)
     {
         NeuerEintrag.Projekt = e.Value?.ToString() ?? "";
-        NeuerEintrag.Artikel = ""; NeuerEintrag.Dekor = "";
-        ArtikelListe.Clear(); DekorListe.Clear();
+        NeuerEintrag.Artikel = "";
+        NeuerEintrag.Dekor = "";
+        ArtikelListe.Clear();
+        DekorListe.Clear();
 
-        if(!string.IsNullOrEmpty(NeuerEintrag.Projekt)) {
+        if (!string.IsNullOrEmpty(NeuerEintrag.Projekt))
+        {
             var res = await EndkontrolleService.GetArtikelsAndDekorsAsync(NeuerEintrag.Projekt);
             ArtikelListe = res.Artikels;
             DekorListe = res.Dekors;
 
-            if(ArtikelListe.Count == 1) NeuerEintrag.Artikel = ArtikelListe[0];
-            if(DekorListe.Count == 1) NeuerEintrag.Dekor = DekorListe[0];
+            if (ArtikelListe.Count == 1) NeuerEintrag.Artikel = ArtikelListe[0];
+            if (DekorListe.Count == 1) NeuerEintrag.Dekor = DekorListe[0];
         }
     }
-    
-
 
     private async Task SaveEintrag()
     {
-        if(string.IsNullOrWhiteSpace(NeuerEintrag.Charge) || string.IsNullOrWhiteSpace(NeuerEintrag.FANr) || 
-           string.IsNullOrWhiteSpace(NeuerEintrag.Artikel) || string.IsNullOrWhiteSpace(NeuerEintrag.Dekor))
+        if (string.IsNullOrWhiteSpace(NeuerEintrag.Charge) || string.IsNullOrWhiteSpace(NeuerEintrag.FANr) ||
+            string.IsNullOrWhiteSpace(NeuerEintrag.Artikel) || string.IsNullOrWhiteSpace(NeuerEintrag.Dekor))
         {
-            await JS.InvokeVoidAsync("alert", "Bitte fülle Charge, FA-Nr, Artikel und Dekor aus.");
+            await JS.InvokeVoidAsync("alert", "Bitte f\u00fclle Charge, FA-Nr, Artikel und Dekor aus.");
             return;
         }
 
-        var res = await EndkontrolleService.InsertEintragAsync(NeuerEintrag, ActualUserName);
-        if(res.Success)
-        {
-            await JS.InvokeVoidAsync("alert", "Eintrag erfolgreich.");
-            
-            // Clear inputs (reset counts, charge, fanr, bemerkung)
-            NeuerEintrag.Charge = ""; NeuerEintrag.FANr = ""; NeuerEintrag.Bemerkung = "";
-            NeuerEintrag.Gutteile = 0; NeuerEintrag.Fusseln = 0; NeuerEintrag.Nadelstiche = 0;
-            NeuerEintrag.Pickel = 0; NeuerEintrag.Dekorfehler = 0; NeuerEintrag.Farbfehler = 0;
-            NeuerEintrag.Flecken = 0; NeuerEintrag.Nebel = 0; NeuerEintrag.Vertiefung = 0;
-            NeuerEintrag.Oelflecken = 0; NeuerEintrag.Tiefziehfehler = 0; NeuerEintrag.Fraesfehler = 0;
-            NeuerEintrag.Knicke = 0; NeuerEintrag.Kratzer = 0;
+        NeuerEintrag.Personalnummer = UserPersonalnummer;
 
-            await LoadRecentEintraege();
+        var res = IsEditMode
+            ? await EndkontrolleService.UpdateEintragAsync(NeuerEintrag, ActualUserName)
+            : await EndkontrolleService.InsertEintragAsync(NeuerEintrag, ActualUserName);
+
+        if (res.Success)
+        {
+            await JS.InvokeVoidAsync("alert", IsEditMode ? "Eintrag erfolgreich aktualisiert." : "Eintrag erfolgreich gespeichert.");
+
+            if (IsEditMode)
+            {
+                ReplaceRecentEintrag(NeuerEintrag);
+            }
+            else
+            {
+                await LoadRecentEintraege();
+            }
+
+            ResetForm();
         }
         else
         {
-             await JS.InvokeVoidAsync("alert", res.Message);
+            await JS.InvokeVoidAsync("alert", res.Message);
         }
     }
 
@@ -397,45 +551,350 @@
 
     private async Task DeleteEintrag(int id)
     {
-        bool confirm = await JS.InvokeAsync<bool>("confirm", "Diesen Eintrag wirklich löschen?");
-        if(confirm)
+        bool confirm = await JS.InvokeAsync<bool>("confirm", "Diesen Eintrag wirklich l\u00f6schen?");
+        if (confirm)
         {
             await EndkontrolleService.DeleteEintragAsync(id, ActualUserName);
             await LoadRecentEintraege();
+            if (SelectedEintragId == id)
+            {
+                ResetForm();
+            }
         }
     }
 
-    // Inline Editing
-    private int? editingId;
-    private string? editingField;
-
-    private bool IsEditing(int id, string field) => editingId == id && editingField == field;
-
-    private void StartEdit(int id, string field)
+    private async Task EditEintrag(EndkontrolleEintrag eintrag)
     {
-        editingId = id;
-        editingField = field;
-    }
+        SelectedEintragId = eintrag.ID;
+        IsEditMode = true;
+        NeuerEintrag = CloneEintrag(eintrag);
+        NeuerEintrag.Personalnummer = UserPersonalnummer;
 
-    private void HandleKeyPress(KeyboardEventArgs e, int id, string field)
-    {
-        if (e.Key == "Enter")
+        Projekte.Clear();
+        ArtikelListe.Clear();
+        DekorListe.Clear();
+
+        if (!string.IsNullOrWhiteSpace(NeuerEintrag.Kunde))
         {
-            // The blur event will trigger SaveField, so we don't need to do it here
-            // but we can clear the editing state
-            editingId = null;
-            editingField = null;
+            Projekte = await EndkontrolleService.GetProjectsAsync(NeuerEintrag.Kunde);
+        }
+
+        if (!string.IsNullOrWhiteSpace(NeuerEintrag.Projekt))
+        {
+            var res = await EndkontrolleService.GetArtikelsAndDekorsAsync(NeuerEintrag.Projekt);
+            ArtikelListe = res.Artikels;
+            DekorListe = res.Dekors;
         }
     }
 
-    private async Task SaveField(int id, string field, object? newValue)
+    private void ResetForm()
     {
-        if (editingId == id && editingField == field)
+        IsEditMode = false;
+        SelectedEintragId = null;
+        NeuerEintrag = new EndkontrolleEintrag
         {
-            await EndkontrolleService.UpdateEintragFieldAsync(id, field, newValue ?? "", ActualUserName);
-            editingId = null;
-            editingField = null;
-            await LoadRecentEintraege();
+            Datum = DateTime.Today,
+            Personalnummer = UserPersonalnummer
+        };
+    }
+
+    private void ReplaceRecentEintrag(EndkontrolleEintrag updated)
+    {
+        var index = RecentEintraege.FindIndex(x => x.ID == updated.ID);
+        if (index >= 0)
+        {
+            RecentEintraege[index] = CloneEintrag(updated);
         }
     }
+
+    private static EndkontrolleEintrag CloneEintrag(EndkontrolleEintrag source) => new()
+    {
+        ID = source.ID,
+        Charge = source.Charge,
+        FANr = source.FANr,
+        Kunde = source.Kunde,
+        Projekt = source.Projekt,
+        Artikel = source.Artikel,
+        Dekor = source.Dekor,
+        Datum = source.Datum == default ? DateTime.Today : source.Datum,
+        Gutteile = source.Gutteile,
+        Fusseln = source.Fusseln,
+        Nadelstiche = source.Nadelstiche,
+        Pickel = source.Pickel,
+        Dekorfehler = source.Dekorfehler,
+        Farbfehler = source.Farbfehler,
+        Flecken = source.Flecken,
+        Nebel = source.Nebel,
+        Vertiefung = source.Vertiefung,
+        Oelflecken = source.Oelflecken,
+        Tiefziehfehler = source.Tiefziehfehler,
+        Fraesfehler = source.Fraesfehler,
+        Knicke = source.Knicke,
+        Kratzer = source.Kratzer,
+        Bemerkung = source.Bemerkung,
+        Personalnummer = source.Personalnummer
+    };
 }
+
+<style>
+    .endkontrolle-page {
+        font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
+        cursor: default;
+    }
+
+    .endkontrolle-page.page-dragging {
+        cursor: grabbing;
+    }
+
+    .end-header h2,
+    .end-card h4,
+    .end-card h5,
+    .end-hint-title {
+        color: #f8fafc;
+        font-family: "Segoe UI Semibold", "Segoe UI", Tahoma, Verdana, sans-serif;
+    }
+
+    .end-card {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(20, 28, 42, 0.96) 0%, rgba(16, 23, 34, 0.98) 100%);
+        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24);
+        overflow: hidden;
+    }
+
+    .end-card .card-body {
+        padding: 1.45rem 1.5rem 1.6rem;
+    }
+
+    .end-card-header {
+        padding: 1.15rem 1.5rem 1rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+        margin-bottom: 0;
+    }
+
+    .end-card-header h4,
+    .end-card-header h5 {
+        margin: 0;
+    }
+
+    .end-badge-room {
+        background: #dbeafe;
+        color: #0f172a;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        padding: 0.45rem 0.8rem;
+        border-radius: 999px;
+    }
+
+    .end-hint-card {
+        background: linear-gradient(135deg, rgba(14, 116, 144, 0.24), rgba(30, 41, 59, 0.82));
+        border: 1px solid rgba(125, 211, 252, 0.28);
+        border-radius: 16px;
+        padding: 1rem 1.2rem;
+    }
+
+    .end-hint-title {
+        font-size: 1rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .end-hint-text {
+        color: #dbeafe;
+        font-size: 0.98rem;
+        line-height: 1.5;
+    }
+
+    .edit-mode-pill {
+        min-width: 250px;
+        background: rgba(251, 191, 36, 0.14);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        border-radius: 16px;
+        padding: 0.9rem 1rem;
+        color: #fef3c7;
+    }
+
+    .edit-banner {
+        background: rgba(59, 130, 246, 0.14);
+        border: 1px solid rgba(96, 165, 250, 0.35);
+        border-radius: 14px;
+        padding: 0.85rem 1rem;
+        color: #dbeafe;
+    }
+
+    .end-label {
+        color: #cbd5e1;
+        font-size: 0.94rem;
+        font-weight: 700;
+        margin-bottom: 0.55rem;
+        padding-left: 0.2rem;
+    }
+
+    .end-input,
+    .end-mini-input {
+        border-radius: 12px;
+        min-height: 46px;
+        font-size: 1rem;
+        padding: 0.82rem 1.15rem;
+        line-height: 1.35;
+    }
+
+    .end-input::placeholder {
+        color: #94a3b8;
+        opacity: 1;
+    }
+
+    .end-input-lg {
+        min-height: 54px;
+        padding: 0.98rem 1.2rem;
+    }
+
+    .end-good-input {
+        color: #86efac !important;
+        font-weight: 800;
+    }
+
+    .error-box {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 16px;
+        padding: 1.1rem 1.15rem;
+        height: 100%;
+    }
+
+    .error-box h5 {
+        margin-bottom: 1rem;
+        font-size: 1rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        padding-bottom: 0.65rem;
+    }
+
+    .error-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.15rem;
+        margin-bottom: 0.85rem;
+        color: #f8fafc;
+        font-size: 1rem;
+    }
+
+    .end-mini-input {
+        width: 96px;
+        flex: 0 0 96px;
+        min-height: 42px;
+        padding: 0.5rem 0.85rem;
+        font-weight: 700;
+    }
+
+    select.end-input {
+        padding-right: 2.5rem;
+    }
+
+    input.end-mini-input[type="number"],
+    input.end-input[type="number"] {
+        text-align: center;
+    }
+
+    .end-save-btn {
+        background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+        border: none;
+        color: #fff;
+        border-radius: 12px;
+        box-shadow: 0 10px 20px rgba(34, 197, 94, 0.22);
+    }
+
+    .end-save-btn:hover {
+        background: linear-gradient(135deg, #15803d 0%, #16a34a 100%);
+        color: #fff;
+    }
+
+    .end-section-note {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+    .end-table thead th {
+        background: #182235;
+        color: #e2e8f0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+        white-space: nowrap;
+    }
+
+    .end-table tbody td {
+        vertical-align: middle;
+        border-color: rgba(148, 163, 184, 0.08);
+        white-space: nowrap;
+    }
+
+    .drag-scroll-area {
+        cursor: grab;
+        user-select: none;
+        -webkit-user-select: none;
+        scroll-behavior: auto;
+    }
+
+    .drag-scroll-area,
+    .drag-scroll-area * {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    .drag-scroll-area.dragging {
+        cursor: grabbing;
+    }
+
+    body.drag-scroll-lock {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    body.drag-scroll-lock .endkontrolle-page,
+    body.drag-scroll-lock .drag-scroll-area {
+        cursor: grabbing !important;
+    }
+
+    .end-edit-btn {
+        background: rgba(59, 130, 246, 0.16);
+        border: 1px solid rgba(96, 165, 250, 0.35);
+        color: #dbeafe;
+        border-radius: 10px;
+        font-weight: 700;
+        min-width: 104px;
+    }
+
+    .end-edit-btn:hover {
+        background: rgba(59, 130, 246, 0.26);
+        color: #fff;
+    }
+
+    .end-row-selected td {
+        background: rgba(34, 197, 94, 0.12) !important;
+        box-shadow: inset 0 1px 0 rgba(134, 239, 172, 0.12), inset 0 -1px 0 rgba(134, 239, 172, 0.12);
+    }
+
+    @@media (max-width: 767.98px) {
+        .end-card-header {
+            padding: 1rem 1rem 0.9rem;
+        }
+
+        .end-card .card-body {
+            padding: 1.15rem 1rem 1.25rem;
+        }
+
+        .end-mini-input {
+            width: 84px;
+            flex-basis: 84px;
+        }
+
+        .error-row {
+            font-size: 0.95rem;
+        }
+
+        .edit-mode-pill {
+            min-width: auto;
+            width: 100%;
+        }
+    }
+</style>
