@@ -51,7 +51,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-12">
                         <label class="modern-label">Lieferant</label>
-                        <select class="form-select modern-select fw-bold" value="@SelectedLieferant" @onchange="OnLieferantChanged">
+                        <select class="form-select modern-select fw-bold @LieferantFieldClass" value="@SelectedLieferant" @onchange="OnLieferantChanged">
                             <option value="">Bitte wählen...</option>
                             @foreach(var l in Lieferanten) { <option value="@l">@l</option> }
                         </select>
@@ -61,7 +61,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-4">
                         <label class="modern-label">Lieferschein</label>
-                        <input type="text" class="form-control modern-input fw-bold text-white" @bind="Lieferschein" placeholder="LS-123" />
+                        <input type="text" class="form-control modern-input fw-bold text-white @LieferscheinFieldClass" @bind="Lieferschein" placeholder="LS-123" />
                     </div>
                     <div class="col-4">
                         <label class="modern-label">Position</label>
@@ -76,7 +76,8 @@
                 <div class="row g-3 mb-4">
                     <div class="col-6">
                         <label class="modern-label">Zustand der Ware</label>
-                        <select class="form-select modern-select fw-bold" @bind="Zustand">
+                        <select class="form-select modern-select fw-bold @ZustandFieldClass" @bind="Zustand">
+                            <option value="">Bitte wählen...</option>
                             <option value="Gut">Gut (Keine Mängel)</option>
                             <option value="Mittel">Mittel (Leichte Mängel)</option>
                             <option value="Schlecht">Schlecht (QS-Fall)</option>
@@ -105,7 +106,7 @@
                     <div class="col-12">
                         <label class="modern-label">Dickenmessung</label>
                         <div class="input-group">
-                            <input type="text" class="form-control modern-input fw-bold text-white"
+                            <input type="text" class="form-control modern-input fw-bold text-white @DickenmessungFieldClass"
                                    @bind="Dickenmessung"
                                    placeholder="z.B. 0,23"
                                    inputmode="decimal" />
@@ -117,7 +118,7 @@
 
                 <div class="mt-auto">
                     <label class="modern-label">Zusätzliche Bemerkung</label>
-                    <textarea class="form-control modern-input text-white custom-placeholder" rows="4" @bind="Bemerkung" placeholder="Optionale Notizen... (Pflichtfeld bei Palettentausch oder Zustand 'Schlecht')"></textarea>
+                    <textarea class="form-control modern-input text-white custom-placeholder @BemerkungFieldClass" rows="4" @bind="Bemerkung" placeholder="Optionale Notizen... (Pflichtfeld bei Palettentausch oder Zustand 'Schlecht')"></textarea>
                 </div>
             </div>
         </div>
@@ -256,6 +257,36 @@
 
 </div>
 
+@if (ShowChargeConfirmation)
+{
+    <div class="modal fade show d-block charge-confirmation-backdrop" tabindex="-1" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content charge-confirmation-modal text-white border-0">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-circle-question text-warning me-2"></i>Charge prüfen
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelChargeConfirmation" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body text-center py-4 px-4">
+                    <p class="text-secondary text-uppercase fw-semibold small mb-2">Bitte vor dem Hinzufügen kontrollieren</p>
+                    <div class="charge-confirmation-value mb-3">@PendingCharge</div>
+                    <div class="charge-confirmation-menge mb-4">@PendingMengeDisplay</div>
+                    <p class="fs-5 fw-semibold mb-0">Ist diese Charge korrekt erfasst und die Menge geprüft?</p>
+                </div>
+                <div class="modal-footer border-secondary justify-content-center gap-2">
+                    <button type="button" class="btn btn-glass px-4 py-2 fw-bold" @onclick="CancelChargeConfirmation">
+                        <i class="fa-solid fa-pen me-2"></i>Nein, korrigieren
+                    </button>
+                    <button type="button" class="btn btn-gradient-success px-4 py-2 fw-bold" @onclick="ConfirmChargeAddition">
+                        <i class="fa-solid fa-check me-2"></i>Ja, hinzufügen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     // Form
     private string Lieferschein = "";
@@ -273,6 +304,7 @@
     private int GesamtLaufmeter = 0;
     
     private bool IsEditMode = false;
+    private bool ShowChargeConfirmation = false;
     
     private List<string> Lieferanten = new();
     private List<string> Materialien = new();
@@ -280,9 +312,18 @@
     private List<WareneingangEntry> WarenList = new();
     private WareneingangEntry? SelectedEntry;
     private ChargenEntry? SelectedCharge;
+    private string PendingCharge = "";
+    private string PendingMenge = "";
     
     private string SortColumn = "ID";
     private bool IsSortedAscending = false;
+    private string PendingMengeDisplay => $"{(string.IsNullOrWhiteSpace(PendingMenge) ? "0" : PendingMenge)} LM/STK";
+    private string LieferantFieldClass => GetRequiredFieldClass(IsLieferantMissing());
+    private string LieferscheinFieldClass => GetRequiredFieldClass(IsLieferscheinMissing());
+    private string ZustandFieldClass => GetRequiredFieldClass(IsZustandMissing());
+    private string DickenmessungFieldClass => GetRequiredFieldClass(IsDickenmessungMissing());
+    private string BemerkungFieldClass => GetRequiredFieldClass(IsBemerkungRequiredAndMissing());
+    private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -318,15 +359,105 @@
     private async Task AddCharge(bool isEnterKey)
     {
         if (string.IsNullOrWhiteSpace(NewCharge)) return;
-        
-        string mengeToUse = string.IsNullOrWhiteSpace(NewMenge) ? "0" : NewMenge.Trim();
-        int isScanner = isEnterKey ? 1 : 0; 
-        
-        ChargenList.Add(new ChargenEntry { Charge = NewCharge.Trim(), Menge = mengeToUse, Scanner = isScanner, IsNew01 = 1 });
+
+        if (isEnterKey)
+        {
+            await AddChargeToList(NewCharge.Trim(), NewMenge.Trim(), true);
+            return;
+        }
+
+        PendingCharge = NewCharge.Trim();
+        PendingMenge = string.IsNullOrWhiteSpace(NewMenge) ? "0" : NewMenge.Trim();
+        ShowChargeConfirmation = true;
+    }
+
+    private async Task ConfirmChargeAddition()
+    {
+        await AddChargeToList(PendingCharge, PendingMenge, false);
+        ResetPendingChargeConfirmation();
+    }
+
+    private async Task CancelChargeConfirmation()
+    {
+        ResetPendingChargeConfirmation();
+        await FocusChargeInputAsync();
+    }
+
+    private async Task AddChargeToList(string charge, string menge, bool isScanner)
+    {
+        if (string.IsNullOrWhiteSpace(charge)) return;
+
+        ChargenList.Add(new ChargenEntry
+        {
+            Charge = charge,
+            Menge = string.IsNullOrWhiteSpace(menge) ? "0" : menge.Trim(),
+            Scanner = isScanner ? 1 : 0,
+            IsNew01 = 1
+        });
+
         UpdateGesamtLaufmeter();
-        
-        NewCharge = ""; NewMenge = "";
+
+        NewCharge = "";
+        NewMenge = "";
+        await FocusChargeInputAsync();
+    }
+
+    private void ResetPendingChargeConfirmation()
+    {
+        ShowChargeConfirmation = false;
+        PendingCharge = "";
+        PendingMenge = "";
+    }
+
+    private async Task FocusChargeInputAsync()
+    {
         await JS.InvokeVoidAsync("eval", "document.getElementById('chargeInput').focus()");
+    }
+
+    private bool IsLieferantMissing() => string.IsNullOrWhiteSpace(SelectedLieferant);
+
+    private bool IsLieferscheinMissing() => string.IsNullOrWhiteSpace(Lieferschein);
+
+    private bool IsZustandMissing() => string.IsNullOrWhiteSpace(Zustand);
+
+    private bool IsDickenmessungMissing() => !TryNormalizeDickenmessung(Dickenmessung, out _);
+
+    private bool IsBemerkungRequiredAndMissing()
+    {
+        return (Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase))
+            && string.IsNullOrWhiteSpace(Bemerkung);
+    }
+
+    private List<string> GetValidationErrors()
+    {
+        var errors = new List<string>();
+
+        if (IsLieferscheinMissing())
+        {
+            errors.Add("Lieferschein eingeben.");
+        }
+
+        if (IsLieferantMissing())
+        {
+            errors.Add("Lieferant auswählen.");
+        }
+
+        if (IsZustandMissing())
+        {
+            errors.Add("Zustand der Ware auswählen.");
+        }
+
+        if (IsDickenmessungMissing())
+        {
+            errors.Add("Dickenmessung als Wert zwischen 0,23 mm und 1,2 mm eingeben.");
+        }
+
+        if (IsBemerkungRequiredAndMissing())
+        {
+            errors.Add("Zusätzliche Bemerkung eintragen, wenn Palettentausch aktiv ist oder der Zustand auf 'Schlecht' steht.");
+        }
+
+        return errors;
     }
     
     private void RemoveCharge(ChargenEntry entry)
@@ -344,19 +475,25 @@
     private async Task SaveEintrag()
     {
 
-        if(string.IsNullOrEmpty(Lieferschein) || string.IsNullOrEmpty(SelectedLieferant)) 
+        var validationErrors = GetValidationErrors();
+        if (validationErrors.Count > 0)
         {
-            await JS.InvokeVoidAsync("alert", "Bitte Lieferschein und Lieferant angeben.");
+            var message = "Bitte folgende Pflichtfelder prüfen bzw. ausfüllen:\n\n- "
+                + string.Join("\n- ", validationErrors);
+
+            await JS.InvokeVoidAsync("alert", message);
             return;
         }
 
-        if ((Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase)) && string.IsNullOrWhiteSpace(Bemerkung))
+        TryNormalizeDickenmessung(Dickenmessung, out var normalizedDickenmessung);
+
+        if (false && (Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase)) && string.IsNullOrWhiteSpace(Bemerkung))
         {
             await JS.InvokeVoidAsync("alert", "Bitte geben Sie eine zusätzliche Bemerkung an (zwingend erforderlich bei Palettentausch oder mangelhaftem Zustand).");
             return;
         }
 
-        if (!TryNormalizeDickenmessung(Dickenmessung, out var normalizedDickenmessung))
+        if (false && !TryNormalizeDickenmessung(Dickenmessung, out _))
         {
             await JS.InvokeVoidAsync("alert", "Bitte eine gÃ¼ltige Dickenmessung zwischen 0,23 mm und 1,2 mm eingeben.");
             return;
@@ -438,7 +575,7 @@
         Pos = SelectedEntry.Pos ?? "";
         EBE = SelectedEntry.EBE_NR ?? "";
         SelectedLieferant = SelectedEntry.Lieferant ?? "";
-        Zustand = SelectedEntry.Zustand ?? "Gut";
+        Zustand = SelectedEntry.Zustand ?? "";
         Dickenmessung = SelectedEntry.Dickenmessung ?? "";
         
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
@@ -605,6 +742,11 @@
         color: #fff;
     }
 
+    .required-outline {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+    }
+
     .modern-select option {
         background: var(--bg-card);
         color: #f8fafc;
@@ -752,6 +894,33 @@
     .status-gut { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
     .status-mittel { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
     .status-schlecht { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
+
+    .charge-confirmation-backdrop {
+        background: rgba(2, 6, 23, 0.82);
+        backdrop-filter: blur(6px);
+        z-index: 1060;
+    }
+
+    .charge-confirmation-modal {
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 41, 59, 0.98) 100%);
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 20px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+    }
+
+    .charge-confirmation-value {
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 800;
+        letter-spacing: 0.12em;
+        color: #f8fafc;
+        word-break: break-word;
+    }
+
+    .charge-confirmation-menge {
+        font-size: clamp(1.35rem, 3vw, 2rem);
+        font-weight: 700;
+        color: #fbbf24;
+    }
 
     .switch-modern {
         width: 3.5rem;
