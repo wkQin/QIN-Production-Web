@@ -38,7 +38,7 @@
     private ChargeEntry Model = new();
     
     [Parameter]
-    public EventCallback<ChargeEntry> OnSave { get; set; }
+    public Func<ChargeEntry, Task<bool>>? OnSave { get; set; }
 
     public Task ShowAsync(ChargeEntry originalRow)
     {
@@ -64,8 +64,17 @@
 
     private async Task SaveAsync()
     {
-        await OnSave.InvokeAsync(Model);
-        await CloseAsync();
+        if (OnSave == null)
+        {
+            await CloseAsync();
+            return;
+        }
+
+        var saved = await OnSave(Model);
+        if (saved)
+        {
+            await CloseAsync();
+        }
     }
 }
 

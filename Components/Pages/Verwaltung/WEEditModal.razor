@@ -15,7 +15,7 @@
                     <div class="row g-3">
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Lieferant</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Lieferant" />
+                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Lieferant" @bind:after="HandleLieferantChangedAsync" />
                         </div>
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Lieferschein Nr (LS_Nr)</label>
@@ -37,10 +37,22 @@
                             <label class="form-label text-secondary small mb-1 fw-bold">Artikel</label>
                             <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Artikel" />
                         </div>
-                        <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Dickenmessung" />
-                        </div>
+                        @if (IsLieferantAutomotiv)
+                        {
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
+                                <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Dickenmessung" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="col-md-6 mb-2">
+                                <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
+                                <div class="form-control border-secondary text-info fw-semibold" style="background: var(--bg-hover);">
+                                    Fuer Non-Automotiv nicht erforderlich
+                                </div>
+                            </div>
+                        }
                         <div class="col-md-6 mb-2">
                             <label class="form-label text-secondary small mb-1 fw-bold">Zustand</label>
                             <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Zustand" />
@@ -87,11 +99,12 @@
 @code {
     private bool isVisible = false;
     private WareneingangEntry Model = new();
+    private bool IsLieferantAutomotiv = true;
     
     [Parameter]
-    public EventCallback<WareneingangEntry> OnSave { get; set; }
+    public Func<WareneingangEntry, Task<bool>>? OnSave { get; set; }
 
-    public Task ShowAsync(WareneingangEntry originalRow)
+    public Task ShowAsync(WareneingangEntry originalRow, bool isLieferantAutomotiv)
     {
         // Clone object
         Model = new WareneingangEntry
@@ -111,10 +124,17 @@
             Palettentausch = originalRow.Palettentausch,
             Gebucht = originalRow.Gebucht
         };
+        IsLieferantAutomotiv = isLieferantAutomotiv;
         
         isVisible = true;
         StateHasChanged();
         return Task.CompletedTask;
+    }
+
+    private async Task HandleLieferantChangedAsync()
+    {
+        IsLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(Model.Lieferant);
+        StateHasChanged();
     }
 
     private Task CloseAsync()
@@ -126,8 +146,17 @@
 
     private async Task SaveAsync()
     {
-        await OnSave.InvokeAsync(Model);
-        await CloseAsync();
+        if (OnSave == null)
+        {
+            await CloseAsync();
+            return;
+        }
+
+        var saved = await OnSave(Model);
+        if (saved)
+        {
+            await CloseAsync();
+        }
     }
 }
 

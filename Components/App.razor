@@ -91,8 +91,9 @@
 
                 const mouseMoveHandler = function (e) {
                     const dx = e.clientX - x;
-                    col.style.width = (w + dx) + 'px';
-                    col.style.minWidth = (w + dx) + 'px';
+                    const nextWidth = Math.max(70, w + dx);
+                    col.style.width = nextWidth + 'px';
+                    col.style.minWidth = nextWidth + 'px';
                 };
 
                 const mouseUpHandler = function () {

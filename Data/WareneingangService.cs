@@ -59,6 +59,41 @@ namespace QIN_Production_Web.Data
             return lieferanten;
         }
 
+        public static async Task<bool> IsLieferantAutomotivAsync(string? lieferant)
+        {
+            if (string.IsNullOrWhiteSpace(lieferant))
+            {
+                return true;
+            }
+
+            const string query = "SELECT TOP 1 Automotiv FROM Lieferanten WHERE Lieferant = @Lieferant";
+
+            using (SqlConnection connection = new SqlConnection(SqlManager.connectionString))
+            {
+                try
+                {
+                    await connection.OpenAsync();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        command.Parameters.AddWithValue("@Lieferant", lieferant.Trim());
+                        var result = await command.ExecuteScalarAsync();
+
+                        if (result == null || result == DBNull.Value)
+                        {
+                            return true;
+                        }
+
+                        return Convert.ToBoolean(result);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    return true;
+                }
+            }
+        }
+
         public static async Task<List<WareneingangEntry>> LoadWareneingangAsync(string? lieferant = null)
         {
             var result = new List<WareneingangEntry>();

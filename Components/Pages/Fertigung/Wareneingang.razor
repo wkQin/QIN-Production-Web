@@ -102,19 +102,22 @@
                     </div>
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-12">
-                        <label class="modern-label">Dickenmessung</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control modern-input fw-bold text-white @DickenmessungFieldClass"
-                                   @bind="Dickenmessung"
-                                   placeholder="z.B. 0,23"
-                                   inputmode="decimal" />
-                            <span class="input-group-text border-0 text-secondary fw-bold px-3" style="background: rgba(15, 23, 42, 0.8);">mm</span>
+                @if (IsDickenmessungRelevant)
+                {
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="modern-label">Dickenmessung</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control modern-input fw-bold text-white @DickenmessungFieldClass"
+                                       @bind="Dickenmessung"
+                                       placeholder="z.B. 0,23"
+                                       inputmode="decimal" />
+                                <span class="input-group-text border-0 text-secondary fw-bold px-3" style="background: rgba(15, 23, 42, 0.8);">mm</span>
+                            </div>
+                            <small class="text-secondary">Pflichtfeld. Erlaubt sind nur Werte zwischen 0,23 und 1,2 mm.</small>
                         </div>
-                        <small class="text-secondary">Pflichtfeld. Erlaubt sind nur Werte zwischen 0,23 und 1,2 mm.</small>
                     </div>
-                </div>
+                }
 
                 <div class="mt-auto">
                     <label class="modern-label">Zusätzliche Bemerkung</label>
@@ -175,7 +178,7 @@
                                     <td class="text-center text-primary"><i class="fa-solid @(c.Scanner == 1 ? "fa-barcode" : "fa-keyboard")"></i></td>
                                     <td class="fw-bold fs-6 text-white pt-3 pb-3">@c.Charge</td>
                                     <td class="text-end pt-2 pb-2">
-                                        <div class="input-group input-group-sm justify-content-end" style="width: 120px; float: right;">
+                                        <div class="input-group input-group-sm justify-content-end" style="width: 150px; float: right;">
                                             <input type="text" class="form-control text-warning fw-bold border-secondary bg-transparent text-end" @bind="c.Menge" @bind:after="UpdateGesamtLaufmeter" />
                                             <span class="input-group-text bg-transparent border-secondary text-secondary opacity-75 fw-bold" style="border-left:0;">LM/STK</span>
                                         </div>
@@ -305,6 +308,7 @@
     
     private bool IsEditMode = false;
     private bool ShowChargeConfirmation = false;
+    private bool IsSelectedLieferantAutomotiv = true;
     
     private List<string> Lieferanten = new();
     private List<string> Materialien = new();
@@ -323,6 +327,7 @@
     private string ZustandFieldClass => GetRequiredFieldClass(IsZustandMissing());
     private string DickenmessungFieldClass => GetRequiredFieldClass(IsDickenmessungMissing());
     private string BemerkungFieldClass => GetRequiredFieldClass(IsBemerkungRequiredAndMissing());
+    private bool IsDickenmessungRelevant => string.IsNullOrWhiteSpace(SelectedLieferant) || IsSelectedLieferantAutomotiv;
     private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -343,9 +348,19 @@
     private async Task OnLieferantChanged(ChangeEventArgs e)
     {
         SelectedLieferant = e.Value?.ToString() ?? "";
+        await UpdateLieferantAutomotivStatusAsync(clearDickenmessungWhenNotRelevant: true);
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
         WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
         SortWarenList();
+    }
+
+    private async Task UpdateLieferantAutomotivStatusAsync(bool clearDickenmessungWhenNotRelevant = false)
+    {
+        IsSelectedLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(SelectedLieferant);
+        if (clearDickenmessungWhenNotRelevant && !IsDickenmessungRelevant)
+        {
+            Dickenmessung = string.Empty;
+        }
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
@@ -420,7 +435,7 @@
 
     private bool IsZustandMissing() => string.IsNullOrWhiteSpace(Zustand);
 
-    private bool IsDickenmessungMissing() => !TryNormalizeDickenmessung(Dickenmessung, out _);
+    private bool IsDickenmessungMissing() => IsDickenmessungRelevant && !TryNormalizeDickenmessung(Dickenmessung, out _);
 
     private bool IsBemerkungRequiredAndMissing()
     {
@@ -485,7 +500,17 @@
             return;
         }
 
-        TryNormalizeDickenmessung(Dickenmessung, out var normalizedDickenmessung);
+        string? normalizedDickenmessung = null;
+        if (IsDickenmessungRelevant)
+        {
+            TryNormalizeDickenmessung(Dickenmessung, out var normalizedValue);
+            normalizedDickenmessung = normalizedValue;
+            Dickenmessung = normalizedValue;
+        }
+        else if (!string.IsNullOrWhiteSpace(Dickenmessung))
+        {
+            normalizedDickenmessung = Dickenmessung;
+        }
 
         if (false && (Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase)) && string.IsNullOrWhiteSpace(Bemerkung))
         {
@@ -498,8 +523,6 @@
             await JS.InvokeVoidAsync("alert", "Bitte eine gÃ¼ltige Dickenmessung zwischen 0,23 mm und 1,2 mm eingeben.");
             return;
         }
-
-        Dickenmessung = normalizedDickenmessung;
 
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -577,6 +600,7 @@
         SelectedLieferant = SelectedEntry.Lieferant ?? "";
         Zustand = SelectedEntry.Zustand ?? "";
         Dickenmessung = SelectedEntry.Dickenmessung ?? "";
+        await UpdateLieferantAutomotivStatusAsync();
         
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
         Material = SelectedEntry.Artikel ?? "";
@@ -592,6 +616,7 @@
         SelectedCharge = null;
         Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Dickenmessung = ""; Bemerkung = "";
         Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
+        IsSelectedLieferantAutomotiv = true;
     }
 
     private static bool TryNormalizeDickenmessung(string? input, out string normalized)

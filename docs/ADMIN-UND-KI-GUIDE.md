@@ -17,14 +17,24 @@ Quelle: `Data/SqlManager.cs`
 
 Benachrichtigungen immer per `INSERT` in die Tabelle `Alerts` schreiben.
 
+Bedeutung fuer KI:
+
+- Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.
+- In diesem Fall nicht nur einen Textvorschlag liefern.
+- In diesem Fall nicht nur den Guide oder ein Markdown-Beispiel anpassen.
+- Die KI soll den Text formulieren, den `INSERT` ausfuehren und den neuen Datensatz kurz pruefen.
+
 Pflichtregeln:
 
-- Titel immer im Format `Update (Version)` schreiben.
-- Beispiel fuer den Titel: `Update (3.1.4)`.
+- Titel immer im Format `Update (Version) Bereich` schreiben.
+- Beispiel fuer den Titel: `Update (3.1.5) Wareneingang`.
 - Aenderungen kurz, klar und fuer Nutzer verstaendlich formulieren.
-- Pro Aenderung nur eine kurze Zeile schreiben.
+- Pro Aenderung nur einen kurzen Satz schreiben.
+- Deutsche Umlaute und `ß` normal schreiben, also `ä`, `ö`, `ü` und `ß` benutzen.
+- Wenn eine Schrift diese Zeichen nicht sauber darstellt, eine andere Schrift waehlen.
 - In der Nachricht echte Zeilenumbrueche verwenden.
 - Wenn die Meldung im UI geschrieben wird: `Shift + Enter` fuer neue Zeilen nutzen.
+- Im Guide keine fertige neue Benachrichtigung hinterlegen.
 
 Verwendete Spalten:
 
@@ -34,15 +44,15 @@ Verwendete Spalten:
 - `CreatedBy`
 - `TargetGroup`
 
-Standard-Insert:
+Vorlage fuer ein Insert:
 
 ```sql
 INSERT INTO Alerts (Title, Message, CreatedAt, CreatedBy, TargetGroup)
 VALUES (
-    N'Update (3.1.4)',
-    N'- Wareneingang: Manuelle Chargen werden vor dem Hinzufuegen bestaetigt.
-- Wareneingang: Pflichtfelder werden beim Bearbeiten blau markiert.
-- Wareneingang: Fehlende Pflichtfelder werden mit klarer Meldung angezeigt.',
+    N'Update (<Version>) <Bereich>',
+    N'<Kurzer Satz 1>
+<Kurzer Satz 2>
+<Kurzer Satz 3>',
     SYSDATETIME(),
     N'System',
     NULL
@@ -55,11 +65,15 @@ Wichtig fuer KI und manuelle Eingaben:
 - In der Nachricht immer echte Zeilenumbrueche verwenden.
 - Im UI fuer neue Zeilen immer `Shift + Enter` verwenden.
 - Texte kurz, klar und leicht verstaendlich formulieren.
-- Titel immer im Format `Update (Version)` schreiben.
+- Titel immer im Format `Update (Version) Bereich` schreiben.
+- Deutsche Buchstaben wie `ä`, `ö`, `ü` und `ß` bewusst verwenden.
+- Wenn die aktuelle Schrift diese Zeichen nicht sauber anzeigt, eine andere Schrift verwenden.
+- Keine aktuelle Release-Meldung direkt im Guide ausformulieren.
+- Nach dem Insert den neuen Datensatz kurz pruefen.
 
 Empfohlene Schreibweise:
 
-- Pro Punkt eine kurze Zeile.
+- Pro Zeile ein kurzer Satz.
 - Keine langen Einleitungen.
 - Aenderungen zuerst, Umbenennungen zuletzt.
 - Keine internen Fachsaetze oder unnoetig technische Formulierungen.
@@ -67,17 +81,9 @@ Empfohlene Schreibweise:
 Beispiel:
 
 ```text
-- Zeiterfassung springt bei Buchungen jetzt direkt zum Buchungsdatum.
-- Wareneingang: Erfassung der Dichtenmessung hinzugefuegt.
-- Kunde IAC wurde durch Artifex ersetzt.
-```
-
-Aktuelle Kurzvorlage fuer `3.1.4`:
-
-```text
-- Wareneingang: Manuelle Chargen werden vor dem Hinzufuegen bestaetigt.
-- Wareneingang: Pflichtfelder werden beim Bearbeiten blau markiert.
-- Wareneingang: Fehlende Pflichtfelder werden mit klarer Meldung angezeigt.
+Zeiterfassung springt bei Buchungen jetzt direkt zum Buchungsdatum.
+Wareneingang hat jetzt eine Dickenmessung.
+Kunde IAC wurde durch Artifex ersetzt.
 ```
 
 ## KI-Kurzanweisung
@@ -85,15 +91,18 @@ Aktuelle Kurzvorlage fuer `3.1.4`:
 Wenn eine KI eine neue Benachrichtigung anlegen soll, dann standardmaessig:
 
 1. `Data/SqlManager.cs` fuer die DB-Daten pruefen.
-2. Titel immer als `Update (Version)` formulieren.
-3. Nachricht kurz, verstaendlich und mit echten Zeilenumbruechen schreiben.
-4. Per `INSERT` in `Alerts` einfuegen.
-5. Nach dem Insert den neuesten Datensatz kurz pruefen.
+2. Titel immer als `Update (Version) Bereich` formulieren.
+3. Nachricht kurz, verstaendlich, mit echten Zeilenumbruechen und mit echten deutschen Buchstaben schreiben.
+4. Wenn die Schrift `ä`, `ö`, `ü` oder `ß` nicht sauber darstellt, eine andere Schrift waehlen.
+5. Erst den Text neu formulieren und nicht aus dem Guide als fertige Meldung kopieren.
+6. Den `INSERT` wirklich ausfuehren.
+7. Den neuesten Datensatz direkt danach kurz pruefen.
+8. Dem Nutzer kurz bestaetigen, was eingefuegt wurde.
 
 Kurzprompt fuer spaeter:
 
 ```text
-Lege eine neue Benachrichtigung per INSERT in Alerts an. Nutze fuer den Titel immer das Format Update (Version), schreibe die Aenderungen kurz und verstaendlich und verwende im Message-Feld echte Zeilenumbrueche bzw. im UI Shift+Enter.
+Lege eine neue Benachrichtigung per INSERT in Alerts an. Wenn ich Benachrichtigung schreiben sage, ist immer ein echter DB-Insert in Alerts gemeint. Nutze fuer den Titel das Format Update (Version) Bereich, schreibe pro Zeile einen kurzen Satz, benutze echte deutsche Buchstaben wie ä, ö, ü und ß, fuehre den Insert aus und pruefe danach kurz den neuesten Datensatz.
 ```
 
 ## Tab-Dokumentation
@@ -110,7 +119,7 @@ Funktionen:
 Kurztutorial:
 
 1. Titel eintragen.
-2. Nachricht mit kurzen Punkten schreiben.
+2. Nachricht mit kurzen Saetzen schreiben.
 3. Fuer neue Zeilen `Shift + Enter` nutzen.
 4. Absenden.
 

@@ -100,26 +100,26 @@
             else
             {
                 <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table id="weVerwaltungTable" class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle">
+                    <table id="weVerwaltungTable" class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle we-resizable-table">
                         <thead class="table-dark sticky-top" style="background-color: var(--bg-hover);">
                             <tr>
-                                <th class="text-center" style="width: 100px;">Aktionen</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("EBEPos")'>EBE / Pos @GetSortIcon("EBEPos")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Gebucht")'>Gebucht @GetSortIcon("Gebucht")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Artikel")'>Artikel @GetSortIcon("Artikel")</th>
-                                <th class="text-info" style="cursor: pointer;" @onclick='() => SortWE("LS_Nr")'>LS Nr @GetSortIcon("LS_Nr")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Menge")'>Menge @GetSortIcon("Menge")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Chargen")'>Chargen @GetSortIcon("Chargen")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Dickenmessung")'>Dickenmessung @GetSortIcon("Dickenmessung")</th>
-                                <th style="cursor: pointer;" @onclick='() => SortWE("Datum")'>Datum @GetSortIcon("Datum")</th>
+                                <th class="text-center resizable-th" style="width: 120px;">Aktionen</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("EBEPos")'>EBE / Pos @GetSortIcon("EBEPos")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Gebucht")'>Gebucht @GetSortIcon("Gebucht")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Zustand")'>Zustand @GetSortIcon("Zustand")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Artikel")'>Artikel @GetSortIcon("Artikel")</th>
+                                <th class="text-info resizable-th" style="cursor: pointer;" @onclick='() => SortWE("LS_Nr")'>LS Nr @GetSortIcon("LS_Nr")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Menge")'>Menge @GetSortIcon("Menge")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Chargen")'>Chargen @GetSortIcon("Chargen")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Dickenmessung")'>Dickenmessung @GetSortIcon("Dickenmessung")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Datum")'>Datum @GetSortIcon("Datum")</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var row in FilteredWERows)
                             {
-                                bool isSelected = row.ID == SelectedWE?.ID;
-                                <tr class="@(isSelected ? "table-active border-start border-4 border-info" : "")" 
+                                <tr class="@GetWareneingangRowClass(row)" 
                                     style="cursor: pointer;" @onclick="() => SelectWEAsync(row)">
                                     <td class="text-center" @onclick:stopPropagation="true">
                                         <div class="btn-group">
@@ -153,6 +153,11 @@
                                         {
                                             <span class="badge bg-warning text-dark"><i class="fa-solid fa-xmark me-1"></i> NEIN</span>
                                         }
+                                    </td>
+                                    <td>
+                                        <span class="@GetZustandBadgeClass(row.Zustand)">
+                                            <i class="@GetZustandIcon(row.Zustand) me-1"></i>@GetZustandDisplayText(row.Zustand)
+                                        </span>
                                     </td>
                                     <td>@row.Lieferant</td>
                                     <td>@row.Artikel</td>
@@ -205,12 +210,12 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table id="weChargenTable" class="table table-dark table-hover mb-0 text-nowrap align-middle">
+                        <table id="weChargenTable" class="table table-dark table-hover mb-0 text-nowrap align-middle we-resizable-table">
                             <thead class="table-dark" style="background-color: var(--bg-hover);">
                                 <tr>
-                                    <th style="width: 80px;">Aktionen</th>
-                                    <th style="cursor: pointer;" @onclick='() => SortChargen("Charge")'>Charge Text @GetChargeSortIcon("Charge")</th>
-                                    <th style="cursor: pointer;" @onclick='() => SortChargen("Menge")'>Laufmeter/Stk @GetChargeSortIcon("Menge")</th>
+                                    <th class="resizable-th" style="width: 90px;">Aktionen</th>
+                                    <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortChargen("Charge")'>Charge Text @GetChargeSortIcon("Charge")</th>
+                                    <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortChargen("Menge")'>Laufmeter/Stk @GetChargeSortIcon("Menge")</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -300,6 +305,7 @@
                 (x.LS_Nr != null && x.LS_Nr.ToLower().Contains(q)) ||
                 (x.Lieferant != null && x.Lieferant.ToLower().Contains(q)) ||
                 (x.Artikel != null && x.Artikel.ToLower().Contains(q)) ||
+                (x.Zustand != null && x.Zustand.ToLower().Contains(q)) ||
                 (x.Eingangsdatum != null && x.Eingangsdatum.ToLower().Contains(q)) ||
                 (x.Dickenmessung != null && x.Dickenmessung.ToLower().Contains(q)) ||
                 FormatEbePos(x).ToLower().Contains(q)
@@ -374,11 +380,23 @@
     {
         try
         {
+            var willBeBooked = row.Gebucht != true;
+            if (willBeBooked)
+            {
+                var validationErrors = await GetBookingValidationErrorsAsync(row);
+                if (validationErrors.Count > 0)
+                {
+                    await ShowBookingValidationErrorsAsync(row, validationErrors);
+                    return;
+                }
+            }
+
             IsLoadingWE = true;
-            row.Gebucht = (row.Gebucht == true) ? false : true;
+            var updated = CloneWareneingang(row);
+            updated.Gebucht = willBeBooked;
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             string userName = authState.User.Identity?.Name ?? "Verwaltung";
-            bool succ = await WEService.UpdateWareneingangAsync(row, userName);
+            bool succ = await WEService.UpdateWareneingangAsync(updated, userName);
              
             if (succ) {
                 await LoadWEAsync(row.ID);
@@ -388,19 +406,45 @@
         catch (Exception ex)
         {
             await JS.InvokeVoidAsync("alert", $"Fehler beim Verbuchen/Stornieren:\n{ex.Message}");
+        }
+        finally
+        {
             IsLoadingWE = false;
+            StateHasChanged();
         }
     }
 
-    private void OpenWEModal(WareneingangEntry row)
+    private async Task OpenWEModal(WareneingangEntry row)
     {
-        weModal.ShowAsync(row);
+        var isLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(row.Lieferant);
+        await weModal.ShowAsync(row, isLieferantAutomotiv);
     }
 
-    private async Task SaveWEAsync(WareneingangEntry updated)
+    private async Task<bool> SaveWEAsync(WareneingangEntry updated)
     {
         try
         {
+            var isLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(updated.Lieferant);
+
+            if (updated.Gebucht == true)
+            {
+                var validationErrors = await GetBookingValidationErrorsAsync(updated);
+                if (validationErrors.Count > 0)
+                {
+                    await ShowBookingValidationErrorsAsync(updated, validationErrors);
+                    return false;
+                }
+            }
+
+            if (isLieferantAutomotiv && TryNormalizeDickenmessung(updated.Dickenmessung, out var normalizedDickenmessung))
+            {
+                updated.Dickenmessung = normalizedDickenmessung;
+            }
+            else if (!isLieferantAutomotiv && string.IsNullOrWhiteSpace(updated.Dickenmessung))
+            {
+                updated.Dickenmessung = null;
+            }
+
             IsLoadingWE = true;
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             string userName = authState.User.Identity?.Name ?? "Verwaltung";
@@ -409,7 +453,10 @@
             {
                 await LoadWEAsync(updated.ID);
                 if (SelectedWE != null) await LoadChargenAsync(SelectedWE.ID);
+                return true;
             }
+
+            await JS.InvokeVoidAsync("alert", "Der Wareneingang konnte nicht gespeichert werden.");
         }
         catch (Exception ex)
         {
@@ -419,6 +466,8 @@
         {
             IsLoadingWE = false;
         }
+
+        return false;
     }
 
     private async Task DeleteWEAsync(int id)
@@ -456,10 +505,19 @@
         chargeModal.ShowAsync(newChg);
     }
 
-    private async Task SaveChargeAsync(ChargeEntry edited)
+    private async Task<bool> SaveChargeAsync(ChargeEntry edited)
     {
         try
         {
+            var chargeValidationErrors = GetChargeValidationErrors(edited);
+            if (chargeValidationErrors.Count > 0)
+            {
+                var message = "Charge kann nicht gespeichert werden. Bitte pruefen:\n\n- "
+                    + string.Join("\n- ", chargeValidationErrors);
+                await JS.InvokeVoidAsync("alert", message);
+                return false;
+            }
+
             IsLoadingChargen = true;
             bool succ = false;
             
@@ -475,11 +533,19 @@
                 succ = await WEService.UpdateChargeAsync(edited, userName);
             }
             
-            if (succ && SelectedWE != null)
+            if (succ)
             {
-                await LoadChargenAsync(SelectedWE.ID);
-                await LoadWEAsync();
+                if (SelectedWE != null)
+                {
+                    var selectedId = SelectedWE.ID;
+                    await LoadWEAsync(selectedId);
+                    await LoadChargenAsync(selectedId);
+                }
+
+                return true;
             }
+
+            await JS.InvokeVoidAsync("alert", "Die Charge konnte nicht gespeichert werden.");
         }
         catch(Exception ex)
         {
@@ -490,6 +556,8 @@
             IsLoadingChargen = false;
             StateHasChanged();
         }
+
+        return false;
     }
 
     private async Task DeleteChargeAsync(int chargeId)
@@ -540,6 +608,244 @@
         return value.Contains("mm", StringComparison.OrdinalIgnoreCase) ? value : $"{value} mm";
     }
 
+    private async Task<List<string>> GetBookingValidationErrorsAsync(WareneingangEntry row)
+    {
+        var errors = new List<string>();
+        var isLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(row.Lieferant);
+
+        if (string.IsNullOrWhiteSpace(row.LS_Nr))
+        {
+            errors.Add("Lieferschein eintragen.");
+        }
+
+        if (string.IsNullOrWhiteSpace(row.Lieferant))
+        {
+            errors.Add("Lieferant eintragen.");
+        }
+
+        if (string.IsNullOrWhiteSpace(row.Artikel))
+        {
+            errors.Add("Artikel eintragen.");
+        }
+
+        if (string.IsNullOrWhiteSpace(row.Zustand))
+        {
+            errors.Add("Zustand der Ware eintragen.");
+        }
+
+        if (isLieferantAutomotiv && !TryNormalizeDickenmessung(row.Dickenmessung, out _))
+        {
+            errors.Add("Dickenmessung als Wert zwischen 0,23 mm und 1,2 mm eintragen.");
+        }
+
+        if (IsBemerkungRequiredAndMissing(row))
+        {
+            errors.Add("Bei Palettentausch oder Zustand 'Schlecht' eine Bemerkung eintragen.");
+        }
+
+        var charges = await GetChargesForValidationAsync(row.ID);
+        if (!charges.Any())
+        {
+            errors.Add("Mindestens eine Charge hinterlegen.");
+            return errors;
+        }
+
+        if (charges.Any(x => string.IsNullOrWhiteSpace(x.Charge)))
+        {
+            errors.Add("Jede Charge braucht einen Charge-Text.");
+        }
+
+        if (charges.Any(x => x.MengeAnzeige <= 0))
+        {
+            errors.Add("Jede Charge braucht eine Menge groesser als 0.");
+        }
+
+        return errors;
+    }
+
+    private async Task<List<ChargeEntry>> GetChargesForValidationAsync(int wareneingangId)
+    {
+        if (SelectedWE?.ID == wareneingangId && ChargenRows.Any())
+        {
+            return ChargenRows.ToList();
+        }
+
+        return (await WEService.GetChargenForWareneingangAsync(wareneingangId)).ToList();
+    }
+
+    private async Task ShowBookingValidationErrorsAsync(WareneingangEntry row, List<string> validationErrors)
+    {
+        var reference = !string.IsNullOrWhiteSpace(row.LS_Nr) ? row.LS_Nr : $"ID {row.ID}";
+        var message = $"Eintrag {reference} kann noch nicht gebucht werden.\n\nEs fehlt noch:\n- "
+            + string.Join("\n- ", validationErrors);
+
+        await JS.InvokeVoidAsync("alert", message);
+    }
+
+    private static List<string> GetChargeValidationErrors(ChargeEntry charge)
+    {
+        var errors = new List<string>();
+
+        if (string.IsNullOrWhiteSpace(charge.Charge))
+        {
+            errors.Add("Charge-Text eintragen.");
+        }
+
+        if ((charge.Echte_Menge ?? 0) <= 0)
+        {
+            errors.Add("Eine Menge groesser als 0 eintragen.");
+        }
+
+        return errors;
+    }
+
+    private static bool IsBemerkungRequiredAndMissing(WareneingangEntry row)
+    {
+        return (row.Palettentausch == true || IsSchlechterZustand(row.Zustand))
+            && string.IsNullOrWhiteSpace(row.Bemerkung);
+    }
+
+    private string GetWareneingangRowClass(WareneingangEntry row)
+    {
+        var classes = new List<string>();
+
+        if (row.ID == SelectedWE?.ID)
+        {
+            classes.Add("table-active");
+            classes.Add("border-start");
+            classes.Add("border-4");
+            classes.Add("border-info");
+        }
+
+        if (IsSchlechterZustand(row.Zustand))
+        {
+            classes.Add("we-row-bad-state");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private static string GetZustandDisplayText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "Nicht gesetzt" : value.Trim();
+    }
+
+    private static string GetZustandBadgeClass(string? value)
+    {
+        if (IsSchlechterZustand(value))
+        {
+            return "badge rounded-pill px-3 py-2 zustand-badge zustand-badge-bad";
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "badge rounded-pill px-3 py-2 zustand-badge zustand-badge-missing";
+        }
+
+        return IsGuterZustand(value)
+            ? "badge rounded-pill px-3 py-2 zustand-badge zustand-badge-good"
+            : "badge rounded-pill px-3 py-2 zustand-badge zustand-badge-neutral";
+    }
+
+    private static string GetZustandIcon(string? value)
+    {
+        if (IsSchlechterZustand(value))
+        {
+            return "fa-solid fa-triangle-exclamation";
+        }
+
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "fa-solid fa-circle-question";
+        }
+
+        return IsGuterZustand(value)
+            ? "fa-solid fa-circle-check"
+            : "fa-solid fa-circle-info";
+    }
+
+    private static bool IsSchlechterZustand(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var normalized = value.Trim().ToLowerInvariant();
+        return normalized.Contains("schlecht")
+            || normalized.Contains("mangel")
+            || normalized.Contains("defekt")
+            || normalized.Contains("fehler");
+    }
+
+    private static bool IsGuterZustand(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var normalized = value.Trim().ToLowerInvariant();
+        return normalized.Contains("gut")
+            || normalized == "ok"
+            || normalized == "i.o."
+            || normalized == "io";
+    }
+
+    private static WareneingangEntry CloneWareneingang(WareneingangEntry source)
+    {
+        return new WareneingangEntry
+        {
+            ID = source.ID,
+            Lieferant = source.Lieferant,
+            EBE_NR = source.EBE_NR,
+            LS_Nr = source.LS_Nr,
+            Pos = source.Pos,
+            Menge = source.Menge,
+            Artikel = source.Artikel,
+            Bemerkung = source.Bemerkung,
+            Zustand = source.Zustand,
+            Chargen = source.Chargen,
+            Benutzer = source.Benutzer,
+            Eingangsdatum = source.Eingangsdatum,
+            Palettentausch = source.Palettentausch,
+            Gebucht = source.Gebucht,
+            Dickenmessung = source.Dickenmessung
+        };
+    }
+
+    private static bool TryNormalizeDickenmessung(string? input, out string normalized)
+    {
+        normalized = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        var cleaned = input.Trim()
+            .Replace("mm", "", StringComparison.OrdinalIgnoreCase)
+            .Replace(" ", "")
+            .Replace(',', '.');
+
+        if (!decimal.TryParse(
+                cleaned,
+                System.Globalization.NumberStyles.AllowDecimalPoint,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var parsed))
+        {
+            return false;
+        }
+
+        if (parsed < 0.23m || parsed > 1.2m)
+        {
+            return false;
+        }
+
+        normalized = parsed.ToString("0.##", new System.Globalization.CultureInfo("de-DE"));
+        return true;
+    }
+
     private async Task ApplyDateFilterAsync()
     {
         await LoadWEAsync();
@@ -561,7 +867,7 @@
         else
         {
             SortColumn = column;
-            SortAscending = column is "Lieferant" or "Artikel" or "LS_Nr" or "EBEPos";
+            SortAscending = column is "Lieferant" or "Artikel" or "LS_Nr" or "EBEPos" or "Zustand";
         }
 
         ApplyWESort();
@@ -572,6 +878,7 @@
         IEnumerable<WareneingangEntry> sorted = SortColumn switch
         {
             "Gebucht" => SortAscending ? FilteredWERows.OrderBy(x => x.Gebucht == true) : FilteredWERows.OrderByDescending(x => x.Gebucht == true),
+            "Zustand" => SortAscending ? FilteredWERows.OrderBy(x => x.Zustand) : FilteredWERows.OrderByDescending(x => x.Zustand),
             "Lieferant" => SortAscending ? FilteredWERows.OrderBy(x => x.Lieferant) : FilteredWERows.OrderByDescending(x => x.Lieferant),
             "Artikel" => SortAscending ? FilteredWERows.OrderBy(x => x.Artikel) : FilteredWERows.OrderByDescending(x => x.Artikel),
             "LS_Nr" => SortAscending ? FilteredWERows.OrderBy(x => x.LS_Nr) : FilteredWERows.OrderByDescending(x => x.LS_Nr),
@@ -709,4 +1016,54 @@
                    out parsed);
     }
 }
+
+<style>
+    .we-resizable-table th {
+        position: relative;
+    }
+
+    .resizable-th {
+        min-width: 90px;
+        user-select: none;
+    }
+
+    .zustand-badge {
+        border: 1px solid transparent;
+        font-size: 0.8rem;
+        letter-spacing: 0.01em;
+    }
+
+    .zustand-badge-good {
+        background: rgba(25, 135, 84, 0.18);
+        color: #8be0ad;
+        border-color: rgba(25, 135, 84, 0.45);
+    }
+
+    .zustand-badge-bad {
+        background: rgba(220, 53, 69, 0.2);
+        color: #ff9ca8;
+        border-color: rgba(220, 53, 69, 0.55);
+        box-shadow: 0 0 18px rgba(220, 53, 69, 0.12);
+    }
+
+    .zustand-badge-neutral {
+        background: rgba(13, 202, 240, 0.18);
+        color: #89e7ff;
+        border-color: rgba(13, 202, 240, 0.4);
+    }
+
+    .zustand-badge-missing {
+        background: rgba(255, 193, 7, 0.18);
+        color: #ffe28f;
+        border-color: rgba(255, 193, 7, 0.45);
+    }
+
+    .we-row-bad-state > td {
+        background: rgba(220, 53, 69, 0.08) !important;
+    }
+
+    .we-row-bad-state:hover > td {
+        background: rgba(220, 53, 69, 0.14) !important;
+    }
+</style>
 
