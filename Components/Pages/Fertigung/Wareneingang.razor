@@ -198,7 +198,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <label class="modern-label text-warning mb-1"><i class="fa-solid fa-print me-1"></i> Chargen-Etikett</label>
-                            <p class="text-secondary small mb-0">Selektierte Charge aus der Liste drucken</p>
+                            <p class="text-secondary small mb-0">Oeffnet die Druckansicht im Browser und zeigt den normalen Druckdialog</p>
                         </div>
                         <button class="btn btn-glass px-4 py-2 fw-bold text-white border-primary" style="background: rgba(59, 130, 246, 0.1);" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
                             <i class="fa-solid fa-print text-warning me-2"></i> Auswahl Drucken
@@ -572,17 +572,13 @@
         
         try
         {
-            var printerHelper = new ZebraPrinterHelper();
             string eingangsDatum = await WareneingangService.GetEingangsDatumForChargeAsync(SelectedCharge.Charge);
-            bool ok = printerHelper.PrintSingleChargeQr(SelectedCharge.Charge, SelectedCharge.Menge, Material, eingangsDatum);
-            if (ok)
-                await JS.InvokeVoidAsync("alert", "Etikett erfolgreich gesendet!");
-            else
-                await JS.InvokeVoidAsync("alert", "Drucker Fehler: Kein Drucker verfügbar.");
+            string printHtml = WareneingangPrintHelper.BuildSingleChargePrintDocument(SelectedCharge.Charge, SelectedCharge.Menge, Material, eingangsDatum);
+            await JS.InvokeVoidAsync("printHtmlDocument", printHtml);
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", "Druckerfehler: " + ex.Message);
+            await JS.InvokeVoidAsync("alert", "Druckansicht konnte nicht geöffnet werden: " + ex.Message);
         }
     }
 

@@ -148,6 +148,64 @@
                 });
             });
         };
+
+        window.printHtmlDocument = async (html) => {
+            if (!html) {
+                throw new Error('Keine Druckansicht erhalten.');
+            }
+
+            await new Promise((resolve, reject) => {
+                try {
+                    const iframe = document.createElement('iframe');
+                    iframe.style.position = 'fixed';
+                    iframe.style.width = '0';
+                    iframe.style.height = '0';
+                    iframe.style.border = '0';
+                    iframe.style.opacity = '0';
+                    iframe.style.pointerEvents = 'none';
+                    iframe.setAttribute('aria-hidden', 'true');
+                    document.body.appendChild(iframe);
+
+                    let completed = false;
+
+                    const finish = () => {
+                        if (completed) return;
+                        completed = true;
+                        setTimeout(() => iframe.remove(), 500);
+                        resolve();
+                    };
+
+                    const printWindow = iframe.contentWindow;
+                    const printDocument = printWindow?.document;
+
+                    if (!printWindow || !printDocument) {
+                        iframe.remove();
+                        reject(new Error('Die Druckansicht konnte nicht erstellt werden.'));
+                        return;
+                    }
+
+                    const triggerPrint = () => {
+                        try {
+                            printWindow.focus();
+                            printWindow.print();
+                            setTimeout(finish, 1500);
+                        } catch (error) {
+                            iframe.remove();
+                            reject(error);
+                        }
+                    };
+
+                    printWindow.addEventListener('afterprint', finish, { once: true });
+                    iframe.addEventListener('load', () => setTimeout(triggerPrint, 150), { once: true });
+
+                    printDocument.open();
+                    printDocument.write(html);
+                    printDocument.close();
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        };
     </script>
     <script src="_content/Blazor-ApexCharts/js/apex-charts.min.js"></script>
     <script src="_content/Blazor-ApexCharts/js/blazor-apex-charts.js"></script>

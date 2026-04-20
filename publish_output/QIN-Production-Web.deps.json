@@ -17,6 +17,7 @@
           "Microsoft.Data.SqlClient": "5.1.5",
           "Microsoft.Identity.Client": "4.83.1",
           "MimeKit": "4.15.1",
+          "QRCoder": "1.8.0",
           "System.Drawing.Common": "8.0.0",
           "System.IO.Packaging": "10.0.5",
           "runtimepack.Microsoft.NETCore.App.Runtime.win-x64": "10.0.5",
@@ -1593,6 +1594,17 @@
           }
         }
       },
+      "QRCoder/1.8.0": {
+        "dependencies": {
+          "System.Drawing.Common": "8.0.0"
+        },
+        "runtime": {
+          "lib/net6.0/QRCoder.dll": {
+            "assemblyVersion": "1.8.0.0",
+            "fileVersion": "1.8.0.0"
+          }
+        }
+      },
       "SixLabors.Fonts/1.0.0": {
         "runtime": {
           "lib/netcoreapp3.1/SixLabors.Fonts.dll": {
@@ -1900,6 +1912,13 @@
       "sha512": "sha512-cxCcQhD0zhboFoG136jJuJtQjNRDJ+BxBm3f2vWn+53bff/CRo+K1mAkWjsW4Wuyy5O22F40MdMG2nRzQu1cJw==",
       "path": "mimekit/4.15.1",
       "hashPath": "mimekit.4.15.1.nupkg.sha512"
+    },
+    "QRCoder/1.8.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-RuvX3PEXU6pbY/I5ItAk800jm62r+YnoPLgyS2WTgwxkOnGkOfU9ORiipHUF0LkLyqM8rlroUCA319JjRYfRFQ==",
+      "path": "qrcoder/1.8.0",
+      "hashPath": "qrcoder.1.8.0.nupkg.sha512"
     },
     "SixLabors.Fonts/1.0.0": {
       "type": "package",
