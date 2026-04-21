@@ -4,6 +4,13 @@
 
 Diese Dokumentation beschreibt den aktuellen technischen Stand des Schichtplans im Dashboard und in der Monitoransicht.
 
+Aktueller Hinweis zum Arbeitsplatzstamm:
+
+- Der verwaltete Schichtplan arbeitet inzwischen mit dem Datenbank-Stamm `dbo.SchichtplanArbeitsplatz`.
+- Im Bereich `Sonstiges` gibt es ab sofort genau einen Arbeitsplatz mit dem Namen `Sonstiges`.
+- Die früheren Einträge `Springer`, `Materialversorgung` und `Reserve / Einarbeitung` werden per SQL-Konsolidierung auf diesen einen Arbeitsplatz zusammengeführt und danach aus dem Arbeitsplatzstamm entfernt.
+- Bestehende Schichtplan-Einträge werden dabei zuerst auf den kanonischen Arbeitsplatz `Sonstiges` umgehängt.
+
 Der Schichtplan ist aktuell ein UI-Prototyp für die Fertigung. Die Daten kommen noch nicht aus der Datenbank, sondern aus statischen Demo-Daten im Komponenten-Code.
 
 Relevante Dateien:
@@ -12,6 +19,21 @@ Relevante Dateien:
 - [ShiftPlanBoard.razor](/Components/Shared/ShiftPlanBoard.razor:1)
 - [ShiftPlanBoard.razor.css](/Components/Shared/ShiftPlanBoard.razor.css:1)
 - [App.razor](/Components/App.razor:1)
+- [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1)
+
+## Arbeitsplatzstamm Sonstiges
+
+Der Bereich `Sonstiges` ist im SQL-Stamm absichtlich auf genau einen Arbeitsplatz reduziert:
+
+- `Sonstiges`
+
+Die Konsolidierung in [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1) macht dabei Folgendes:
+
+1. Falls noch kein Arbeitsplatz `Sonstiges` existiert, wird ein vorhandener Sonstiges-Platz zum kanonischen Arbeitsplatz umbenannt.
+2. Vorhandene Schichtplan-Einträge werden auf diesen kanonischen Arbeitsplatz migriert.
+3. Verbleibende alte Sonstiges-Arbeitsplätze werden aus dem Arbeitsplatzstamm gelöscht.
+
+Damit bleibt die Verwaltung einfacher, und im UI erscheint der Bereich `Sonstiges` nur noch einmal.
 
 ## Route und Einbindung
 

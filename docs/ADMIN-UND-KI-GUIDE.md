@@ -13,6 +13,14 @@ Quelle: `Data/SqlManager.cs`
 - Benutzer: `db.user`
 - Passwort: `232323`
 
+Wichtige Klarstellung:
+
+- Es gibt zwei Datenbanken: `qinFSK\table1` und `Fertigung`.
+- `dbo` ist jeweils nur das Schema innerhalb der Datenbank.
+- `dbo.Table1` ist keine eigene Datenbank.
+- Benutzerdaten liegen aktuell in `qinFSK\table1`, zum Beispiel in `dbo.LoginDaten`.
+- Fertigungsbezogene Tabellen wie der Schichtplan sollen in `Fertigung` unter dem Schema `dbo` angelegt werden.
+
 ## Benachrichtigungen schreiben
 
 Benachrichtigungen immer per `INSERT` in die Tabelle `Alerts` schreiben.
@@ -27,7 +35,7 @@ Bedeutung fuer KI:
 Pflichtregeln:
 
 - Titel immer im Format `Update (Version) Bereich` schreiben.
-- Beispiel fuer den Titel: `Update (3.1.5) Wareneingang`.
+- Beispiel fuer den Titel: `Update (3.2.0) Schichtplan`.
 - Aenderungen kurz, klar und fuer Nutzer verstaendlich formulieren.
 - Pro Aenderung nur einen kurzen Satz schreiben.
 - Deutsche Umlaute und `ß` normal schreiben, also `ä`, `ö`, `ü` und `ß` benutzen.

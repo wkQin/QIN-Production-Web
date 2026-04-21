@@ -1,0 +1,696 @@
+.schichtplan-admin-page {
+    color: #e2e8f0;
+}
+
+.schichtplan-admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 1.25rem;
+    padding: 1.4rem 1.5rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 1.4rem;
+    background:
+        radial-gradient(circle at top right, rgba(56, 189, 248, 0.1), transparent 28%),
+        linear-gradient(180deg, rgba(11, 18, 32, 0.98), rgba(14, 24, 40, 0.96));
+    box-shadow: 0 20px 50px rgba(2, 6, 23, 0.28);
+}
+
+.schichtplan-admin-copy {
+    max-width: 44rem;
+}
+
+.schichtplan-admin-kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.74rem;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.14);
+    color: #bfdbfe;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.schichtplan-admin-copy h2 {
+    margin: 0.75rem 0 0.35rem;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.schichtplan-admin-copy p {
+    margin: 0;
+    color: rgba(226, 232, 240, 0.72);
+    line-height: 1.55;
+}
+
+.schichtplan-admin-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: 0.9rem;
+}
+
+.schichtplan-toolbar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 14rem;
+}
+
+.schichtplan-toolbar-field span,
+.schichtplan-board-filter span {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: rgba(191, 219, 254, 0.84);
+}
+
+.schichtplan-toolbar-meta,
+.schichtplan-pool-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+}
+
+.schichtplan-toolbar-pill,
+.schichtplan-drag-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.55rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.7);
+    color: #e2e8f0;
+    font-weight: 700;
+}
+
+.schichtplan-refresh-btn {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+}
+
+.schichtplan-status-alert,
+.schichtplan-error-alert {
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    margin-bottom: 1rem;
+}
+
+.schichtplan-loading-state {
+    min-height: 18rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.9rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    background: rgba(10, 17, 30, 0.88);
+}
+
+.schichtplan-pool-card,
+.schichtplan-board-card {
+    border: 1px solid rgba(148, 163, 184, 0.14);
+    border-radius: 1.35rem;
+    background: linear-gradient(180deg, rgba(9, 16, 30, 0.98), rgba(11, 18, 32, 0.96));
+    box-shadow: 0 20px 48px rgba(2, 6, 23, 0.24);
+}
+
+.schichtplan-pool-card {
+    padding: 1.2rem;
+}
+
+.schichtplan-board-card {
+    overflow: hidden;
+}
+
+.schichtplan-pool-header,
+.schichtplan-board-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.schichtplan-pool-header h3,
+.schichtplan-board-header h3 {
+    margin: 0;
+    font-size: 1.18rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.schichtplan-pool-header p,
+.schichtplan-board-header p {
+    margin: 0.3rem 0 0;
+    color: rgba(226, 232, 240, 0.68);
+    line-height: 1.5;
+}
+
+.schichtplan-user-toolbar,
+.schichtplan-pool-actions,
+.schichtplan-board-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.schichtplan-user-toolbar {
+    margin-top: 1rem;
+}
+
+.schichtplan-search-field {
+    position: relative;
+}
+
+.schichtplan-search-field i {
+    position: absolute;
+    left: 0.95rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(191, 219, 254, 0.58);
+    font-size: 0.88rem;
+    pointer-events: none;
+}
+
+.schichtplan-search-field input {
+    padding-left: 2.55rem;
+}
+
+.schichtplan-user-toolbar .schichtplan-search-field {
+    min-width: 16rem;
+    flex: 1 1 16rem;
+}
+
+.schichtplan-user-toolbar > input {
+    min-width: 15rem;
+    flex: 1 1 15rem;
+}
+
+.schichtplan-pool-actions.is-stacked {
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 1rem;
+}
+
+.schichtplan-pool-actions.is-stacked .schichtplan-search-field {
+    width: 100%;
+}
+
+.schichtplan-chip-scroll {
+    max-height: 19rem;
+    overflow: auto;
+    margin-top: 1rem;
+    padding-right: 0.15rem;
+}
+
+.schichtplan-chip-scroll::-webkit-scrollbar,
+.schichtplan-material-scroll::-webkit-scrollbar {
+    width: 10px;
+}
+
+.schichtplan-chip-scroll::-webkit-scrollbar-thumb,
+.schichtplan-material-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.45);
+    border-radius: 999px;
+}
+
+.schichtplan-pool-empty,
+.schichtplan-board-empty {
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    border: 1px dashed rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.45);
+    color: rgba(226, 232, 240, 0.72);
+}
+
+.schichtplan-chip-grid {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.users-grid {
+    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));
+}
+
+.schichtplan-material-table {
+    margin-top: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-radius: 1rem;
+    background: rgba(8, 15, 28, 0.58);
+    overflow: hidden;
+}
+
+.schichtplan-material-scroll {
+    display: flex;
+    flex-direction: column;
+    gap: 0.42rem;
+    max-height: 54rem;
+    overflow: auto;
+    padding: 0.6rem;
+}
+
+.schichtplan-material-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.65rem;
+    align-items: center;
+    min-width: 0;
+    min-height: 2.8rem;
+    padding: 0.52rem 0.7rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: linear-gradient(180deg, rgba(18, 27, 45, 0.92), rgba(13, 21, 37, 0.98));
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.schichtplan-material-row:hover {
+    transform: translateY(-1px);
+    border-color: rgba(96, 165, 250, 0.42);
+    box-shadow: 0 10px 18px rgba(2, 6, 23, 0.2);
+}
+
+.schichtplan-material-row:active {
+    cursor: grabbing;
+}
+
+.schichtplan-material-row-main {
+    min-width: 0;
+}
+
+.schichtplan-material-name {
+    display: block;
+    color: #f8fafc;
+    font-weight: 750;
+    line-height: 1.22;
+    font-size: 0.9rem;
+    word-break: break-word;
+}
+
+.schichtplan-material-delete {
+    width: 1.9rem;
+    height: 1.9rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: rgba(248, 113, 113, 0.95);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 18px rgba(2, 6, 23, 0.18);
+}
+
+.schichtplan-chip {
+    min-width: 0;
+    position: relative;
+    padding: 0.75rem 0.85rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: linear-gradient(180deg, rgba(18, 27, 45, 0.92), rgba(13, 21, 37, 0.98));
+    cursor: grab;
+    user-select: none;
+    transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.schichtplan-chip:hover {
+    transform: translateY(-2px);
+    border-color: rgba(96, 165, 250, 0.42);
+    box-shadow: 0 16px 30px rgba(2, 6, 23, 0.25);
+}
+
+.schichtplan-chip:active {
+    cursor: grabbing;
+}
+
+.schichtplan-chip-copy {
+    min-width: 0;
+    padding-right: 1.9rem;
+}
+
+.schichtplan-chip-delete {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.92);
+    color: rgba(248, 113, 113, 0.95);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 18px rgba(2, 6, 23, 0.22);
+}
+
+.chip-title {
+    display: block;
+    color: #f8fafc;
+    font-weight: 800;
+    line-height: 1.28;
+}
+
+.chip-subtitle {
+    display: block;
+    margin-top: 0.32rem;
+    color: rgba(191, 219, 254, 0.72);
+    font-size: 0.76rem;
+    line-height: 1.2;
+}
+
+.user-chip.is-manual {
+    border-color: rgba(34, 197, 94, 0.28);
+    background: linear-gradient(180deg, rgba(18, 54, 39, 0.72), rgba(11, 28, 24, 0.96));
+}
+
+.schichtplan-board-header {
+    padding: 1.15rem 1.2rem 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.schichtplan-board-tools {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.schichtplan-board-filter {
+    display: flex;
+    flex-direction: column;
+    gap: 0.42rem;
+    min-width: 15rem;
+}
+
+.schichtplan-board-grid {
+    display: grid;
+    grid-template-columns: minmax(14rem, 0.95fr) repeat(3, minmax(0, 1fr));
+}
+
+.schichtplan-grid-cell {
+    min-width: 0;
+}
+
+.schichtplan-board-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(8, 15, 28, 0.98);
+}
+
+.header-cell {
+    padding: 0.88rem 0.95rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+    color: #f8fafc;
+}
+
+.header-cell span {
+    display: block;
+    font-weight: 800;
+}
+
+.header-cell small {
+    display: block;
+    margin-top: 0.25rem;
+    color: rgba(226, 232, 240, 0.62);
+}
+
+.header-cell.is-night {
+    background: rgba(67, 56, 202, 0.12);
+}
+
+.header-cell.is-early {
+    background: rgba(16, 185, 129, 0.12);
+}
+
+.header-cell.is-late {
+    background: rgba(249, 115, 22, 0.12);
+}
+
+.schichtplan-section-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.68rem 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.08);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    background: rgba(15, 23, 42, 0.56);
+    color: #f8fafc;
+    --area-color: #64748b;
+}
+
+.schichtplan-section-row strong {
+    font-size: 0.96rem;
+    font-weight: 800;
+}
+
+.schichtplan-section-row span {
+    color: rgba(226, 232, 240, 0.66);
+    font-size: 0.82rem;
+}
+
+.theme-thermo { --area-color: #0ea5e9; }
+.theme-mill { --area-color: #22c55e; }
+.theme-stanzen { --area-color: #f59e0b; }
+.theme-uv { --area-color: #a855f7; }
+.theme-flex { --area-color: #f97316; }
+.theme-cleanroom { --area-color: #14b8a6; }
+.theme-misc { --area-color: #94a3b8; }
+
+.schichtplan-section-row::before {
+    content: "";
+    width: 0.45rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: var(--area-color);
+}
+
+.schichtplan-workplace-row {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.07);
+}
+
+.schichtplan-workplace-cell {
+    padding: 0.92rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.08);
+    background: linear-gradient(180deg, rgba(10, 17, 30, 0.94), rgba(12, 20, 35, 0.96));
+    box-shadow: inset 3px 0 0 var(--area-color);
+}
+
+.schichtplan-workplace-number {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.58rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.12);
+    color: rgba(226, 232, 240, 0.76);
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.58rem;
+}
+
+.schichtplan-workplace-cell strong {
+    display: block;
+    color: #f8fafc;
+    font-size: 0.96rem;
+}
+
+.schichtplan-slot {
+    padding: 0.72rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.08);
+    background: rgba(8, 15, 28, 0.82);
+}
+
+.schichtplan-slot.is-night {
+    background: linear-gradient(180deg, rgba(30, 27, 75, 0.3), rgba(8, 15, 28, 0.88));
+}
+
+.schichtplan-slot.is-early {
+    background: linear-gradient(180deg, rgba(6, 78, 59, 0.24), rgba(8, 15, 28, 0.88));
+}
+
+.schichtplan-slot.is-late {
+    background: linear-gradient(180deg, rgba(124, 45, 18, 0.24), rgba(8, 15, 28, 0.88));
+}
+
+.schichtplan-slot.is-drag-active {
+    box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.16);
+}
+
+.schichtplan-slot-topline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.schichtplan-slot-label {
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: rgba(191, 219, 254, 0.8);
+}
+
+.schichtplan-clear-btn,
+.schichtplan-remove-user-btn {
+    width: 1.8rem;
+    height: 1.8rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.9);
+    color: rgba(226, 232, 240, 0.84);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.schichtplan-material-card {
+    min-height: 3.7rem;
+    margin-top: 0.62rem;
+    padding: 0.78rem 0.82rem;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(96, 165, 250, 0.14);
+    background: linear-gradient(180deg, rgba(18, 29, 47, 0.94), rgba(11, 18, 33, 0.98));
+}
+
+.schichtplan-material-card strong {
+    display: block;
+    font-size: 0.94rem;
+    line-height: 1.42;
+    color: #f8fafc;
+}
+
+.schichtplan-material-card.is-empty {
+    border-style: dashed;
+    color: rgba(226, 232, 240, 0.5);
+}
+
+.schichtplan-user-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin-top: 0.7rem;
+    padding: 0.52rem;
+    border-radius: 1rem;
+    outline: 1px solid rgba(96, 165, 250, 0.34);
+    background: linear-gradient(180deg, rgba(13, 22, 38, 0.9), rgba(9, 16, 29, 0.96));
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
+}
+
+.schichtplan-user-pill {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.45rem;
+    padding: 0.46rem 0.6rem;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    background: rgba(15, 23, 42, 0.9);
+    color: #f8fafc;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.schichtplan-entry-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin-top: 0.8rem;
+}
+
+.schichtplan-entry-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.schichtplan-entry-fields span {
+    color: rgba(191, 219, 254, 0.8);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.materials-card {
+    position: sticky;
+    top: 1rem;
+}
+
+@media (max-width: 1399.98px) {
+    .schichtplan-admin-header {
+        flex-direction: column;
+    }
+
+    .schichtplan-admin-toolbar {
+        justify-content: flex-start;
+    }
+
+    .schichtplan-user-toolbar,
+    .schichtplan-board-tools {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .schichtplan-board-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .schichtplan-workplace-cell,
+    .schichtplan-slot {
+        border-right: 0;
+    }
+
+    .schichtplan-entry-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .materials-card {
+        position: static;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .schichtplan-admin-header,
+    .schichtplan-pool-card {
+        padding: 1rem;
+    }
+
+    .schichtplan-user-toolbar,
+    .schichtplan-pool-actions,
+    .schichtplan-board-header,
+    .schichtplan-board-tools {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .schichtplan-user-toolbar .schichtplan-search-field,
+    .schichtplan-user-toolbar > input,
+    .schichtplan-board-filter {
+        min-width: 0;
+    }
+
+    .schichtplan-user-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .users-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .schichtplan-material-row {
+        gap: 0.55rem;
+    }
+}

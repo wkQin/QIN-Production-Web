@@ -1,0 +1,716 @@
+@page "/verwaltung/schichtplan"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using QIN_Production_Web.Data
+@implements IAsyncDisposable
+@attribute [Authorize(Roles = "Admin,Verwaltung")]
+@inject SchichtplanService SchichtplanService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<PageTitle>Schichtplan - Verwaltung</PageTitle>
+
+<div class="container-fluid py-4 min-vh-100 bg-dark schichtplan-admin-page">
+    <div class="schichtplan-admin-header">
+        <div class="schichtplan-admin-copy">
+            <div class="schichtplan-admin-kicker">Verwaltung</div>
+            <h2>Schichtplan</h2>
+            <p>Benutzer und Material per Drag-and-drop auf die Arbeitsplätze ziehen. Bereits zugeordnete Benutzer verschwinden oben automatisch aus der Liste.</p>
+        </div>
+
+        <div class="schichtplan-admin-toolbar">
+            <label class="schichtplan-toolbar-field">
+                <span>Plan-Datum</span>
+                <input type="date"
+                       class="form-control form-control-lg bg-dark text-white border-secondary"
+                       value="@SelectedDate.ToString("yyyy-MM-dd")"
+                       @onchange="OnDateChangedAsync" />
+            </label>
+
+            <div class="schichtplan-toolbar-meta">
+                <span class="schichtplan-toolbar-pill">KW @ViewModel.Board.Kalenderwoche</span>
+                <span class="schichtplan-toolbar-pill">@LastUpdatedDisplay</span>
+            </div>
+
+            <button type="button" class="btn btn-outline-light btn-lg schichtplan-refresh-btn" @onclick="ReloadAsync">
+                <i class="fa-solid fa-rotate-right me-2"></i>
+                Neu laden
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <div class="@($"alert schichtplan-status-alert {StatusAlertClass}")" role="alert">
+            @StatusMessage
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        <div class="schichtplan-loading-state">
+            <div class="spinner-border text-info" role="status"></div>
+            <span>Schichtplan wird geladen...</span>
+        </div>
+    }
+    else if (!string.IsNullOrWhiteSpace(LoadError))
+    {
+        <div class="alert alert-danger schichtplan-error-alert" role="alert">
+            @LoadError
+        </div>
+    }
+    else
+    {
+        <section class="schichtplan-pool-card users-card">
+            <div class="schichtplan-pool-header">
+                <div>
+                    <h3>Benutzer</h3>
+                </div>
+                <div class="schichtplan-pool-meta">
+                    <span class="schichtplan-toolbar-pill">@VisibleUsers.Count Benutzer sichtbar</span>
+                </div>
+            </div>
+
+            <div class="schichtplan-user-toolbar">
+                <div class="schichtplan-search-field">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text"
+                           class="form-control bg-dark text-white border-secondary"
+                           placeholder="Benutzer suchen"
+                           @bind="UserSearchTerm"
+                           @bind:event="oninput" />
+                </div>
+                <input type="text"
+                       class="form-control bg-dark text-white border-secondary"
+                       placeholder="Neuen Benutzer anlegen"
+                       @bind="NewManualUserName"
+                       @bind:event="oninput" />
+                <button type="button" class="btn btn-primary fw-bold" @onclick="CreateManualUserAsync">
+                    <i class="fa-solid fa-user-plus me-2"></i>
+                    Benutzer hinzufügen
+                </button>
+            </div>
+
+            <div class="schichtplan-chip-scroll">
+                @if (VisibleUsers.Count == 0)
+                {
+                    <div class="schichtplan-pool-empty">Keine passenden Benutzer gefunden oder alle Benutzer sind bereits eingeplant.</div>
+                }
+                else
+                {
+                    <div class="schichtplan-chip-grid users-grid">
+                        @foreach (var user in VisibleUsers)
+                        {
+                            <div class="@($"schichtplan-chip user-chip {(user.IsManual ? "is-manual" : string.Empty)}")"
+                                 draggable="true"
+                                 @ondragstart="() => BeginUserDragAsync(user)"
+                                 @ondragend="EndDragAsync">
+                                @if (user.IsManual)
+                                {
+                                    <button type="button"
+                                            class="schichtplan-chip-delete"
+                                            title="Manuellen Benutzer löschen"
+                                            @onclick="() => DeleteManualUserAsync(user)"
+                                            @onclick:stopPropagation="true"
+                                            @onmousedown:stopPropagation="true">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                }
+
+                                <div class="schichtplan-chip-copy">
+                                    <span class="chip-title">@user.DisplayName</span>
+                                    <span class="chip-subtitle">@GetUserSubtitle(user)</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </section>
+
+        <div class="row g-4 mt-1">
+            <div class="col-xxl-9 col-xl-8">
+                <section class="schichtplan-board-card">
+                    <div class="schichtplan-board-header">
+                        <div>
+                            <h3>Planung</h3>
+                            <p>Material oder Benutzer auf eine Schichtkarte ziehen. Standardmäßig wird nur ein Bereich gezeigt, damit die Ansicht kürzer bleibt.</p>
+                        </div>
+
+                        <div class="schichtplan-board-tools">
+                            <label class="schichtplan-board-filter">
+                                <span>Arbeitsbereich</span>
+                                <select class="form-select bg-dark text-white border-secondary" value="@SelectedAreaFilter" @onchange="OnAreaFilterChanged">
+                                    <option value="@AllAreasFilter">Alle Bereiche</option>
+                                    @foreach (var area in AreaOptions)
+                                    {
+                                        <option value="@area">@area</option>
+                                    }
+                                </select>
+                            </label>
+
+                            @if (CurrentDrag is not null)
+                            {
+                                <div class="schichtplan-drag-pill">
+                                    <i class="fa-solid fa-arrow-pointer me-2"></i>
+                                    @CurrentDrag.DisplayLabel
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    @if (VisibleSections.Count == 0)
+                    {
+                        <div class="schichtplan-board-empty">
+                            Für den gewählten Bereich gibt es keine Arbeitsplätze.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="schichtplan-board-grid schichtplan-board-header-row">
+                            <div class="schichtplan-grid-cell header-cell workplace-head">
+                                <span>Maschine / Arbeitsplatz</span>
+                                <small>Nummer und Bereich</small>
+                            </div>
+
+                            @foreach (var shift in ShiftHeaders)
+                            {
+                                <div class="@($"schichtplan-grid-cell header-cell {GetShiftClass(shift)}")">
+                                    <span>@shift</span>
+                                    <small>Material, Benutzer, FA-Nr, Bemerkung</small>
+                                </div>
+                            }
+                        </div>
+
+                        @foreach (var boardSection in VisibleSections)
+                        {
+                            <div class="@($"schichtplan-section-row {boardSection.ThemeClass}")">
+                                <strong>@boardSection.Name</strong>
+                                <span>@boardSection.Workplaces.Count Arbeitsplätze</span>
+                            </div>
+
+                            @foreach (var workplace in boardSection.Workplaces)
+                            {
+                                <div class="@($"schichtplan-board-grid schichtplan-workplace-row {boardSection.ThemeClass}")">
+                                    <div class="schichtplan-grid-cell schichtplan-workplace-cell">
+                                        <div class="schichtplan-workplace-number">@GetWorkplaceNumber(workplace.ArbeitsplatzNr)</div>
+                                        <strong>@workplace.ArbeitsplatzName</strong>
+                                    </div>
+
+                                    @foreach (var cell in workplace.Shifts)
+                                    {
+                                        <div class="@($"schichtplan-grid-cell schichtplan-slot {GetShiftClass(cell.Shift)} {(CurrentDrag is not null ? "is-drag-active" : string.Empty)}")"
+                                             @ondragover:preventDefault
+                                             @ondrop="() => HandleDropAsync(workplace.ArbeitsplatzId, cell.Shift)">
+                                            <div class="schichtplan-slot-topline">
+                                                <span class="schichtplan-slot-label">@cell.Shift</span>
+                                                @if (!string.IsNullOrWhiteSpace(cell.Material))
+                                                {
+                                                    <button type="button" class="schichtplan-clear-btn" @onclick="() => ClearMaterialAsync(workplace.ArbeitsplatzId, cell.Shift)">
+                                                        <i class="fa-solid fa-xmark"></i>
+                                                    </button>
+                                                }
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(cell.Material))
+                                            {
+                                                <div class="schichtplan-material-card">
+                                                    <strong>@cell.Material</strong>
+                                                </div>
+                                            }
+
+                                            @if (cell.AssignedUsers.Count > 0)
+                                            {
+                                                <div class="schichtplan-user-grid">
+                                                    @foreach (var assignedUser in cell.AssignedUsers)
+                                                    {
+                                                        <div class="schichtplan-user-pill">
+                                                            <span>@assignedUser.DisplayName</span>
+                                                            <button type="button" class="schichtplan-remove-user-btn" @onclick="() => RemoveUserAsync(assignedUser.AssignmentId)">
+                                                                <i class="fa-solid fa-xmark"></i>
+                                                            </button>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+
+                                            <div class="schichtplan-entry-fields">
+                                                <label>
+                                                    <span>FA-Nr</span>
+                                                    <input type="text"
+                                                           class="form-control form-control-sm bg-dark text-white border-secondary"
+                                                           value="@cell.FANr"
+                                                           @onchange="args => SaveEntryDetailsAsync(workplace.ArbeitsplatzId, cell.Shift, args.Value?.ToString(), cell.Bemerkung)" />
+                                                </label>
+                                                <label>
+                                                    <span>Bemerkung</span>
+                                                    <textarea class="form-control form-control-sm bg-dark text-white border-secondary"
+                                                              rows="1"
+                                                              @onchange="args => SaveEntryDetailsAsync(workplace.ArbeitsplatzId, cell.Shift, cell.FANr, args.Value?.ToString())">@cell.Bemerkung</textarea>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        }
+                    }
+                </section>
+            </div>
+
+            <div class="col-xxl-3 col-xl-4">
+                <section class="schichtplan-pool-card materials-card">
+                    <div class="schichtplan-pool-header">
+                        <div>
+                            <h3>Materialliste</h3>
+                        </div>
+                    </div>
+
+                    <div class="schichtplan-pool-actions is-stacked">
+                        <div class="schichtplan-search-field">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text"
+                                   class="form-control bg-dark text-white border-secondary"
+                                   placeholder="Material suchen"
+                                   @bind="MaterialSearchTerm"
+                                   @bind:event="oninput" />
+                        </div>
+                        <input type="text"
+                               class="form-control bg-dark text-white border-secondary"
+                               placeholder="Neues Material anlegen"
+                               @bind="NewMaterialName"
+                               @bind:event="oninput" />
+                        <button type="button" class="btn btn-outline-info fw-bold" @onclick="CreateMaterialAsync">
+                            <i class="fa-solid fa-plus me-2"></i>
+                            Material hinzufügen
+                        </button>
+                    </div>
+
+                    <div class="schichtplan-material-table">
+                        <div class="schichtplan-material-scroll">
+                            @if (VisibleMaterials.Count == 0)
+                            {
+                                <div class="schichtplan-pool-empty">Keine passenden Materialien gefunden.</div>
+                            }
+                            else
+                            {
+                                @foreach (var material in VisibleMaterials)
+                                {
+                                    <div class="schichtplan-material-row"
+                                         draggable="true"
+                                         @ondragstart="() => BeginMaterialDragAsync(material)"
+                                         @ondragend="EndDragAsync">
+                                        <div class="schichtplan-material-row-main">
+                                            <span class="schichtplan-material-name">@material.Material</span>
+                                        </div>
+
+                                        <button type="button"
+                                                class="schichtplan-material-delete"
+                                                title="Material löschen"
+                                                @onclick="() => DeleteMaterialAsync(material)"
+                                                @onclick:stopPropagation="true"
+                                                @onmousedown:stopPropagation="true">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const string AllAreasFilter = "__ALLE__";
+
+    private readonly string[] ShiftHeaders =
+    [
+        SchichtplanKonstanten.Nachtschicht,
+        SchichtplanKonstanten.Frühschicht,
+        SchichtplanKonstanten.Spätschicht
+    ];
+
+    private SchichtplanManagementModel ViewModel { get; set; } = new()
+    {
+        Board = new SchichtplanBoardModel
+        {
+            PlanDatum = DateTime.Today,
+            Kalenderwoche = SchichtplanKonstanten.Kalenderwoche(DateTime.Today)
+        }
+    };
+
+    private DateTime SelectedDate { get; set; } = DateTime.Today;
+    private bool IsLoading { get; set; } = true;
+    private bool hasAreaFilterInitialized;
+    private string? LoadError { get; set; }
+    private string? StatusMessage { get; set; }
+    private string StatusAlertClass { get; set; } = "alert-info";
+    private string CurrentUserName { get; set; } = "Verwaltung";
+    private string NewManualUserName { get; set; } = string.Empty;
+    private string NewMaterialName { get; set; } = string.Empty;
+    private string MaterialSearchTerm { get; set; } = string.Empty;
+    private string UserSearchTerm { get; set; } = string.Empty;
+    private string SelectedAreaFilter { get; set; } = AllAreasFilter;
+    private DragItem? CurrentDrag { get; set; }
+
+    private string LastUpdatedDisplay =>
+        ViewModel.Board.LastUpdatedAt.HasValue
+            ? $"Zuletzt geändert: {ViewModel.Board.LastUpdatedAt:dd.MM.yyyy HH:mm}"
+            : "Noch keine Änderungen";
+
+    private List<string> AreaOptions =>
+        ViewModel.Board.Sections
+            .Select(section => section.Name)
+            .Where(name => !string.IsNullOrWhiteSpace(name))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(name => name, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
+            .ToList();
+
+    private List<SchichtplanSectionModel> VisibleSections =>
+        SelectedAreaFilter == AllAreasFilter
+            ? ViewModel.Board.Sections
+            : ViewModel.Board.Sections
+                .Where(section => string.Equals(section.Name, SelectedAreaFilter, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+    private List<SchichtplanAvailableUserModel> VisibleUsers =>
+        ViewModel.AvailableUsers
+            .Where(user =>
+                string.IsNullOrWhiteSpace(UserSearchTerm) ||
+                (user.DisplayName?.Contains(UserSearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (user.Bereich?.Contains(UserSearchTerm, StringComparison.OrdinalIgnoreCase) ?? false))
+            .OrderBy(user => user.DisplayName ?? string.Empty, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
+            .ToList();
+
+    private List<SchichtplanMaterialModel> VisibleMaterials =>
+        ViewModel.Materials
+            .Where(material =>
+                string.IsNullOrWhiteSpace(MaterialSearchTerm) ||
+                material.Material.Contains(MaterialSearchTerm, StringComparison.OrdinalIgnoreCase))
+            .OrderBy(material => material.Sortierung)
+            .ThenBy(material => material.Material, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
+            .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        CurrentUserName = authState.User.Identity?.Name ?? "Verwaltung";
+        await LoadAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("schichtplanDragScroll.deactivate");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private async Task ReloadAsync()
+    {
+        await LoadAsync();
+        SetStatus("Schichtplan neu geladen.", true);
+    }
+
+    private async Task OnDateChangedAsync(ChangeEventArgs args)
+    {
+        if (DateTime.TryParse(args.Value?.ToString(), out var parsedDate))
+        {
+            SelectedDate = parsedDate.Date;
+            await LoadAsync();
+        }
+    }
+
+    private Task OnAreaFilterChanged(ChangeEventArgs args)
+    {
+        SelectedAreaFilter = args.Value?.ToString() ?? AllAreasFilter;
+        return Task.CompletedTask;
+    }
+
+    private async Task LoadAsync()
+    {
+        IsLoading = true;
+        LoadError = null;
+
+        try
+        {
+            ViewModel = await SchichtplanService.GetManagementModelAsync(SelectedDate);
+            EnsureAreaFilterSelection();
+        }
+        catch (Exception ex)
+        {
+            LoadError = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void EnsureAreaFilterSelection()
+    {
+        var areas = AreaOptions;
+        if (areas.Count == 0)
+        {
+            SelectedAreaFilter = AllAreasFilter;
+            hasAreaFilterInitialized = true;
+            return;
+        }
+
+        if (!hasAreaFilterInitialized)
+        {
+            SelectedAreaFilter = areas[0];
+            hasAreaFilterInitialized = true;
+            return;
+        }
+
+        if (SelectedAreaFilter != AllAreasFilter &&
+            !areas.Contains(SelectedAreaFilter, StringComparer.OrdinalIgnoreCase))
+        {
+            SelectedAreaFilter = areas[0];
+        }
+    }
+
+    private async Task BeginUserDragAsync(SchichtplanAvailableUserModel user)
+    {
+        CurrentDrag = new DragItem("user", user.DisplayName, user.Source, user.Key, user.Personalnummer, null);
+        await JS.InvokeVoidAsync("schichtplanDragScroll.activate");
+    }
+
+    private async Task BeginMaterialDragAsync(SchichtplanMaterialModel material)
+    {
+        CurrentDrag = new DragItem("material", material.Material, null, null, null, material.Id);
+        await JS.InvokeVoidAsync("schichtplanDragScroll.activate");
+    }
+
+    private async Task EndDragAsync()
+    {
+        await JS.InvokeVoidAsync("schichtplanDragScroll.deactivate");
+        await Task.Delay(60);
+
+        if (CurrentDrag is not null)
+        {
+            CurrentDrag = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task HandleDropAsync(int workplaceId, string shift)
+    {
+        var draggedItem = CurrentDrag;
+        if (draggedItem is null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (draggedItem.Type == "user")
+            {
+                await SchichtplanService.AssignUserAsync(
+                    SelectedDate,
+                    workplaceId,
+                    shift,
+                    new SchichtplanAvailableUserModel
+                    {
+                        DisplayName = draggedItem.DisplayLabel,
+                        Source = draggedItem.Source ?? "LoginDaten",
+                        Key = draggedItem.Key ?? string.Empty,
+                        Personalnummer = draggedItem.Personalnummer,
+                        IsManual = string.Equals(draggedItem.Source, "Manuell", StringComparison.OrdinalIgnoreCase)
+                    },
+                    CurrentUserName);
+
+                SetStatus($"Benutzer '{draggedItem.DisplayLabel}' wurde zugeordnet.", true);
+            }
+            else if (draggedItem.Type == "material" && draggedItem.MaterialId.HasValue)
+            {
+                await SchichtplanService.AssignMaterialAsync(SelectedDate, workplaceId, shift, draggedItem.MaterialId.Value, CurrentUserName);
+                SetStatus($"Material '{draggedItem.DisplayLabel}' wurde gesetzt.", true);
+            }
+
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+        finally
+        {
+            CurrentDrag = null;
+            await JS.InvokeVoidAsync("schichtplanDragScroll.deactivate");
+        }
+    }
+
+    private async Task RemoveUserAsync(int assignmentId)
+    {
+        try
+        {
+            await SchichtplanService.RemoveUserAsync(assignmentId, CurrentUserName);
+            await LoadAsync();
+            SetStatus("Benutzer wurde entfernt.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task ClearMaterialAsync(int workplaceId, string shift)
+    {
+        try
+        {
+            await SchichtplanService.ClearMaterialAsync(SelectedDate, workplaceId, shift, CurrentUserName);
+            await LoadAsync();
+            SetStatus("Material wurde entfernt.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task SaveEntryDetailsAsync(int workplaceId, string shift, string? faNr, string? bemerkung)
+    {
+        try
+        {
+            await SchichtplanService.UpdateEntryDetailsAsync(SelectedDate, workplaceId, shift, faNr, bemerkung, CurrentUserName);
+            await LoadAsync();
+            SetStatus("Kartendetails wurden gespeichert.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task CreateManualUserAsync()
+    {
+        try
+        {
+            var created = await SchichtplanService.CreateManualUserAsync(NewManualUserName, CurrentUserName);
+            if (created is null)
+            {
+                SetStatus("Bitte einen Benutzernamen eingeben.", false);
+                return;
+            }
+
+            NewManualUserName = string.Empty;
+            await LoadAsync();
+            SetStatus($"Benutzer '{created.DisplayName}' steht jetzt oben in der Liste.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task CreateMaterialAsync()
+    {
+        try
+        {
+            var created = await SchichtplanService.CreateMaterialAsync(NewMaterialName, CurrentUserName);
+            if (created is null)
+            {
+                SetStatus("Bitte einen Materialnamen eingeben.", false);
+                return;
+            }
+
+            NewMaterialName = string.Empty;
+            MaterialSearchTerm = string.Empty;
+            await LoadAsync();
+            SetStatus($"Material '{created.Material}' wurde hinzugefügt.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task DeleteManualUserAsync(SchichtplanAvailableUserModel user)
+    {
+        try
+        {
+            var deleted = await SchichtplanService.DeleteManualUserAsync(user.Key, CurrentUserName);
+            if (!deleted)
+            {
+                SetStatus("Der manuelle Benutzer konnte nicht gelöscht werden.", false);
+                return;
+            }
+
+            await LoadAsync();
+            SetStatus($"Manueller Benutzer '{user.DisplayName}' wurde gelöscht.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private async Task DeleteMaterialAsync(SchichtplanMaterialModel material)
+    {
+        try
+        {
+            var deleted = await SchichtplanService.DeleteMaterialAsync(material.Id, CurrentUserName);
+            if (!deleted)
+            {
+                SetStatus("Das Material konnte nicht gelöscht werden.", false);
+                return;
+            }
+
+            await LoadAsync();
+            SetStatus($"Material '{material.Material}' wurde gelöscht.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private void SetStatus(string message, bool isSuccess)
+    {
+        StatusMessage = message;
+        StatusAlertClass = isSuccess ? "alert-success" : "alert-danger";
+    }
+
+    private static string GetShiftClass(string shift) => shift switch
+    {
+        SchichtplanKonstanten.Nachtschicht => "is-night",
+        SchichtplanKonstanten.Frühschicht => "is-early",
+        SchichtplanKonstanten.Spätschicht => "is-late",
+        _ => string.Empty
+    };
+
+    private static string GetWorkplaceNumber(string? workplaceNr) =>
+        string.IsNullOrWhiteSpace(workplaceNr) ? "Sonderplatz" : workplaceNr;
+
+    private static string GetUserSubtitle(SchichtplanAvailableUserModel user)
+    {
+        if (user.IsManual)
+        {
+            return "Manuell";
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.Bereich))
+        {
+            return user.Bereich!;
+        }
+
+        return "Produktiv";
+    }
+
+    private sealed record DragItem(
+        string Type,
+        string DisplayLabel,
+        string? Source,
+        string? Key,
+        string? Personalnummer,
+        int? MaterialId);
+}

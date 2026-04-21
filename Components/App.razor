@@ -149,6 +149,75 @@
             });
         };
 
+        window.schichtplanDragScroll = (() => {
+            let isActive = false;
+            let dragOverHandler = null;
+
+            const getScrollableTarget = (x, y) => {
+                let element = document.elementFromPoint(x, y);
+
+                while (element) {
+                    const style = window.getComputedStyle(element);
+                    const overflowY = style.overflowY;
+                    if ((overflowY === 'auto' || overflowY === 'scroll') && element.scrollHeight > element.clientHeight + 8) {
+                        return element;
+                    }
+
+                    element = element.parentElement;
+                }
+
+                return document.scrollingElement || document.documentElement;
+            };
+
+            const scrollTarget = (target, deltaY) => {
+                if (!target) return;
+
+                if (target === document.body || target === document.documentElement || target === document.scrollingElement) {
+                    window.scrollBy(0, deltaY);
+                    return;
+                }
+
+                target.scrollTop += deltaY;
+            };
+
+            return {
+                activate: () => {
+                    if (isActive) return;
+
+                    isActive = true;
+                    dragOverHandler = (event) => {
+                        if (!isActive) return;
+
+                        const target = getScrollableTarget(event.clientX, event.clientY);
+                        const rect = target === document.body || target === document.documentElement || target === document.scrollingElement
+                            ? { top: 0, bottom: window.innerHeight }
+                            : target.getBoundingClientRect();
+
+                        const edgeSize = 90;
+                        const maxSpeed = 28;
+
+                        if (event.clientY < rect.top + edgeSize) {
+                            scrollTarget(target, -maxSpeed);
+                        } else if (event.clientY > rect.bottom - edgeSize) {
+                            scrollTarget(target, maxSpeed);
+                        }
+                    };
+
+                    document.addEventListener('dragover', dragOverHandler);
+                },
+
+                deactivate: () => {
+                    if (!isActive) return;
+
+                    isActive = false;
+                    if (dragOverHandler) {
+                        document.removeEventListener('dragover', dragOverHandler);
+                        dragOverHandler = null;
+                    }
+                }
+            };
+        })();
+
         window.shiftPlanBoard = (() => {
             const sessions = new Map();
 
