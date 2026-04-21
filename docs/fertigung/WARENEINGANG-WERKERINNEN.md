@@ -1,136 +1,96 @@
-# Wareneingang
+# Arbeitsanweisung Wareneingang
 
-## Fuer wen ist diese Seite?
+## Kurz und einfach
 
-Diese Seite ist fuer Mitarbeitende in der Fertigung gedacht, die angelieferte Ware erfassen, Chargen aufnehmen und bei Bedarf Etiketten drucken.
+Diese Anleitung ist fuer Werkerinnen und Werker gedacht.
 
-Seite im System:
+Jeder Schritt ist kurz geschrieben.
+Zu jedem Schritt kann direkt ein Bild oder Screenshot eingefuegt werden.
 
-- [Wareneingang.razor](/Components/Pages/Fertigung/Wareneingang.razor:1)
+## Teil 1: Formular ausfuellen
 
-## Zweck
+### Schritt 1
 
-Mit dieser Maske wird dokumentiert:
+Lieferant auswaehlen.
 
-- von welchem Lieferanten die Ware kommt
-- zu welchem Lieferschein, welcher Position und welcher EBE-Nummer der Eingang gehoert
-- in welchem Zustand die Ware angekommen ist
-- ob ein Palettentausch stattgefunden hat
-- welche Dickenmessung festgestellt wurde
-- welche Chargen mit welcher Menge zum Wareneingang gehoeren
+**Bild Schritt 1: Hier einfuegen**
 
-## Aufbau der Seite
+### Schritt 2
 
-Die Seite besteht aus drei Hauptbereichen:
+Passenden Eintrag aus der Liste unten auswaehlen.
 
-1. Stammdaten
-2. Chargen Erfassung
-3. Letzte Buchungen
+**Bild Schritt 2: Hier einfuegen**
 
-Im Kopf der Seite ist immer sichtbar, ob gerade eine neue Buchung oder die Bearbeitung eines vorhandenen Eintrags aktiv ist.
+### Schritt 3
 
-## So wird ein neuer Wareneingang erfasst
+Lieferschein vom Lieferpapier eintragen.
 
-1. Lieferant auswaehlen.
-2. Lieferschein eintragen.
-3. Position und EBE-Nr. eintragen.
-4. Zustand der Ware auswaehlen.
-5. Palettentausch auf `Ja` oder `Nein` setzen.
-6. Dickenmessung eintragen.
-7. Falls noetig eine Bemerkung ergaenzen.
-8. Charge scannen oder eintippen.
-9. Menge zur Charge eintragen.
-10. Charge mit `Enter` oder ueber `Hinzufuegen` in die Liste uebernehmen.
-11. Alle Chargen pruefen.
-12. Ueber `Wareneingang Buchen` speichern.
+**Bild Schritt 3: Hier einfuegen**
 
-## Pflichtangaben vor dem Speichern
+## Teil 2: Ware pruefen
 
-Vor dem Speichern muessen mindestens diese Angaben vorhanden sein:
+### Schritt 4
 
-- Lieferant
-- Lieferschein
-- Dickenmessung mit gueltigem Wert
+Zustand der Ware auswaehlen.
 
-Zusaetzlich gilt:
+Wenn `Schlecht`, dann Bemerkung schreiben und QS kontaktieren.
 
-- Bei `Palettentausch = Ja` ist eine Bemerkung zwingend.
-- Bei Zustand `Schlecht` ist eine Bemerkung zwingend.
-- Die Dickenmessung muss zwischen `0,23` und `1,2` mm liegen.
+**Bild Schritt 4: Hier einfuegen**
 
-## Chargen richtig erfassen
+### Schritt 5
 
-Die Chargenliste wird rechts in der Seite aufgebaut.
+Palettentausch auf `Ja` oder `Nein` setzen.
 
-Wichtig:
+**Bild Schritt 5: Hier einfuegen**
 
-- Eine Charge kann per Scanner oder per Tastatur erfasst werden.
-- Mit `Enter` wird die Charge direkt hinzugefuegt.
-- Die Gesamtmenge wird oben rechts als `Gesamt` mitgerechnet.
-- Bereits hinzugefuegte Chargen koennen wieder entfernt werden.
-- Die Mengen in der Liste sollten direkt nach dem Scannen noch einmal geprueft werden.
+### Schritt 6
 
-## Etikett fuer eine Charge drucken
+Dickenmessung eintragen.
 
-Wenn fuer eine Charge ein Etikett gebraucht wird:
+Nur Werte zwischen `0,23 mm` und `1,2 mm` sind erlaubt.
 
-1. Die gewuenschte Charge in der Liste anklicken.
-2. `Auswahl Drucken` verwenden.
+**Bild Schritt 6: Hier einfuegen**
 
-Das Drucken ist nur moeglich, wenn eine Charge markiert ist.
+## Teil 3: Chargen bearbeiten
 
-## Historie und Bearbeiten
+### Schritt 7
 
-Im unteren Bereich stehen die letzten Buchungen.
+Wenn alles ausgefuellt ist, zu den Chargen gehen.
 
-So wird ein vorhandener Eintrag bearbeitet:
+Es gibt zwei Moeglichkeiten:
 
-1. In der Historie die passende Zeile anklicken.
-2. Der Eintrag wird oben in die Maske geladen.
-3. Die Statusanzeige wechselt auf `Edit`.
-4. Werte anpassen.
-5. Ueber `Aenderungen Speichern` sichern.
+1. Chargen sind schon eingetragen: Charge und Menge pruefen.
+2. Chargen sind nicht eingetragen: Charge scannen und Menge eingeben.
 
-Mit `Leeren` wird die Maske wieder auf eine neue Erfassung zurueckgesetzt.
+**Bild Schritt 7A: Vorhandene Chargen pruefen**
 
-## Wichtiger Hinweis beim Bearbeiten
+**Bild Schritt 7B: Neue Charge scannen**
 
-Nach aktuellem Stand werden beim Laden eines alten Eintrags nicht alle Felder sichtbar in die Maske zurueckgeschrieben.
+### Schritt 8
 
-Darum gilt im Alltag:
+Chargen-Etiketten drucken.
 
-- Bemerkung immer aktiv pruefen und bei Bedarf neu eintragen.
-- Palettentausch vor dem Speichern bewusst neu setzen.
-- Chargenmengen nach dem Laden eines alten Eintrags besonders sorgfaeltig kontrollieren.
+Das Etikett auf Karton oder Gebinde kleben.
 
-## Was passiert nach dem Speichern?
+**Bild Schritt 8: Hier einfuegen**
 
-Wenn das Speichern erfolgreich ist:
+### Schritt 9
 
-- erscheint eine Erfolgsmeldung
-- die Historie wird neu geladen
-- die Maske wird geleert
-- im Hintergrund wird eine QS-E-Mail verschickt
+Zum Schluss speichern.
 
-## Praktischer Ablauf im Alltag
+Je nach Maske `Wareneingang Buchen` oder `Aenderungen Speichern` klicken.
 
-1. Lieferant und Lieferschein zuerst erfassen.
-2. Zustand und Palettentausch direkt mitpruefen.
-3. Dickenmessung sofort eintragen, solange die Ware vorliegt.
-4. Chargen nacheinander scannen.
-5. Gesamtmenge und einzelne Mengen kurz gegenpruefen.
-6. Bei Auffaelligkeiten eine klare Bemerkung hinterlegen.
-7. Erst danach buchen.
+**Bild Schritt 9: Hier einfuegen**
 
-## Hinweise fuer den Betrieb
+## Letzte Seite: Wichtige Punkte
 
-- Die Dickenmessung kann mit Komma oder Punkt eingegeben werden.
-- Die Einheit fuer die Dickenmessung ist `mm`.
-- Bei Zustand `Schlecht` sollte die Bemerkung moeglichst konkret sein.
-- Wenn der Druck nicht funktioniert, zuerst pruefen, ob die richtige Charge markiert ist.
-- Wenn eine alte Buchung korrigiert werden soll, immer ueber die Historie arbeiten und nicht einfach neu erfassen.
-
-## Relevante Code-Stellen
-
-- Seitenaufbau und Bedienlogik: [Wareneingang.razor](/Components/Pages/Fertigung/Wareneingang.razor:1)
-- Datenzugriffe und Speichern: [WareneingangService.cs](/Data/WareneingangService.cs:1)
+- Alle Pflichtfelder muessen ausgefuellt sein.
+- Wenn ein Pflichtfeld fehlt oder falsch ist, erscheint ein Hinweistext.
+- Dann das fehlende Feld ausfuellen oder korrigieren und erneut speichern.
+- Lieferant, Lieferschein und Zustand immer pruefen.
+- Bei Zustand `Schlecht` immer eine Bemerkung schreiben und QS kontaktieren.
+- Palettentausch immer richtig auswaehlen.
+- Die Dickenmessung darf nur zwischen `0,23 mm` und `1,2 mm` liegen.
+- Wenn Chargen schon vorhanden sind, immer Charge und Menge kontrollieren.
+- Wenn eine Charge neu erfasst wird, Charge scannen und Menge richtig eintragen.
+- Nach dem Drucken das richtige Etikett auf den richtigen Karton oder das richtige Gebinde kleben.

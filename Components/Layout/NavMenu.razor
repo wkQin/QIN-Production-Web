@@ -111,67 +111,154 @@
 </nav>
 
 <div class="@($"bottom-nav {(IsCollapsed ? "collapsed-nav" : "")}")">
-    <!-- Notification Dock -->
-    <div class="@($"d-flex mb-3 {(IsCollapsed ? "flex-column align-items-center gap-3" : "justify-content-around px-2")}")">
-        <NavLink class="btn position-relative p-2" href="nachrichten" title="Systemnachrichten" style="border-radius: 12px; background: var(--border-color); color: var(--text-secondary); transition: all 0.2s;">
-            <i class="fa-solid fa-envelope fs-5"></i>
-            @if (UnreadCount > 0)
-            {
-                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-dark" style="font-size: 0.6rem;">@UnreadCount</span>
-            }
-        </NavLink>
-        
-        <button class="btn position-relative p-2" title="Benachrichtigungen" style="border-radius: 12px; background: var(--border-color); color: var(--text-secondary); transition: all 0.2s;" @onclick="OpenNavAlerts">
-            <i class="fa-solid fa-bell fs-5"></i>
-            @if (AlertCount > 0)
-            {
-                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-warning border border-dark rounded-circle shadow-sm"></span>
-            }
-        </button>
-    </div>
-
     <AuthorizeView>
         <Authorized>
-            <div class="@($"nav-item user-profile mb-2 {(IsCollapsed ? "collapsed-item" : "")}")" title="@context.User.Identity?.Name">
-                <i class="fa-solid fa-circle-user nav-icon text-info fs-4"></i>
-                @if(!IsCollapsed) { 
-                    <div class="user-info ms-2" style="line-height: 1.2;">
-                        <span class="d-block fw-bold text-white" style="font-size: 0.85rem;">@context.User.Identity?.Name</span>
-                        <span class="d-block text-secondary" style="font-size: 0.70rem; text-transform: uppercase;">@context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+            @{
+                var userName = context.User.Identity?.Name ?? "Benutzer";
+                var userRole = context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "Benutzer";
+            }
+
+            <div class="@($"profile-menu-container {(IsCollapsed ? "collapsed" : "")} {(isUserMenuOpen ? "open" : "")}")">
+                <button type="button"
+                        class="@($"nav-item user-menu-trigger {(IsCollapsed ? "collapsed-item" : "")} {(isUserMenuOpen ? "open" : "")}")"
+                        title="Profilmenü"
+                        @onclick="ToggleUserMenu">
+                    <div class="user-avatar-shell">
+                        <i class="fa-solid fa-circle-user nav-icon text-info fs-4"></i>
+                        @if (HasAnyNotifications)
+                        {
+                            @if (IsCollapsed)
+                            {
+                                <span class="user-avatar-badge compact">@FormatNotificationCount(UnreadCount + AlertCount)</span>
+                            }
+                            else
+                            {
+                                <span class="user-avatar-badge"></span>
+                            }
+                        }
+                    </div>
+
+                    @if (!IsCollapsed)
+                    {
+                        <div class="user-info">
+                            <span class="user-display-name">@userName</span>
+                            <span class="user-display-role">@userRole</span>
+                        </div>
+
+                        <div class="user-status-strip">
+                            <span class="@($"user-status-chip message-chip {(UnreadCount > 0 ? "has-unread" : "")}")" title="Nachrichten">
+                                <i class="fa-solid fa-envelope"></i>
+                                @if (UnreadCount > 0)
+                                {
+                                    <strong>@FormatNotificationCount(UnreadCount)</strong>
+                                }
+                            </span>
+
+                            <span class="@($"user-status-chip alert-chip {(AlertCount > 0 ? "has-unread" : "")}")" title="Benachrichtigungen">
+                                <i class="fa-solid fa-bell"></i>
+                                @if (AlertCount > 0)
+                                {
+                                    <strong>@FormatNotificationCount(AlertCount)</strong>
+                                }
+                            </span>
+                        </div>
+
+                        <i class="fa-solid fa-chevron-@(isUserMenuOpen ? "up" : "down") user-menu-chevron"></i>
+                    }
+                </button>
+
+                @if (isUserMenuOpen)
+                {
+                    <div class="@($"user-dropdown-menu {(IsCollapsed ? "collapsed" : "")}")" @onclick:stopPropagation="true">
+                        <div class="user-dropdown-header">
+                            <div class="user-dropdown-name">@userName</div>
+                            <div class="user-dropdown-role">@userRole</div>
+                        </div>
+
+                        <button type="button" class="user-dropdown-item" @onclick="OpenMessages">
+                            <span class="user-dropdown-icon">
+                                <i class="fa-solid fa-envelope"></i>
+                            </span>
+                            <span class="user-dropdown-copy">
+                                <span class="user-dropdown-title">Nachrichten</span>
+                                <span class="user-dropdown-subtitle">Chats und Direktnachrichten</span>
+                            </span>
+                            @if (UnreadCount > 0)
+                            {
+                                <span class="user-dropdown-badge danger">@FormatNotificationCount(UnreadCount)</span>
+                            }
+                            else
+                            {
+                                <span class="user-dropdown-meta">0 neu</span>
+                            }
+                        </button>
+
+                        <button type="button" class="user-dropdown-item" @onclick="OpenAlertsFromMenu">
+                            <span class="user-dropdown-icon">
+                                <i class="fa-solid fa-bell"></i>
+                            </span>
+                            <span class="user-dropdown-copy">
+                                <span class="user-dropdown-title">Benachrichtigungen</span>
+                                <span class="user-dropdown-subtitle">Systemmeldungen</span>
+                            </span>
+                            @if (AlertCount > 0)
+                            {
+                                <span class="user-dropdown-badge warning">@FormatNotificationCount(AlertCount)</span>
+                            }
+                            else
+                            {
+                                <span class="user-dropdown-meta">Alles gelesen</span>
+                            }
+                        </button>
+
+                        <button type="button" class="user-dropdown-item" @onclick="OpenSettings">
+                            <span class="user-dropdown-icon">
+                                <i class="fa-solid fa-gear"></i>
+                            </span>
+                            <span class="user-dropdown-copy">
+                                <span class="user-dropdown-title">Einstellungen</span>
+                                <span class="user-dropdown-subtitle">Profil, Design und Optionen</span>
+                            </span>
+                        </button>
+
+                        <a class="user-dropdown-item danger" href="/api/auth/logout" target="_top" title="Abmelden">
+                            <span class="user-dropdown-icon">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </span>
+                            <span class="user-dropdown-copy">
+                                <span class="user-dropdown-title">Abmelden</span>
+                                <span class="user-dropdown-subtitle">Sitzung sicher beenden</span>
+                            </span>
+                        </a>
                     </div>
                 }
             </div>
-            
-            <a class="@($"nav-item text-danger border-top border-secondary pt-3 {(IsCollapsed ? "collapsed-item" : "")}")" href="/api/auth/logout" target="_top" style="cursor: pointer;" title="Abmelden">
-                <i class="fa-solid fa-right-from-bracket nav-icon"></i>
-                @if(!IsCollapsed) { <span>Abmelden</span> }
-            </a>
         </Authorized>
     </AuthorizeView>
-
-    <NavLink class="@($"nav-item {(IsCollapsed ? "collapsed-item" : "")}")" href="einstellungen" title="Einstellungen">
-        <i class="fa-solid fa-gear nav-icon"></i>
-        @if(!IsCollapsed) { <span>Einstellungen</span> }
-    </NavLink>
 </div>
+
+@if (isUserMenuOpen)
+{
+    <button type="button" class="user-menu-backdrop" aria-label="Profilmenü schließen" @onclick="CloseUserMenu"></button>
+}
 
 <!-- Nav Alerts Modal -->
 @if (showNavAlerts)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1050;">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content bg-dark text-white border-secondary shadow-lg">
-                <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title text-primary fw-bold">
+    <div class="modal fade show d-block nav-alerts-modal" tabindex="-1" style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1050;">
+        <div class="modal-dialog modal-dialog-centered modal-xl nav-alerts-dialog">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg nav-alerts-content">
+                <div class="modal-header border-bottom border-secondary nav-alerts-header">
+                    <h5 class="modal-title text-primary fw-bold nav-alerts-title">
                         <i class="fa-solid fa-bullhorn me-2"></i> Aktuelle Ankündigungen
                     </h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="CloseNavAlerts"></button>
                 </div>
-                <div class="modal-body p-0" style="max-height: 60vh; overflow-y: auto;">
-                    <div class="list-group list-group-flush border-0">
+                <div class="modal-body p-0 nav-alerts-body" style="max-height: 60vh; overflow-y: auto;">
+                    <div class="list-group list-group-flush border-0 nav-alerts-list">
                         @if (navAlerts.Count == 0)
                         {
-                            <div class="p-4 text-center text-secondary">
+                            <div class="p-4 text-center text-secondary nav-alerts-empty">
                                 <i class="fa-solid fa-check-circle fs-2 mb-2"></i><br/>
                                 Keine Ankündigungen vorhanden.
                             </div>
@@ -180,13 +267,13 @@
                         {
                             @foreach (var alert in navAlerts)
                             {
-                                <div class="list-group-item border-bottom border-secondary m-0 rounded-0" style="background: rgba(30,30,30,0.5);">
-                                    <strong class="@(!alert.IsRead ? "text-white" : "text-secondary") fs-5 d-block mb-2">
+                                <div class="@($"list-group-item border-bottom border-secondary m-0 rounded-0 nav-alert-card {(!alert.IsRead ? "is-unread" : "")}")" style="background: rgba(30,30,30,0.5);">
+                                    <strong class="@($"{(!alert.IsRead ? "text-white" : "text-secondary")} fs-5 d-block mb-2 nav-alert-card-title")">
                                         @if (!alert.IsRead) { <span class="badge bg-blue me-2 shadow-sm rounded-pill" style="font-size: 0.70rem;">Neu</span> }
                                         @alert.Title
                                     </strong>
-                                    <p class="text-secondary mb-3" style="white-space: pre-wrap; line-height: 1.5;">@alert.Message</p>
-                                    <div class="text-secondary small d-flex justify-content-between border-top border-dark pt-2">
+                                    <p class="text-secondary mb-3 nav-alert-message" style="white-space: pre-wrap; line-height: 1.5;">@alert.Message</p>
+                                    <div class="text-secondary small d-flex justify-content-between border-top border-dark pt-2 nav-alert-meta">
                                         <span><i class="fa-solid fa-user-pen me-1"></i> @alert.CreatedBy</span>
                                         <span><i class="fa-regular fa-clock me-1"></i> @alert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
                                     </div>
@@ -195,8 +282,8 @@
                         }
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-3">
-                    <button type="button" class="btn btn-secondary w-100 fw-bold" @onclick="CloseNavAlerts">Schließen</button>
+                <div class="modal-footer border-top-0 pt-3 nav-alerts-footer">
+                    <button type="button" class="btn btn-secondary w-100 fw-bold nav-alerts-close-btn" @onclick="CloseNavAlerts">Schließen</button>
                 </div>
             </div>
         </div>
@@ -216,9 +303,11 @@
     private int UnreadCount = 0;
     private int AlertCount = 0;
     private bool showNavAlerts = false;
+    private bool isUserMenuOpen = false;
     private List<SystemAlert> navAlerts = new();
     
     private System.Threading.Timer? _pollingTimer;
+    private bool HasAnyNotifications => UnreadCount > 0 || AlertCount > 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -242,6 +331,7 @@
             await InvokeAsync(async () =>
             {
                 await LoadUnreadCount();
+                await LoadAlerts();
                 StateHasChanged();
             });
         }, null, 5000, 5000); 
@@ -279,6 +369,8 @@
 
     private async Task OpenNavAlerts()
     {
+        CloseUserMenu();
+        await LoadAlerts();
         showNavAlerts = true;
         
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -299,6 +391,49 @@
     private void CloseNavAlerts()
     {
         showNavAlerts = false;
+    }
+
+    private async Task ToggleUserMenu()
+    {
+        if (!isUserMenuOpen)
+        {
+            await LoadUnreadCount();
+            await LoadAlerts();
+        }
+
+        isUserMenuOpen = !isUserMenuOpen;
+    }
+
+    private void CloseUserMenu()
+    {
+        isUserMenuOpen = false;
+    }
+
+    private void OpenMessages()
+    {
+        CloseUserMenu();
+        NavigationManager.NavigateTo("/nachrichten");
+    }
+
+    private void OpenSettings()
+    {
+        CloseUserMenu();
+        NavigationManager.NavigateTo("/einstellungen");
+    }
+
+    private async Task OpenAlertsFromMenu()
+    {
+        await OpenNavAlerts();
+    }
+
+    private static string FormatNotificationCount(int count)
+    {
+        if (count > 99)
+        {
+            return "99+";
+        }
+
+        return count.ToString();
     }
 
     private void ToggleFertigung() {

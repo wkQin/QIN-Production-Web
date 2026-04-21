@@ -1,6 +1,6 @@
 @page "/"
-@using QIN_Production_Web.Data
 @using Microsoft.AspNetCore.Components.Authorization
+@using QIN_Production_Web.Data
 @inject LoginService LoginService
 @inject AlertService AlertService
 @inject NavigationManager NavigationManager
@@ -13,9 +13,8 @@
     <p class="text-secondary">Hier ist die Live-Übersicht deiner heutigen Produktion.</p>
 </div>
 
-<div class="row g-4 mb-4 align-items-stretch">
-    <!-- Main Content Area -->
-    <div class="col-xl-6 col-lg-12">
+<div class="row g-4 mb-4">
+    <div class="col-12">
         <div class="content-card h-100">
             <div class="card-header-flex">
                 <h4>Aktuelle Produktion</h4>
@@ -29,36 +28,47 @@
         </div>
     </div>
 
-    <!-- Ankündigungen Sidebar -->
-    <div class="col-xl-3 col-lg-6">
+    <div class="col-xl-6 col-lg-12">
         <div class="content-card h-100">
             <div class="card-header-flex">
                 <h4><i class="fa-solid fa-bullhorn text-primary me-2"></i> Ankündigungen</h4>
+                <span class="badge rounded-pill dashboard-alerts-badge">@alerts.Count</span>
             </div>
-            <div class="card-body p-0 overflow-auto custom-scrollbar" style="max-height: 500px;">
+            <div class="card-body dashboard-alerts-panel custom-scrollbar">
                 @if (alerts.Count == 0)
                 {
-                    <div class="p-4 text-center text-secondary">
-                        <small>Keine aktuellen Ankündigungen.</small>
+                    <div class="nav-alerts-empty dashboard-alerts-empty-state">
+                        <i class="fa-solid fa-check-circle"></i>
+                        <div class="dashboard-alerts-empty-title">Keine aktuellen Ankündigungen</div>
+                        <small>Neue Systemmeldungen erscheinen hier automatisch.</small>
                     </div>
                 }
                 else
                 {
-                    <div class="list-group list-group-flush border-0">
+                    <div class="dashboard-alert-list">
                         @foreach (var alert in alerts)
                         {
-                            <div class="list-group-item notification-item border-bottom border-dark m-0 rounded-0" @onclick="() => ReadAlert(alert)">
-                                <div class="notif-dot @(!alert.IsRead ? "bg-blue shadow-sm" : "bg-secondary opacity-50") mt-1"></div>
-                                <div class="notif-content w-100">
-                                    <strong class="text-truncate d-block @(!alert.IsRead ? "text-white" : "text-secondary")">@alert.Title</strong>
-                                    <span class="d-block text-truncate text-secondary" style="max-width: 90%;">
-                                        @alert.Message
-                                    </span>
-                                    <div class="text-secondary mt-1" style="font-size: 0.75rem;">
-                                        @alert.CreatedAt.ToShortDateString() • von @alert.CreatedBy
+                            <button type="button"
+                                    class="@($"dashboard-alert-preview nav-alert-card {(!alert.IsRead ? "is-unread" : "")}")"
+                                    @onclick="() => ReadAlert(alert)">
+                                <div class="dashboard-alert-preview-header">
+                                    <div class="dashboard-alert-preview-title">
+                                        @if (!alert.IsRead)
+                                        {
+                                            <span class="badge bg-blue shadow-sm rounded-pill dashboard-alert-new-badge">Neu</span>
+                                        }
+                                        <strong class="@($"{(!alert.IsRead ? "text-white" : "text-secondary")} nav-alert-card-title")">@alert.Title</strong>
                                     </div>
+                                    <span class="dashboard-alert-preview-date">@alert.CreatedAt.ToString("dd.MM.yyyy")</span>
                                 </div>
-                            </div>
+
+                                <p class="nav-alert-message dashboard-alert-preview-message">@alert.Message</p>
+
+                                <div class="nav-alert-meta dashboard-alert-preview-meta">
+                                    <span><i class="fa-solid fa-user-pen"></i> @alert.CreatedBy</span>
+                                    <span><i class="fa-regular fa-clock"></i> @alert.CreatedAt.ToString("HH:mm")</span>
+                                </div>
+                            </button>
                         }
                     </div>
                 }
@@ -66,14 +76,13 @@
         </div>
     </div>
 
-    <!-- Right Sidebar Area -->
-    <div class="col-xl-3 col-lg-6">
+    <div class="col-xl-6 col-lg-12">
         <div class="content-card h-100">
             <div class="card-header-flex">
                 <h4><i class="fa-solid fa-users text-success me-2"></i> Wer ist online?</h4>
                 <span class="badge bg-success rounded-pill">@onlineUsers.Count</span>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body p-0 dashboard-online-panel custom-scrollbar">
                 @if (onlineUsers.Count == 0)
                 {
                     <div class="p-4 text-center text-secondary">
@@ -111,28 +120,34 @@
     </div>
 </div>
 
-<!-- Alert Modal -->
 @if (selectedAlert != null)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary shadow-lg">
-                <div class="modal-header border-bottom border-secondary">
-                    <h5 class="modal-title text-primary fw-bold">
-                        <i class="fa-solid fa-bullhorn me-2"></i> @selectedAlert.Title
-                    </h5>
+    <div class="modal fade show d-block nav-alerts-modal"
+         tabindex="-1"
+         @onclick="CloseAlert"
+         style="background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px);">
+        <div class="modal-dialog modal-dialog-centered nav-alerts-dialog dashboard-alert-dialog" @onclick:stopPropagation="true">
+            <div class="modal-content bg-dark text-white border-secondary shadow-lg nav-alerts-content">
+                <div class="modal-header border-bottom border-secondary nav-alerts-header">
+                    <div class="dashboard-alert-modal-copy">
+                        <h5 class="modal-title text-primary fw-bold nav-alerts-title">
+                            <i class="fa-solid fa-bullhorn me-2"></i> @selectedAlert.Title
+                        </h5>
+                        <div class="nav-alerts-subtitle">Systemmeldung vom @selectedAlert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" @onclick="CloseAlert"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <p style="white-space: pre-wrap; font-size: 1.1rem; line-height: 1.6;">@selectedAlert.Message</p>
-                    
-                    <div class="mt-4 pt-3 border-top border-secondary d-flex justify-content-between align-items-center text-secondary small">
-                        <span><i class="fa-solid fa-user-pen me-2"></i>Erstellt von <strong>@selectedAlert.CreatedBy</strong></span>
-                        <span><i class="fa-regular fa-calendar me-2"></i>@selectedAlert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
-                    </div>
+                <div class="modal-body nav-alerts-body">
+                    <article class="@($"nav-alert-card dashboard-alert-modal-card {(!selectedAlert.IsRead ? "is-unread" : "")}")">
+                        <p class="nav-alert-message dashboard-alert-modal-message">@selectedAlert.Message</p>
+                        <div class="nav-alert-meta dashboard-alert-modal-meta">
+                            <span><i class="fa-solid fa-user-pen"></i> Erstellt von @selectedAlert.CreatedBy</span>
+                            <span><i class="fa-regular fa-calendar"></i> @selectedAlert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</span>
+                        </div>
+                    </article>
                 </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-secondary w-100 fw-bold" @onclick="CloseAlert">Schließen</button>
+                <div class="modal-footer border-top-0 nav-alerts-footer">
+                    <button type="button" class="btn btn-secondary w-100 fw-bold nav-alerts-close-btn" @onclick="CloseAlert">Schließen</button>
                 </div>
             </div>
         </div>
@@ -144,11 +159,12 @@
         font-size: 2.2rem;
         margin-bottom: 8px;
     }
+
     .dashboard-header p {
         font-size: 1.1rem;
         color: var(--text-secondary);
     }
-    
+
     .content-card {
         background: var(--bg-card);
         border: var(--glass-border);
@@ -159,6 +175,7 @@
         box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         overflow: hidden;
     }
+
     .card-header-flex {
         padding: 24px;
         border-bottom: var(--glass-border);
@@ -167,13 +184,14 @@
         align-items: center;
         background: rgba(30, 41, 59, 0.5);
     }
-    .card-header-flex h4 { 
-        margin: 0; 
-        font-size: 1.25rem; 
+
+    .card-header-flex h4 {
+        margin: 0;
+        font-size: 1.25rem;
         font-weight: 700;
         color: var(--text-primary);
     }
-    
+
     .empty-state {
         min-height: 250px;
         display: flex;
@@ -183,51 +201,188 @@
         color: var(--text-secondary);
         opacity: 0.5;
     }
-    .empty-state i { font-size: 4rem; color: var(--text-secondary); }
-    
-    .notification-item {
+
+    .empty-state i {
+        font-size: 4rem;
+        color: var(--text-secondary);
+    }
+
+    .dashboard-alerts-badge {
+        background: rgba(59, 130, 246, 0.18);
+        color: #bfdbfe;
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        min-width: 42px;
+        padding: 0.45rem 0.8rem;
+    }
+
+    .dashboard-alerts-panel {
+        max-height: 420px;
+        overflow: auto;
+        padding: 20px;
+    }
+
+    .dashboard-online-panel {
+        max-height: 320px;
+        overflow: auto;
+    }
+
+    .dashboard-alert-list {
+        display: grid;
+        gap: 14px;
+    }
+
+    .dashboard-alert-preview {
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        color: inherit;
+        border: 0;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dashboard-alert-preview:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 22px 44px rgba(2, 6, 23, 0.22);
+    }
+
+    .dashboard-alert-preview-header {
         display: flex;
         align-items: flex-start;
-        gap: 16px;
-        padding: 16px;
-        border-radius: 12px;
-        background: var(--bg-hover);
-        transition: background 0.2s;
-        cursor: pointer;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
     }
-    .notification-item:hover {
-        background: var(--border-color);
+
+    .dashboard-alert-preview-title {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .notif-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; box-shadow: 0 0 10px #60a5fa;}
-    .notif-content strong { display: block; color: var(--text-primary); font-size: 1rem; margin-bottom: 2px;}
-    .notif-content span { color: var(--text-secondary); font-size: 0.85rem; }
+
+    .dashboard-alert-new-badge {
+        flex-shrink: 0;
+        padding: 0.42rem 0.72rem;
+        font-size: 0.68rem;
+    }
+
+    .dashboard-alert-preview-date {
+        flex-shrink: 0;
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        line-height: 1.4;
+        white-space: nowrap;
+    }
+
+    .dashboard-alert-preview-message {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 14px !important;
+    }
+
+    .dashboard-alert-preview-meta {
+        padding-top: 12px !important;
+        font-size: 0.76rem;
+    }
+
+    .dashboard-alerts-empty-state {
+        min-height: 100%;
+        padding: 28px 20px;
+        text-align: center;
+    }
+
+    .dashboard-alerts-empty-state i {
+        font-size: 2rem;
+        color: var(--accent-hover);
+    }
+
+    .dashboard-alerts-empty-title {
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+
+    .dashboard-alert-dialog {
+        width: min(820px, calc(100vw - 64px));
+    }
+
+    .dashboard-alert-modal-copy {
+        min-width: 0;
+    }
+
+    .nav-alerts-subtitle {
+        margin-top: 6px;
+        color: var(--text-secondary);
+        font-size: 0.84rem;
+        line-height: 1.5;
+    }
+
+    .dashboard-alert-modal-card {
+        min-height: 0;
+    }
+
+    .dashboard-alert-modal-message {
+        margin-bottom: 20px !important;
+        white-space: pre-wrap;
+        font-size: 1.03rem;
+    }
+
+    .dashboard-alert-modal-meta {
+        align-items: center;
+    }
 
     .btn-outline-primary {
         color: var(--accent-hover);
         border-color: var(--accent-hover);
     }
+
     .btn-outline-primary:hover {
         background-color: var(--accent-hover);
         color: #fff;
     }
-    
+
     .border-dark {
         border-color: var(--border-color) !important;
     }
 
-    /* Custom stealthy scrollbar for the widgets */
     .custom-scrollbar::-webkit-scrollbar {
         width: 6px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(0,0,0,0.1); 
+        background: rgba(0,0,0,0.1);
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: var(--border-color); 
+        background: var(--border-color);
         border-radius: 10px;
     }
+
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: var(--border-color); 
+        background: var(--border-color);
+    }
+
+    @@media (max-width: 767.98px) {
+        .dashboard-alerts-panel {
+            padding: 16px;
+        }
+
+        .dashboard-alert-preview-header {
+            flex-direction: column;
+        }
+
+        .dashboard-alert-preview-title {
+            width: 100%;
+        }
+
+        .dashboard-alert-dialog {
+            width: calc(100vw - 24px);
+        }
+
+        .dashboard-alert-modal-meta {
+            align-items: flex-start;
+        }
     }
 </style>
 
@@ -236,25 +391,25 @@
     private List<SystemAlert> alerts = new();
     private string UserName = "Benutzer";
     private string UserId = string.Empty;
-    
-    private SystemAlert? selectedAlert = null;
+
+    private SystemAlert? selectedAlert;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         UserName = authState.User?.Identity?.Name ?? "Benutzer";
         UserId = authState.User?.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? string.Empty;
-        
+
         onlineUsers = await LoginService.GetOnlineUsersAsync();
         if (!string.IsNullOrEmpty(UserId))
         {
             alerts = await AlertService.GetRecentAlertsAsync(UserId);
         }
     }
-    
+
     private void SendMessageTo(UserSession user)
     {
-        NavigationManager.NavigateTo($"/nachrichten");
+        NavigationManager.NavigateTo("/nachrichten");
     }
 
     private async Task ReadAlert(SystemAlert alert)
@@ -272,4 +427,3 @@
         selectedAlert = null;
     }
 }
-
