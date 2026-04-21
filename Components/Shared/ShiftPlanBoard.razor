@@ -1,0 +1,447 @@
+@using System.Globalization
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<section id="@shellId" class="@($"shiftplan-shell {(isFullscreen ? "is-fullscreen" : string.Empty)}")">
+    @if (!isFullscreen)
+    {
+        <div id="@controlsId" class="shiftplan-controls shiftplan-controls-minimal">
+            <div class="shiftplan-head-actions shiftplan-head-actions-solo">
+                <button type="button" class="shiftplan-action-btn" @onclick="ToggleFullscreenAsync">
+                    <i class="fa-solid fa-expand me-2"></i>
+                    Monitoransicht
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <button type="button" class="shiftplan-fullscreen-exit" aria-label="Monitoransicht verlassen" @onclick="CloseFullscreenAsync">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    }
+
+    <div id="@stageShellId" class="shiftplan-stage-shell">
+        <div id="@stageId" class="@($"shiftplan-stage {(isFullscreen ? "is-monitor-stage" : "is-embedded-stage")}")">
+            <div class="shiftplan-board-meta">
+                <div class="shiftplan-board-copy">
+                    <span class="shiftplan-board-kicker">Schichtplan Produktion</span>
+                    <strong>KW @calendarWeekLabel</strong>
+                </div>
+
+                <div class="shiftplan-board-status">
+                    <span>@boardDateLabel</span>
+                    <span>Zuletzt aktualisiert: @lastUpdatedLabel</span>
+                </div>
+            </div>
+
+            <section class="shiftplan-table-panel">
+                <div class="shiftplan-table-grid shiftplan-header-row">
+                    <div class="shiftplan-cell shiftplan-header-cell shiftplan-header-machine">
+                        <span>Maschine / Arbeitsplatz</span>
+                        <small>Nummer und Besetzung</small>
+                    </div>
+
+                    @for (var shiftIndex = 0; shiftIndex < shiftHeaders.Length; shiftIndex++)
+                    {
+                        <div class="@($"shiftplan-cell shiftplan-header-cell {shiftHeaders[shiftIndex].ColumnClass}")">
+                            <span>@shiftHeaders[shiftIndex].Label</span>
+                            <small>Material und Mitarbeiter</small>
+                        </div>
+                    }
+                </div>
+
+                @foreach (var group in sections)
+                {
+                    <div class="@($"shiftplan-row shiftplan-group-row {group.ThemeClass}")">
+                        <div class="shiftplan-group-content">
+                            <strong>@group.Name</strong>
+                            <span>@group.Machines.Count Arbeitsplätze</span>
+                        </div>
+                    </div>
+
+                    @for (var machineIndex = 0; machineIndex < group.Machines.Count; machineIndex++)
+                    {
+                        var machine = group.Machines[machineIndex];
+
+                        <div class="@($"shiftplan-row shiftplan-data-row {group.ThemeClass} {(machineIndex % 2 == 1 ? "is-alt" : string.Empty)}")">
+                            <div class="shiftplan-cell shiftplan-machine-cell">
+                                <div class="shiftplan-machine-meta">
+                                    <span class="shiftplan-machine-number">@machine.Number</span>
+                                    <span class="shiftplan-machine-staffing">@machine.Staffing</span>
+                                </div>
+                                <strong class="shiftplan-machine-name">@machine.Name</strong>
+                            </div>
+
+                            @for (var shiftIndex = 0; shiftIndex < machine.Shifts.Count; shiftIndex++)
+                            {
+                                var slot = machine.Shifts[shiftIndex];
+                                var columnClass = shiftHeaders[shiftIndex].ColumnClass;
+
+                                <div class="@($"shiftplan-cell shiftplan-shift-cell {columnClass}")">
+                                    @if (slot is null)
+                                    {
+                                        <div class="shiftplan-empty-cell">frei</div>
+                                    }
+                                    else
+                                    {
+                                        <article class="@($"shiftplan-task {columnClass}")">
+                                            <div class="shiftplan-task-head">
+                                                <div class="shiftplan-task-material">@slot.Material</div>
+                                                <span class="shiftplan-task-count">@GetPeopleCountLabel(slot.People.Length)</span>
+                                            </div>
+
+                                            <div class="shiftplan-task-people-grid">
+                                                @foreach (var person in slot.People)
+                                                {
+                                                    <span class="shiftplan-task-person">@person</span>
+                                                }
+                                            </div>
+
+                                            @if (!string.IsNullOrWhiteSpace(slot.Note))
+                                            {
+                                                <div class="shiftplan-task-note">@slot.Note</div>
+                                            }
+                                        </article>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </section>
+        </div>
+    </div>
+</section>
+
+@code {
+    private readonly string shellId = $"shiftplan-shell-{Guid.NewGuid():N}";
+    private readonly string controlsId = $"shiftplan-controls-{Guid.NewGuid():N}";
+    private readonly string stageShellId = $"shiftplan-stage-shell-{Guid.NewGuid():N}";
+    private readonly string stageId = $"shiftplan-stage-{Guid.NewGuid():N}";
+
+    private readonly ShiftHeader[] shiftHeaders =
+    [
+        new("Nachtschicht", "shift-night"),
+        new("Frühschicht", "shift-early"),
+        new("Spätschicht", "shift-late")
+    ];
+    private readonly List<ShiftPlanSection> sections = BuildSections();
+    private readonly string boardDateLabel = DateTime.Today.ToString("dddd, dd.MM.yyyy", CultureInfo.GetCultureInfo("de-DE"));
+    private readonly string calendarWeekLabel = ISOWeek.GetWeekOfYear(DateTime.Today).ToString("00", CultureInfo.InvariantCulture);
+    private readonly string lastUpdatedLabel = DateTime.Now.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("de-DE")) + " Uhr";
+
+    private bool isFullscreen;
+    private bool activateMonitorView;
+
+    private async Task ToggleFullscreenAsync()
+    {
+        if (isFullscreen)
+        {
+            await CloseFullscreenAsync();
+            return;
+        }
+
+        isFullscreen = true;
+        activateMonitorView = true;
+    }
+
+    private async Task CloseFullscreenAsync()
+    {
+        if (isFullscreen)
+        {
+            await JS.InvokeVoidAsync("shiftPlanBoard.deactivate", shellId, stageShellId, stageId);
+        }
+
+        isFullscreen = false;
+        activateMonitorView = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!activateMonitorView)
+        {
+            return;
+        }
+
+        activateMonitorView = false;
+        await JS.InvokeVoidAsync("shiftPlanBoard.activate", shellId, controlsId, stageShellId, stageId);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("shiftPlanBoard.deactivate", shellId, stageShellId, stageId);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private static List<ShiftPlanSection> BuildSections() =>
+    [
+        new(
+            "Thermoformung",
+            "Tiefziehen und Formgebung",
+            "theme-thermo",
+            [
+                Machine(
+                    "005180",
+                    "Geiss U8",
+                    "2 Plätze",
+                    night: Slot("BMW Seitenteil", ["Max Bauer", "Anna Schneider"]),
+                    early: Slot("BMW Seitenteil", ["Paul Neumann", "Lena Wolf"])),
+                Machine(
+                    "005181",
+                    "Geiss T10",
+                    "2 Plätze",
+                    early: Slot("Audi Blende", ["Felix Braun", "Clara Vogel"]),
+                    late: Slot("Audi Blende", ["Greta Schulz", "Niklas Werner"])),
+                Machine(
+                    "005194",
+                    "Rudholzer",
+                    "1 Platz",
+                    night: Slot("ABS Schwarz", ["Jonas Richter"]),
+                    late: Slot("ABS Schwarz", ["Fabian Richter"], "inkl. Freigabe")),
+                Machine(
+                    "005192",
+                    "Parco",
+                    "2 Plätze",
+                    early: Slot("MB Mittelkonsole", ["Marie Keller", "David Koch"])),
+                Machine(
+                    "005193",
+                    "Kiefel",
+                    "2 Plätze",
+                    late: Slot("BMW Türfach", ["Julia Adler", "Tim Hartmann"]))
+            ]),
+
+        new(
+            "Fräsen",
+            "CNC und Nacharbeit",
+            "theme-mill",
+            [
+                Machine(
+                    "005525",
+                    "Geiss Eco",
+                    "1 Platz",
+                    early: Slot("BMW N17", ["Sophie Krüger"])),
+                Machine(
+                    "005528",
+                    "MKM 4 K.",
+                    "1 Platz",
+                    night: Slot("Konturen Serie A", ["Tobias Vogt"])),
+                Machine(
+                    "005529",
+                    "MKM 4 K.",
+                    "1 Platz",
+                    late: Slot("Audi Abschluss", ["Anne Mertens"])),
+                Machine(
+                    "005543",
+                    "MKM 2 K.",
+                    "1 Platz",
+                    early: Slot("Deckel Nacharbeit", ["Nina Winter"])),
+                Machine(
+                    "005542",
+                    "MKM 2 K.",
+                    "1 Platz",
+                    late: Slot("Blenden Satz B", ["Philipp Roth"])),
+                Machine(
+                    "005541",
+                    "MKM 2 K.",
+                    "1 Platz",
+                    early: Slot("Audi Trim", ["Laura Franke"])),
+                Machine(
+                    "005540",
+                    "MKM 2 K.",
+                    "1 Platz",
+                    night: Slot("BMW Konsole", ["Sebastian Fink"]))
+            ]),
+
+        new(
+            "Stanzen",
+            "Stanzen und Trennen",
+            "theme-stanzen",
+            [
+                Machine(
+                    "005317",
+                    "Handstanze",
+                    "1 Platz",
+                    early: Slot("BMW Clips", ["Miriam Scholz"])),
+                Machine(
+                    "005318",
+                    "Hydraulikstanze",
+                    "1 Platz",
+                    night: Slot("Audi Lochbild", ["Jan Becker"])),
+                Machine(
+                    "005319",
+                    "Hydraulikstanze",
+                    "1 Platz",
+                    late: Slot("MB Rahmen", ["Hanna Lange"])),
+                Machine(
+                    "005320",
+                    "Hydraulikstanze",
+                    "1 Platz",
+                    early: Slot("Trennkante Serie 3", ["Emma Peters"])),
+                Machine(
+                    "005321",
+                    "Hydraulikstanze",
+                    "1 Platz",
+                    night: Slot("Lochbild Serie 4", ["Karl Hofmann"])),
+                Machine(
+                    "005322",
+                    "Hydraulikstanze",
+                    "1 Platz",
+                    late: Slot("Abschlusskante", ["Moritz Kramer"]))
+            ]),
+
+        new(
+            "UV",
+            "Härten und Oberfläche",
+            "theme-uv",
+            [
+                Machine(
+                    "005410",
+                    "UV-Anlage",
+                    "1 Platz",
+                    early: Slot("Rahmen Serie 7", ["Oskar Busch"], "mit Prüfcharge"))
+            ]),
+
+        new(
+            "Ohne Bereich",
+            "Einzelarbeitsplatz",
+            "theme-flex",
+            [
+                Machine(
+                    "-",
+                    "Biegemaschine",
+                    "1 Platz",
+                    late: Slot("Sonderteile", ["Mara Seidel"]))
+            ]),
+
+        new(
+            "Sauberraum",
+            "Reinraum-Arbeitsplätze",
+            "theme-cleanroom",
+            [
+                Machine(
+                    "005591",
+                    "Tisch 1",
+                    "1 Platz",
+                    early: Slot("BMW Teile", ["Noah Klein"])),
+                Machine(
+                    "005592",
+                    "Tisch 2",
+                    "1 Platz",
+                    early: Slot("BMW Teile", ["Lea Hoffmann"])),
+                Machine(
+                    "005593",
+                    "Tisch 3",
+                    "1 Platz",
+                    night: Slot("Audi Chromring", ["Ben Fischer"])),
+                Machine(
+                    "005594",
+                    "Tisch 4",
+                    "1 Platz",
+                    late: Slot("Audi Chromteile", ["Sarah Lorenz"])),
+                Machine(
+                    "005595",
+                    "Tisch 5",
+                    "1 Platz",
+                    early: Slot("BMW Blende", ["Johanna Reuter"])),
+                Machine(
+                    "005596",
+                    "Tisch 6",
+                    "1 Platz",
+                    night: Slot("MB Blende", ["Lena Wolf"])),
+                Machine(
+                    "005597",
+                    "Tisch 7",
+                    "1 Platz",
+                    late: Slot("Teilesatz Q4", ["Matthias Beck"])),
+                Machine(
+                    "005598",
+                    "Tisch 8",
+                    "1 Platz",
+                    early: Slot("BMW N17", ["Helena Graf"])),
+                Machine(
+                    "005599",
+                    "Tisch 9",
+                    "1 Platz",
+                    late: Slot("Verpackung Satz 2", ["Mia Schäfer"])),
+                Machine(
+                    "005600",
+                    "Tisch 10",
+                    "1 Platz",
+                    night: Slot("Kontrolle Serie 5", ["David Koch"])),
+                Machine(
+                    "005600",
+                    "Tisch 11",
+                    "1 Platz",
+                    early: Slot("Sichtprüfung", ["Jule Braun"])),
+                Machine(
+                    "005600",
+                    "Tisch 12",
+                    "1 Platz",
+                    late: Slot("2K-Lack", ["Clara Vogel"]))
+            ]),
+
+        new(
+            "Sonstiges",
+            "Reserve und Sonderaufgaben",
+            "theme-misc",
+            [
+                Machine(
+                    "-",
+                    "Springer",
+                    "1 Platz",
+                    early: Slot("Unterstützung Thermo", ["Fabian Richter"])),
+                Machine(
+                    "-",
+                    "Materialversorgung",
+                    "1 Platz",
+                    early: Slot("Linienversorgung", ["Anne Mertens"])),
+                Machine(
+                    "-",
+                    "Reserve / Einarbeitung",
+                    "1 Platz",
+                    late: Slot("Begleitung Linie", ["Greta Schulz"]))
+            ])
+    ];
+
+    private static ShiftPlanMachine Machine(
+        string number,
+        string name,
+        string staffing,
+        ShiftPlanSlot? night = null,
+        ShiftPlanSlot? early = null,
+        ShiftPlanSlot? late = null)
+        => new(number, name, staffing, night, early, late);
+
+    private static ShiftPlanSlot Slot(string material, string[] people, string? note = null)
+        => new(material, people, note);
+
+    private static string GetPeopleCountLabel(int count)
+        => count == 1 ? "1 Person" : $"{count} Personen";
+
+    private sealed record ShiftHeader(string Label, string ColumnClass);
+
+    private sealed record ShiftPlanSlot(string Material, string[] People, string? Note);
+
+    private sealed record ShiftPlanMachine(
+        string Number,
+        string Name,
+        string Staffing,
+        ShiftPlanSlot? Night,
+        ShiftPlanSlot? Early,
+        ShiftPlanSlot? Late)
+    {
+        public IReadOnlyList<ShiftPlanSlot?> Shifts => [Night, Early, Late];
+    }
+
+    private sealed record ShiftPlanSection(
+        string Name,
+        string Description,
+        string ThemeClass,
+        List<ShiftPlanMachine> Machines);
+}

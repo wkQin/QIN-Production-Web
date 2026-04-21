@@ -16,14 +16,8 @@
 <div class="row g-4 mb-4">
     <div class="col-12">
         <div class="content-card h-100">
-            <div class="card-header-flex">
-                <h4>Aktuelle Produktion</h4>
-            </div>
-            <div class="card-body">
-                <div class="empty-state h-100 min-vh-25">
-                    <i class="fa-solid fa-industry mb-3"></i>
-                    <p>Produktionsdaten werden geladen...</p>
-                </div>
+            <div class="card-body p-0">
+                <ShiftPlanBoard />
             </div>
         </div>
     </div>
@@ -213,6 +207,14 @@
         border: 1px solid rgba(59, 130, 246, 0.3);
         min-width: 42px;
         padding: 0.45rem 0.8rem;
+    }
+
+    .production-plan-badge {
+        background: rgba(14, 165, 233, 0.14);
+        color: #bae6fd;
+        border: 1px solid rgba(14, 165, 233, 0.24);
+        min-width: 7.5rem;
+        padding: 0.45rem 0.9rem;
     }
 
     .dashboard-alerts-panel {

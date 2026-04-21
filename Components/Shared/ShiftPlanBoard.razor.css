@@ -1,0 +1,775 @@
+.shiftplan-shell {
+    --shiftplan-grid: 15.8rem 13.6rem 13.6rem 13.6rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1rem 1.1rem 1.1rem;
+    background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 32%),
+        linear-gradient(180deg, rgba(7, 14, 28, 0.98) 0%, rgba(12, 21, 38, 0.96) 100%);
+    color: #e2e8f0;
+}
+
+.shiftplan-shell.is-fullscreen {
+    --shiftplan-grid: 14rem 11.85rem 11.85rem 11.85rem;
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+    padding: 0.24rem;
+    background:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 28%),
+        linear-gradient(180deg, #07111f 0%, #081523 100%);
+    overflow: hidden;
+}
+
+.shiftplan-controls {
+    display: flex;
+    flex-direction: column;
+}
+
+.shiftplan-controls-minimal {
+    align-items: flex-end;
+    margin-bottom: -0.15rem;
+}
+
+.shiftplan-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.shiftplan-head-copy {
+    min-width: 0;
+}
+
+.shiftplan-kicker,
+.shiftplan-board-kicker {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.72rem;
+    border-radius: 999px;
+    background: rgba(59, 130, 246, 0.12);
+    color: #bfdbfe;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.shiftplan-title-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 0.45rem;
+}
+
+.shiftplan-title-row h3 {
+    margin: 0;
+    font-size: 1.42rem;
+    color: #f8fafc;
+}
+
+.shiftplan-head-copy p {
+    margin: 0.4rem 0 0;
+    max-width: 48rem;
+    color: rgba(226, 232, 240, 0.72);
+    line-height: 1.45;
+    font-size: 0.92rem;
+}
+
+.shiftplan-head-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.shiftplan-head-actions-solo {
+    width: 100%;
+}
+
+.shiftplan-date-pill,
+.shiftplan-action-btn {
+    min-height: 2.2rem;
+    padding: 0 0.94rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.shiftplan-date-pill {
+    background: rgba(15, 23, 42, 0.76);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    color: #f8fafc;
+}
+
+.shiftplan-action-btn {
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.94), rgba(14, 165, 233, 0.88));
+    color: #fff;
+    transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.shiftplan-action-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.04);
+}
+
+.shiftplan-fullscreen-exit {
+    position: absolute;
+    top: 0.55rem;
+    right: 0.55rem;
+    z-index: 4;
+    width: 2.35rem;
+    height: 2.35rem;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 999px;
+    background: rgba(8, 15, 30, 0.78);
+    color: rgba(226, 232, 240, 0.88);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+}
+
+.shiftplan-stage-shell {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-stage-shell {
+    position: relative;
+    overflow: hidden;
+}
+
+.shiftplan-stage {
+    width: max-content;
+    display: flex;
+    flex-direction: column;
+}
+
+.shiftplan-stage.is-embedded-stage {
+    width: 100%;
+    min-width: 0;
+}
+
+.shiftplan-stage.is-monitor-stage {
+    min-width: 49.6rem;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform-origin: top center;
+}
+
+.shiftplan-board-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.82rem 0.92rem;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-bottom: 0;
+    border-radius: 1.05rem 1.05rem 0 0;
+    background: linear-gradient(180deg, rgba(10, 19, 36, 0.98) 0%, rgba(12, 22, 40, 0.96) 100%);
+    box-shadow: 0 18px 44px rgba(2, 6, 23, 0.24);
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-board-meta {
+    padding: 0.74rem 0.86rem;
+    border-radius: 1rem 1rem 0 0;
+}
+
+.shiftplan-board-copy {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    min-width: 0;
+}
+
+.shiftplan-board-copy strong {
+    color: #f8fafc;
+    font-size: 1rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.shiftplan-board-status {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    white-space: nowrap;
+}
+
+.shiftplan-board-status span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0 0.78rem;
+    border-radius: 999px;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: rgba(226, 232, 240, 0.76);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-board-status span {
+    min-height: 1.8rem;
+    padding: 0 0.72rem;
+    font-size: 0.72rem;
+}
+
+.shiftplan-table-panel {
+    overflow: hidden;
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    border-top: 0;
+    border-radius: 0 0 1rem 1rem;
+    background: rgba(7, 14, 28, 0.88);
+    box-shadow: 0 22px 52px rgba(2, 6, 23, 0.28);
+}
+
+.shiftplan-table-grid,
+.shiftplan-row {
+    display: grid;
+    grid-template-columns: var(--shiftplan-grid);
+}
+
+.shiftplan-stage.is-embedded-stage .shiftplan-table-panel {
+    width: 100%;
+}
+
+.shiftplan-stage.is-embedded-stage .shiftplan-table-grid,
+.shiftplan-stage.is-embedded-stage .shiftplan-row {
+    grid-template-columns: minmax(14.5rem, 1.14fr) minmax(10.6rem, 1fr) minmax(10.6rem, 1fr) minmax(10.6rem, 1fr);
+}
+
+.shiftplan-cell {
+    min-width: 0;
+}
+
+.shiftplan-header-row {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-header-row {
+    position: static;
+}
+
+.shiftplan-header-cell {
+    padding: 0.82rem 0.9rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.1);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+    background: rgba(14, 25, 46, 0.98);
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+}
+
+.shiftplan-header-cell:last-child {
+    border-right: 0;
+}
+
+.shiftplan-header-machine {
+    background: rgba(8, 16, 31, 0.98);
+}
+
+.shiftplan-header-cell span {
+    color: #f8fafc;
+    font-size: 0.86rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+}
+
+.shiftplan-header-cell small {
+    color: rgba(226, 232, 240, 0.56);
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.shift-night {
+    box-shadow: inset 0 4px 0 rgba(148, 163, 184, 0.6);
+}
+
+.shift-early {
+    box-shadow: inset 0 4px 0 rgba(59, 130, 246, 0.88);
+}
+
+.shift-late {
+    box-shadow: inset 0 4px 0 rgba(251, 191, 36, 0.88);
+}
+
+.shiftplan-group-row {
+    grid-template-columns: 1fr;
+    border-top: 1px solid rgba(148, 163, 184, 0.08);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.shiftplan-group-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.42rem 0.92rem;
+}
+
+.shiftplan-group-content strong {
+    color: #f8fafc;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.shiftplan-group-content span {
+    color: rgba(248, 250, 252, 0.84);
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.shiftplan-group-row.theme-thermo {
+    background: linear-gradient(90deg, rgba(15, 118, 110, 0.96), rgba(20, 184, 166, 0.82));
+}
+
+.shiftplan-group-row.theme-mill {
+    background: linear-gradient(90deg, rgba(153, 27, 27, 0.96), rgba(239, 68, 68, 0.82));
+}
+
+.shiftplan-group-row.theme-stanzen {
+    background: linear-gradient(90deg, rgba(180, 83, 9, 0.96), rgba(245, 158, 11, 0.84));
+}
+
+.shiftplan-group-row.theme-uv {
+    background: linear-gradient(90deg, rgba(29, 78, 216, 0.96), rgba(56, 189, 248, 0.82));
+}
+
+.shiftplan-group-row.theme-flex {
+    background: linear-gradient(90deg, rgba(71, 85, 105, 0.96), rgba(148, 163, 184, 0.82));
+}
+
+.shiftplan-group-row.theme-cleanroom {
+    background: linear-gradient(90deg, rgba(77, 124, 15, 0.96), rgba(132, 204, 22, 0.82));
+}
+
+.shiftplan-group-row.theme-misc {
+    background: linear-gradient(90deg, rgba(109, 40, 217, 0.96), rgba(168, 85, 247, 0.82));
+}
+
+.shiftplan-data-row {
+    background: rgba(8, 15, 30, 0.72);
+    border-top: 1px solid rgba(148, 163, 184, 0.06);
+}
+
+.shiftplan-data-row.is-alt {
+    background: rgba(10, 19, 35, 0.92);
+}
+
+.shiftplan-machine-cell,
+.shiftplan-shift-cell {
+    min-height: 2.5rem;
+    padding: 0.22rem 0.26rem;
+    border-right: 1px solid rgba(148, 163, 184, 0.08);
+}
+
+.shiftplan-machine-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.16rem;
+    padding: 0.28rem 0.56rem;
+    background: rgba(10, 19, 35, 0.92);
+}
+
+.shiftplan-machine-cell::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 0.32rem;
+    background: rgba(148, 163, 184, 0.28);
+}
+
+.shiftplan-machine-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+
+.shiftplan-machine-number {
+    color: #cbd5e1;
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+}
+
+.shiftplan-machine-staffing {
+    padding: 0.1rem 0.46rem;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.12);
+    color: rgba(226, 232, 240, 0.76);
+    font-size: 0.58rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.shiftplan-machine-name {
+    color: #f8fafc;
+    font-size: 0.8rem;
+    line-height: 1.12;
+}
+
+.shiftplan-data-row.theme-thermo .shiftplan-machine-cell::before,
+.shiftplan-data-row.theme-thermo .shiftplan-machine-staffing {
+    background-color: rgba(20, 184, 166, 0.18);
+}
+
+.shiftplan-data-row.theme-thermo .shiftplan-machine-cell::before {
+    background: #14b8a6;
+}
+
+.shiftplan-data-row.theme-thermo .shiftplan-machine-number {
+    color: #99f6e4;
+}
+
+.shiftplan-data-row.theme-mill .shiftplan-machine-cell::before {
+    background: #ef4444;
+}
+
+.shiftplan-data-row.theme-mill .shiftplan-machine-number {
+    color: #fecaca;
+}
+
+.shiftplan-data-row.theme-mill .shiftplan-machine-staffing {
+    background: rgba(239, 68, 68, 0.18);
+}
+
+.shiftplan-data-row.theme-stanzen .shiftplan-machine-cell::before {
+    background: #f59e0b;
+}
+
+.shiftplan-data-row.theme-stanzen .shiftplan-machine-number {
+    color: #fde68a;
+}
+
+.shiftplan-data-row.theme-stanzen .shiftplan-machine-staffing {
+    background: rgba(245, 158, 11, 0.18);
+}
+
+.shiftplan-data-row.theme-uv .shiftplan-machine-cell::before {
+    background: #38bdf8;
+}
+
+.shiftplan-data-row.theme-uv .shiftplan-machine-number {
+    color: #bae6fd;
+}
+
+.shiftplan-data-row.theme-uv .shiftplan-machine-staffing {
+    background: rgba(56, 189, 248, 0.18);
+}
+
+.shiftplan-data-row.theme-flex .shiftplan-machine-cell::before {
+    background: #94a3b8;
+}
+
+.shiftplan-data-row.theme-flex .shiftplan-machine-number {
+    color: #e2e8f0;
+}
+
+.shiftplan-data-row.theme-flex .shiftplan-machine-staffing {
+    background: rgba(148, 163, 184, 0.18);
+}
+
+.shiftplan-data-row.theme-cleanroom .shiftplan-machine-cell::before {
+    background: #84cc16;
+}
+
+.shiftplan-data-row.theme-cleanroom .shiftplan-machine-number {
+    color: #d9f99d;
+}
+
+.shiftplan-data-row.theme-cleanroom .shiftplan-machine-staffing {
+    background: rgba(132, 204, 22, 0.18);
+}
+
+.shiftplan-data-row.theme-misc .shiftplan-machine-cell::before {
+    background: #a855f7;
+}
+
+.shiftplan-data-row.theme-misc .shiftplan-machine-number {
+    color: #e9d5ff;
+}
+
+.shiftplan-data-row.theme-misc .shiftplan-machine-staffing {
+    background: rgba(168, 85, 247, 0.18);
+}
+
+.shiftplan-shift-cell {
+    display: flex;
+    align-items: stretch;
+    background: rgba(9, 18, 35, 0.7);
+}
+
+.shiftplan-shift-cell.shift-night {
+    background-color: rgba(148, 163, 184, 0.04);
+}
+
+.shiftplan-shift-cell.shift-early {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+.shiftplan-shift-cell.shift-late {
+    background-color: rgba(251, 191, 36, 0.05);
+}
+
+.shiftplan-empty-cell {
+    width: 100%;
+    border-radius: 0.52rem;
+    border: 1px dashed rgba(148, 163, 184, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(148, 163, 184, 0.4);
+    font-size: 0.58rem;
+    font-weight: 800;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+}
+
+.shiftplan-task {
+    position: relative;
+    width: 100%;
+    border-radius: 0.56rem;
+    padding: 0.42rem 0.48rem 0.36rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 0.24rem;
+    background: linear-gradient(180deg, rgba(24, 37, 57, 0.98) 0%, rgba(17, 27, 42, 0.98) 100%);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    box-shadow: 0 10px 22px rgba(2, 6, 23, 0.12);
+}
+
+.shiftplan-task::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0.2rem;
+    border-radius: 0.56rem 0.56rem 0 0;
+}
+
+.shiftplan-task.shift-night {
+    background: linear-gradient(180deg, rgba(31, 42, 60, 0.98) 0%, rgba(19, 28, 42, 0.98) 100%);
+}
+
+.shiftplan-task.shift-night::before {
+    background: linear-gradient(90deg, rgba(148, 163, 184, 0.98), rgba(203, 213, 225, 0.8));
+}
+
+.shiftplan-task.shift-early {
+    background: linear-gradient(180deg, rgba(20, 39, 67, 0.98) 0%, rgba(16, 29, 47, 0.98) 100%);
+}
+
+.shiftplan-task.shift-early::before {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.98), rgba(125, 211, 252, 0.84));
+}
+
+.shiftplan-task.shift-late {
+    background: linear-gradient(180deg, rgba(58, 41, 19, 0.98) 0%, rgba(35, 27, 18, 0.98) 100%);
+}
+
+.shiftplan-task.shift-late::before {
+    background: linear-gradient(90deg, rgba(251, 191, 36, 0.98), rgba(253, 224, 71, 0.84));
+}
+
+.shiftplan-task-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.4rem;
+    padding-top: 0.04rem;
+}
+
+.shiftplan-task-material {
+    min-width: 0;
+    color: #f8fafc;
+    font-size: 0.66rem;
+    font-weight: 800;
+    line-height: 1.16;
+}
+
+.shiftplan-task-count {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 1.15rem;
+    padding: 0 0.42rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(226, 232, 240, 0.86);
+    font-size: 0.5rem;
+    font-weight: 800;
+    letter-spacing: 0.03em;
+}
+
+.shiftplan-task-people-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.18rem;
+}
+
+.shiftplan-task-person {
+    min-width: 0;
+    padding: 0.18rem 0.34rem;
+    border-radius: 0.42rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    color: rgba(241, 245, 249, 0.88);
+    font-size: 0.56rem;
+    font-weight: 700;
+    line-height: 1.12;
+}
+
+.shiftplan-task-note {
+    margin-top: 0.02rem;
+    padding-top: 0.16rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+    color: rgba(148, 163, 184, 0.84);
+    font-size: 0.52rem;
+    line-height: 1.08;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-header-cell {
+    padding: 0.72rem 0.78rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-header-cell span {
+    font-size: 0.8rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-header-cell small {
+    font-size: 0.58rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-group-content {
+    padding: 0.32rem 0.8rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-group-content strong {
+    font-size: 0.72rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-group-content span {
+    font-size: 0.6rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-machine-cell,
+.shiftplan-shell.is-fullscreen .shiftplan-shift-cell {
+    min-height: 2.1rem;
+    padding: 0.16rem 0.2rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-machine-cell {
+    padding: 0.2rem 0.44rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-machine-number {
+    font-size: 0.6rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-machine-staffing {
+    font-size: 0.52rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-machine-name {
+    font-size: 0.72rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task {
+    padding: 0.28rem 0.36rem 0.3rem;
+    border-radius: 0.42rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task::before {
+    height: 0.16rem;
+    border-radius: 0.42rem 0.42rem 0 0;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-head {
+    gap: 0.28rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-material {
+    font-size: 0.54rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-count {
+    min-height: 0.96rem;
+    padding: 0 0.34rem;
+    font-size: 0.44rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-people-grid {
+    gap: 0.14rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-person {
+    padding: 0.13rem 0.28rem;
+    font-size: 0.47rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-note,
+.shiftplan-shell.is-fullscreen .shiftplan-empty-cell {
+    font-size: 0.44rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-task-note {
+    padding-top: 0.12rem;
+}
+
+@media (max-width: 1100px) {
+    .shiftplan-head {
+        flex-direction: column;
+    }
+
+    .shiftplan-head-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .shiftplan-shell {
+        padding: 0.85rem;
+    }
+
+    .shiftplan-stage.is-embedded-stage {
+        min-width: 49rem;
+    }
+
+    .shiftplan-board-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .shiftplan-board-status {
+        flex-direction: column;
+        align-items: flex-start;
+        white-space: normal;
+    }
+}

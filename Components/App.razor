@@ -149,6 +149,143 @@
             });
         };
 
+        window.shiftPlanBoard = (() => {
+            const sessions = new Map();
+
+            const measureStage = (stage) => {
+                const previousPosition = stage.style.position;
+                const previousLeft = stage.style.left;
+                const previousTop = stage.style.top;
+                const previousTransform = stage.style.transform;
+
+                stage.style.position = 'static';
+                stage.style.left = '';
+                stage.style.top = '';
+                stage.style.transform = 'none';
+
+                const naturalWidth = Math.max(stage.scrollWidth, stage.offsetWidth);
+                const naturalHeight = Math.max(stage.scrollHeight, stage.offsetHeight);
+
+                stage.style.position = previousPosition;
+                stage.style.left = previousLeft;
+                stage.style.top = previousTop;
+                stage.style.transform = previousTransform;
+
+                return { naturalWidth, naturalHeight };
+            };
+
+            const fitStage = (shellId) => {
+                const session = sessions.get(shellId);
+                if (!session) return;
+
+                const { shell, controls, stageShell, stage } = session;
+                if (!shell || !stageShell || !stage) return;
+
+                const { naturalWidth, naturalHeight } = measureStage(stage);
+                const availableWidth = Math.max(0, stageShell.clientWidth - 6);
+                const availableHeight = Math.max(0, stageShell.clientHeight - 6);
+                const controlsHeight = controls ? controls.getBoundingClientRect().height : 0;
+
+                if (availableWidth === 0 || availableHeight === 0 || naturalWidth === 0 || naturalHeight === 0) {
+                    requestAnimationFrame(() => fitStage(shellId));
+                    return;
+                }
+
+                const scaleX = Math.max(0.1, Math.min(3, availableWidth / naturalWidth));
+                const scaleY = Math.max(0.1, Math.min(3, availableHeight / naturalHeight));
+                const topOffset = 0;
+
+                shell.style.setProperty('--shiftplan-fit-scale-x', scaleX.toString());
+                shell.style.setProperty('--shiftplan-fit-scale-y', scaleY.toString());
+                shell.style.setProperty('--shiftplan-fit-controls', `${controlsHeight}px`);
+                stage.style.top = `${Math.floor(topOffset)}px`;
+                stage.style.transform = `translateX(-50%) scale(${scaleX}, ${scaleY})`;
+            };
+
+            const removeSession = (shellId, stageShellId, stageId) => {
+                const session = sessions.get(shellId);
+                if (session) {
+                    window.removeEventListener('resize', session.resizeHandler);
+                    if (window.visualViewport) {
+                        window.visualViewport.removeEventListener('resize', session.resizeHandler);
+                    }
+
+                    if (session.resizeObserver) {
+                        session.resizeObserver.disconnect();
+                    }
+
+                    sessions.delete(shellId);
+                }
+
+                const stageShell = document.getElementById(stageShellId);
+                const stage = document.getElementById(stageId);
+                const shell = document.getElementById(shellId);
+
+                if (stageShell) {
+                    stageShell.style.height = '';
+                }
+
+                if (stage) {
+                    stage.style.top = '';
+                    stage.style.transform = '';
+                    stage.style.left = '';
+                    stage.style.position = '';
+                }
+
+                if (shell) {
+                    shell.style.removeProperty('--shiftplan-fit-scale-x');
+                    shell.style.removeProperty('--shiftplan-fit-scale-y');
+                    shell.style.removeProperty('--shiftplan-fit-controls');
+                }
+
+                document.documentElement.style.overflow = '';
+                document.body.style.overflow = '';
+            };
+
+            return {
+                activate: (shellId, controlsId, stageShellId, stageId) => {
+                    removeSession(shellId, stageShellId, stageId);
+
+                    const shell = document.getElementById(shellId);
+                    const controls = document.getElementById(controlsId);
+                    const stageShell = document.getElementById(stageShellId);
+                    const stage = document.getElementById(stageId);
+
+                    if (!shell || !stageShell || !stage) {
+                        return;
+                    }
+
+                    const resizeHandler = () => requestAnimationFrame(() => fitStage(shellId));
+                    const resizeObserver = typeof ResizeObserver === 'function'
+                        ? new ResizeObserver(() => requestAnimationFrame(() => fitStage(shellId)))
+                        : null;
+
+                    sessions.set(shellId, { shell, controls, stageShell, stage, resizeHandler, resizeObserver });
+
+                    window.addEventListener('resize', resizeHandler);
+                    if (window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', resizeHandler);
+                    }
+
+                    if (resizeObserver) {
+                        resizeObserver.observe(stageShell);
+                        if (controls) {
+                            resizeObserver.observe(controls);
+                        }
+                    }
+
+                    document.documentElement.style.overflow = 'hidden';
+                    document.body.style.overflow = 'hidden';
+
+                    requestAnimationFrame(() => fitStage(shellId));
+                },
+
+                deactivate: (shellId, stageShellId, stageId) => {
+                    removeSession(shellId, stageShellId, stageId);
+                }
+            };
+        })();
+
         window.printHtmlDocument = async (html) => {
             if (!html) {
                 throw new Error('Keine Druckansicht erhalten.');
