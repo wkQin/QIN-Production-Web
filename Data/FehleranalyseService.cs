@@ -203,6 +203,7 @@ namespace QIN_Production_Web.Data
             if (fehlerListe == null || !fehlerListe.Any())
                 return "Keine Daten vorhanden";
 
+            var now = DateTime.Now;
             string exportDirectory = @"N:\tmp";
             if (!Directory.Exists(exportDirectory))
             {
@@ -210,14 +211,14 @@ namespace QIN_Production_Web.Data
                 catch { exportDirectory = Path.GetTempPath(); } // Fallback to local temp if N: is missing
             }
 
-            string filePath = Path.Combine(exportDirectory, $"Auswertung_{DateTime.Today:yyyy-MM-dd}.xlsx");
+            string filePath = Path.Combine(exportDirectory, $"Auswertung_{now:yyyy-MM-dd}.xlsx");
 
             try
             {
                 using var workbook = new XLWorkbook();
                 var ws = workbook.Worksheets.Add("Auswertung");
 
-                ws.Range("A1:I1").Merge().Value = $"Ausschusswerte {DateTime.Today:MMMM yyyy}";
+                ws.Range("A1:I1").Merge().Value = $"Ausschusswerte {now:MMMM yyyy}";
                 ws.Cell("A1").Style.Font.Bold = true;
                 ws.Cell("A1").Style.Fill.BackgroundColor = XLColor.LightGreen;
                 ws.Cell("A1").Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;

@@ -97,6 +97,12 @@
     padding-inline: 1.15rem;
 }
 
+.schichtplan-delete-btn {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+}
+
 .schichtplan-status-alert,
 .schichtplan-error-alert {
     border-radius: 1rem;
@@ -164,6 +170,7 @@
 }
 
 .schichtplan-user-toolbar {
+    flex-wrap: wrap;
     margin-top: 1rem;
 }
 
@@ -193,6 +200,48 @@
 .schichtplan-user-toolbar > input {
     min-width: 15rem;
     flex: 1 1 15rem;
+}
+
+.schichtplan-copy-btn {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+}
+
+.schichtplan-multi-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.9rem;
+    margin: 0;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 1rem;
+    background: rgba(9, 16, 30, 0.76);
+}
+
+.schichtplan-multi-toggle .form-check-input {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.schichtplan-multi-toggle-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.schichtplan-multi-toggle-copy strong {
+    color: #f8fafc;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.schichtplan-multi-toggle-copy small {
+    color: rgba(191, 219, 254, 0.74);
+    font-size: 0.72rem;
+    line-height: 1.2;
 }
 
 .schichtplan-pool-actions.is-stacked {
@@ -238,7 +287,7 @@
 }
 
 .users-grid {
-    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
 }
 
 .schichtplan-material-table {
@@ -313,8 +362,8 @@
 .schichtplan-chip {
     min-width: 0;
     position: relative;
-    padding: 0.75rem 0.85rem;
-    border-radius: 1rem;
+    padding: 0.62rem 0.7rem;
+    border-radius: 0.92rem;
     border: 1px solid rgba(148, 163, 184, 0.18);
     background: linear-gradient(180deg, rgba(18, 27, 45, 0.92), rgba(13, 21, 37, 0.98));
     cursor: grab;
@@ -334,7 +383,7 @@
 
 .schichtplan-chip-copy {
     min-width: 0;
-    padding-right: 1.9rem;
+    padding-right: 1.65rem;
 }
 
 .schichtplan-chip-delete {
@@ -357,14 +406,7 @@
     display: block;
     color: #f8fafc;
     font-weight: 800;
-    line-height: 1.28;
-}
-
-.chip-subtitle {
-    display: block;
-    margin-top: 0.32rem;
-    color: rgba(191, 219, 254, 0.72);
-    font-size: 0.76rem;
+    font-size: 0.88rem;
     line-height: 1.2;
 }
 
@@ -423,18 +465,6 @@
     color: rgba(226, 232, 240, 0.62);
 }
 
-.header-cell.is-night {
-    background: rgba(67, 56, 202, 0.12);
-}
-
-.header-cell.is-early {
-    background: rgba(16, 185, 129, 0.12);
-}
-
-.header-cell.is-late {
-    background: rgba(249, 115, 22, 0.12);
-}
-
 .schichtplan-section-row {
     display: flex;
     justify-content: space-between;
@@ -443,9 +473,11 @@
     padding: 0.68rem 1rem;
     border-top: 1px solid rgba(148, 163, 184, 0.08);
     border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-    background: rgba(15, 23, 42, 0.56);
+    background: linear-gradient(90deg, var(--area-soft), rgba(15, 23, 42, 0.68));
     color: #f8fafc;
     --area-color: #64748b;
+    --area-soft: rgba(148, 163, 184, 0.18);
+    --area-strong: rgba(148, 163, 184, 0.24);
 }
 
 .schichtplan-section-row strong {
@@ -458,13 +490,48 @@
     font-size: 0.82rem;
 }
 
-.theme-thermo { --area-color: #0ea5e9; }
-.theme-mill { --area-color: #22c55e; }
-.theme-stanzen { --area-color: #f59e0b; }
-.theme-uv { --area-color: #a855f7; }
-.theme-flex { --area-color: #f97316; }
-.theme-cleanroom { --area-color: #14b8a6; }
-.theme-misc { --area-color: #94a3b8; }
+.theme-thermo {
+    --area-color: #7dd3fc;
+    --area-soft: rgba(125, 211, 252, 0.2);
+    --area-strong: rgba(14, 165, 233, 0.24);
+}
+
+.theme-mill {
+    --area-color: #22c55e;
+    --area-soft: rgba(34, 197, 94, 0.2);
+    --area-strong: rgba(34, 197, 94, 0.24);
+}
+
+.theme-stanzen {
+    --area-color: #ef4444;
+    --area-soft: rgba(239, 68, 68, 0.18);
+    --area-strong: rgba(239, 68, 68, 0.24);
+}
+
+.theme-uv {
+    --area-color: #a855f7;
+    --area-soft: rgba(168, 85, 247, 0.18);
+    --area-strong: rgba(168, 85, 247, 0.24);
+}
+
+.theme-bending,
+.theme-flex {
+    --area-color: #94a3b8;
+    --area-soft: rgba(148, 163, 184, 0.16);
+    --area-strong: rgba(148, 163, 184, 0.22);
+}
+
+.theme-cleanroom {
+    --area-color: #facc15;
+    --area-soft: rgba(250, 204, 21, 0.18);
+    --area-strong: rgba(250, 204, 21, 0.24);
+}
+
+.theme-misc {
+    --area-color: #b45309;
+    --area-soft: rgba(180, 83, 9, 0.18);
+    --area-strong: rgba(180, 83, 9, 0.24);
+}
 
 .schichtplan-section-row::before {
     content: "";
@@ -490,8 +557,8 @@
     align-items: center;
     padding: 0.25rem 0.58rem;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.12);
-    color: rgba(226, 232, 240, 0.76);
+    background: var(--area-soft);
+    color: #f8fafc;
     font-size: 0.74rem;
     font-weight: 800;
     letter-spacing: 0.04em;
@@ -507,19 +574,7 @@
 .schichtplan-slot {
     padding: 0.72rem;
     border-right: 1px solid rgba(148, 163, 184, 0.08);
-    background: rgba(8, 15, 28, 0.82);
-}
-
-.schichtplan-slot.is-night {
-    background: linear-gradient(180deg, rgba(30, 27, 75, 0.3), rgba(8, 15, 28, 0.88));
-}
-
-.schichtplan-slot.is-early {
-    background: linear-gradient(180deg, rgba(6, 78, 59, 0.24), rgba(8, 15, 28, 0.88));
-}
-
-.schichtplan-slot.is-late {
-    background: linear-gradient(180deg, rgba(124, 45, 18, 0.24), rgba(8, 15, 28, 0.88));
+    background: linear-gradient(180deg, rgba(8, 15, 28, 0.88), rgba(8, 15, 28, 0.96));
 }
 
 .schichtplan-slot.is-drag-active {
@@ -538,7 +593,13 @@
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(191, 219, 254, 0.8);
+    color: rgba(226, 232, 240, 0.78);
+}
+
+.schichtplan-slot-material-counter {
+    color: rgba(191, 219, 254, 0.72);
+    font-size: 0.7rem;
+    font-weight: 700;
 }
 
 .schichtplan-clear-btn,
@@ -554,13 +615,40 @@
     justify-content: center;
 }
 
-.schichtplan-material-card {
-    min-height: 3.7rem;
+.schichtplan-material-stack {
+    display: grid;
+    gap: 0.55rem;
     margin-top: 0.62rem;
+}
+
+.schichtplan-material-card {
+    min-height: 3.3rem;
     padding: 0.78rem 0.82rem;
     border-radius: 0.95rem;
-    border: 1px solid rgba(96, 165, 250, 0.14);
+    border: 1px solid var(--area-strong);
     background: linear-gradient(180deg, rgba(18, 29, 47, 0.94), rgba(11, 18, 33, 0.98));
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.5);
+}
+
+.schichtplan-material-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.schichtplan-material-card-copy {
+    min-width: 0;
+}
+
+.schichtplan-material-card-slot {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: rgba(191, 219, 254, 0.72);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .schichtplan-material-card strong {
@@ -568,6 +656,7 @@
     font-size: 0.94rem;
     line-height: 1.42;
     color: #f8fafc;
+    word-break: break-word;
 }
 
 .schichtplan-material-card.is-empty {
@@ -582,7 +671,7 @@
     margin-top: 0.7rem;
     padding: 0.52rem;
     border-radius: 1rem;
-    outline: 1px solid rgba(96, 165, 250, 0.34);
+    outline: 1px solid var(--area-strong);
     background: linear-gradient(180deg, rgba(13, 22, 38, 0.9), rgba(9, 16, 29, 0.96));
     box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
 }
@@ -621,6 +710,21 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+}
+
+.schichtplan-entry-fields .bemerkung-field span {
+    color: #fda4af;
+}
+
+.schichtplan-entry-fields .bemerkung-input {
+    border-color: rgba(248, 113, 113, 0.45) !important;
+    background: linear-gradient(180deg, rgba(69, 10, 10, 0.38), rgba(30, 41, 59, 0.88));
+    color: #fee2e2 !important;
+}
+
+.schichtplan-entry-fields .bemerkung-input:focus {
+    border-color: rgba(248, 113, 113, 0.72) !important;
+    box-shadow: 0 0 0 0.2rem rgba(248, 113, 113, 0.12);
 }
 
 .materials-card {
@@ -678,7 +782,8 @@
 
     .schichtplan-user-toolbar .schichtplan-search-field,
     .schichtplan-user-toolbar > input,
-    .schichtplan-board-filter {
+    .schichtplan-board-filter,
+    .schichtplan-multi-toggle {
         min-width: 0;
     }
 

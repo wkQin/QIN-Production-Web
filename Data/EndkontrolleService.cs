@@ -177,6 +177,7 @@ namespace QIN_Production_Web.Data
                                     ID = Convert.ToInt32(r["ID"]),
                                     Charge = r["Charge"]?.ToString() ?? "",
                                     FANr = r["FA-Nr"]?.ToString() ?? "",
+                                    Datum = r["FSKdate"] == DBNull.Value ? DateTime.Today : Convert.ToDateTime(r["FSKdate"]),
                                     Kunde = r["Kunde"]?.ToString() ?? "",
                                     Projekt = r["Projekt"]?.ToString() ?? "",
                                     Artikel = r["Artikel"]?.ToString() ?? "",

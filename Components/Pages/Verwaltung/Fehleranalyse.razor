@@ -319,8 +319,8 @@
     private string SelectedProjekt = "";
     private string SelectedArtikel = "";
     private string SelectedDekor = "";
-    private DateTime StartDatum = DateTime.Today.AddDays(-30);
-    private DateTime EndDatum = DateTime.Today;
+    private DateTime StartDatum = DateTime.Now;
+    private DateTime EndDatum = DateTime.Now;
 
     private List<CustomerData> Kunden = new();
     private List<string> Projekte = new();
@@ -436,8 +436,9 @@
     {
         SearchCharge = ""; SelectedKunde = ""; SelectedProjekt = ""; SelectedArtikel = ""; SelectedDekor = "";
         Projekte.Clear(); ArtikelListe.Clear(); DekorListe.Clear();
-        StartDatum = DateTime.Today.AddDays(-30);
-        EndDatum = DateTime.Today;
+        var now = DateTime.Now;
+        StartDatum = now;
+        EndDatum = now;
         Eintraege.Clear(); GesamtResult = new(); ExterneFehler.Clear(); InterneFehler.Clear(); ChartData.Clear();
     }
 

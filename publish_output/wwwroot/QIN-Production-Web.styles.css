@@ -258,6 +258,12 @@
     padding-inline: 1.15rem;
 }
 
+.schichtplan-delete-btn[b-2iorto2ci5] {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+}
+
 .schichtplan-status-alert[b-2iorto2ci5],
 .schichtplan-error-alert[b-2iorto2ci5] {
     border-radius: 1rem;
@@ -325,6 +331,7 @@
 }
 
 .schichtplan-user-toolbar[b-2iorto2ci5] {
+    flex-wrap: wrap;
     margin-top: 1rem;
 }
 
@@ -354,6 +361,48 @@
 .schichtplan-user-toolbar > input[b-2iorto2ci5] {
     min-width: 15rem;
     flex: 1 1 15rem;
+}
+
+.schichtplan-copy-btn[b-2iorto2ci5] {
+    min-height: 2.8rem;
+    border-radius: 999px;
+    padding-inline: 1.15rem;
+}
+
+.schichtplan-multi-toggle[b-2iorto2ci5] {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 2.9rem;
+    margin: 0;
+    padding: 0.45rem 0.8rem;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 1rem;
+    background: rgba(9, 16, 30, 0.76);
+}
+
+.schichtplan-multi-toggle .form-check-input[b-2iorto2ci5] {
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.schichtplan-multi-toggle-copy[b-2iorto2ci5] {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.schichtplan-multi-toggle-copy strong[b-2iorto2ci5] {
+    color: #f8fafc;
+    font-size: 0.84rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.schichtplan-multi-toggle-copy small[b-2iorto2ci5] {
+    color: rgba(191, 219, 254, 0.74);
+    font-size: 0.72rem;
+    line-height: 1.2;
 }
 
 .schichtplan-pool-actions.is-stacked[b-2iorto2ci5] {
@@ -399,7 +448,7 @@
 }
 
 .users-grid[b-2iorto2ci5] {
-    grid-template-columns: repeat(auto-fill, minmax(11.25rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
 }
 
 .schichtplan-material-table[b-2iorto2ci5] {
@@ -474,8 +523,8 @@
 .schichtplan-chip[b-2iorto2ci5] {
     min-width: 0;
     position: relative;
-    padding: 0.75rem 0.85rem;
-    border-radius: 1rem;
+    padding: 0.62rem 0.7rem;
+    border-radius: 0.92rem;
     border: 1px solid rgba(148, 163, 184, 0.18);
     background: linear-gradient(180deg, rgba(18, 27, 45, 0.92), rgba(13, 21, 37, 0.98));
     cursor: grab;
@@ -495,7 +544,7 @@
 
 .schichtplan-chip-copy[b-2iorto2ci5] {
     min-width: 0;
-    padding-right: 1.9rem;
+    padding-right: 1.65rem;
 }
 
 .schichtplan-chip-delete[b-2iorto2ci5] {
@@ -518,14 +567,7 @@
     display: block;
     color: #f8fafc;
     font-weight: 800;
-    line-height: 1.28;
-}
-
-.chip-subtitle[b-2iorto2ci5] {
-    display: block;
-    margin-top: 0.32rem;
-    color: rgba(191, 219, 254, 0.72);
-    font-size: 0.76rem;
+    font-size: 0.88rem;
     line-height: 1.2;
 }
 
@@ -584,18 +626,6 @@
     color: rgba(226, 232, 240, 0.62);
 }
 
-.header-cell.is-night[b-2iorto2ci5] {
-    background: rgba(67, 56, 202, 0.12);
-}
-
-.header-cell.is-early[b-2iorto2ci5] {
-    background: rgba(16, 185, 129, 0.12);
-}
-
-.header-cell.is-late[b-2iorto2ci5] {
-    background: rgba(249, 115, 22, 0.12);
-}
-
 .schichtplan-section-row[b-2iorto2ci5] {
     display: flex;
     justify-content: space-between;
@@ -604,9 +634,11 @@
     padding: 0.68rem 1rem;
     border-top: 1px solid rgba(148, 163, 184, 0.08);
     border-bottom: 1px solid rgba(148, 163, 184, 0.08);
-    background: rgba(15, 23, 42, 0.56);
+    background: linear-gradient(90deg, var(--area-soft), rgba(15, 23, 42, 0.68));
     color: #f8fafc;
     --area-color: #64748b;
+    --area-soft: rgba(148, 163, 184, 0.18);
+    --area-strong: rgba(148, 163, 184, 0.24);
 }
 
 .schichtplan-section-row strong[b-2iorto2ci5] {
@@ -619,13 +651,48 @@
     font-size: 0.82rem;
 }
 
-.theme-thermo[b-2iorto2ci5] { --area-color: #0ea5e9; }
-.theme-mill[b-2iorto2ci5] { --area-color: #22c55e; }
-.theme-stanzen[b-2iorto2ci5] { --area-color: #f59e0b; }
-.theme-uv[b-2iorto2ci5] { --area-color: #a855f7; }
-.theme-flex[b-2iorto2ci5] { --area-color: #f97316; }
-.theme-cleanroom[b-2iorto2ci5] { --area-color: #14b8a6; }
-.theme-misc[b-2iorto2ci5] { --area-color: #94a3b8; }
+.theme-thermo[b-2iorto2ci5] {
+    --area-color: #7dd3fc;
+    --area-soft: rgba(125, 211, 252, 0.2);
+    --area-strong: rgba(14, 165, 233, 0.24);
+}
+
+.theme-mill[b-2iorto2ci5] {
+    --area-color: #22c55e;
+    --area-soft: rgba(34, 197, 94, 0.2);
+    --area-strong: rgba(34, 197, 94, 0.24);
+}
+
+.theme-stanzen[b-2iorto2ci5] {
+    --area-color: #ef4444;
+    --area-soft: rgba(239, 68, 68, 0.18);
+    --area-strong: rgba(239, 68, 68, 0.24);
+}
+
+.theme-uv[b-2iorto2ci5] {
+    --area-color: #a855f7;
+    --area-soft: rgba(168, 85, 247, 0.18);
+    --area-strong: rgba(168, 85, 247, 0.24);
+}
+
+.theme-bending[b-2iorto2ci5],
+.theme-flex[b-2iorto2ci5] {
+    --area-color: #94a3b8;
+    --area-soft: rgba(148, 163, 184, 0.16);
+    --area-strong: rgba(148, 163, 184, 0.22);
+}
+
+.theme-cleanroom[b-2iorto2ci5] {
+    --area-color: #facc15;
+    --area-soft: rgba(250, 204, 21, 0.18);
+    --area-strong: rgba(250, 204, 21, 0.24);
+}
+
+.theme-misc[b-2iorto2ci5] {
+    --area-color: #b45309;
+    --area-soft: rgba(180, 83, 9, 0.18);
+    --area-strong: rgba(180, 83, 9, 0.24);
+}
 
 .schichtplan-section-row[b-2iorto2ci5]::before {
     content: "";
@@ -651,8 +718,8 @@
     align-items: center;
     padding: 0.25rem 0.58rem;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.12);
-    color: rgba(226, 232, 240, 0.76);
+    background: var(--area-soft);
+    color: #f8fafc;
     font-size: 0.74rem;
     font-weight: 800;
     letter-spacing: 0.04em;
@@ -668,19 +735,7 @@
 .schichtplan-slot[b-2iorto2ci5] {
     padding: 0.72rem;
     border-right: 1px solid rgba(148, 163, 184, 0.08);
-    background: rgba(8, 15, 28, 0.82);
-}
-
-.schichtplan-slot.is-night[b-2iorto2ci5] {
-    background: linear-gradient(180deg, rgba(30, 27, 75, 0.3), rgba(8, 15, 28, 0.88));
-}
-
-.schichtplan-slot.is-early[b-2iorto2ci5] {
-    background: linear-gradient(180deg, rgba(6, 78, 59, 0.24), rgba(8, 15, 28, 0.88));
-}
-
-.schichtplan-slot.is-late[b-2iorto2ci5] {
-    background: linear-gradient(180deg, rgba(124, 45, 18, 0.24), rgba(8, 15, 28, 0.88));
+    background: linear-gradient(180deg, rgba(8, 15, 28, 0.88), rgba(8, 15, 28, 0.96));
 }
 
 .schichtplan-slot.is-drag-active[b-2iorto2ci5] {
@@ -699,7 +754,13 @@
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: rgba(191, 219, 254, 0.8);
+    color: rgba(226, 232, 240, 0.78);
+}
+
+.schichtplan-slot-material-counter[b-2iorto2ci5] {
+    color: rgba(191, 219, 254, 0.72);
+    font-size: 0.7rem;
+    font-weight: 700;
 }
 
 .schichtplan-clear-btn[b-2iorto2ci5],
@@ -715,13 +776,40 @@
     justify-content: center;
 }
 
-.schichtplan-material-card[b-2iorto2ci5] {
-    min-height: 3.7rem;
+.schichtplan-material-stack[b-2iorto2ci5] {
+    display: grid;
+    gap: 0.55rem;
     margin-top: 0.62rem;
+}
+
+.schichtplan-material-card[b-2iorto2ci5] {
+    min-height: 3.3rem;
     padding: 0.78rem 0.82rem;
     border-radius: 0.95rem;
-    border: 1px solid rgba(96, 165, 250, 0.14);
+    border: 1px solid var(--area-strong);
     background: linear-gradient(180deg, rgba(18, 29, 47, 0.94), rgba(11, 18, 33, 0.98));
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.5);
+}
+
+.schichtplan-material-card-head[b-2iorto2ci5] {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.schichtplan-material-card-copy[b-2iorto2ci5] {
+    min-width: 0;
+}
+
+.schichtplan-material-card-slot[b-2iorto2ci5] {
+    display: block;
+    margin-bottom: 0.2rem;
+    color: rgba(191, 219, 254, 0.72);
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
 }
 
 .schichtplan-material-card strong[b-2iorto2ci5] {
@@ -729,6 +817,7 @@
     font-size: 0.94rem;
     line-height: 1.42;
     color: #f8fafc;
+    word-break: break-word;
 }
 
 .schichtplan-material-card.is-empty[b-2iorto2ci5] {
@@ -743,7 +832,7 @@
     margin-top: 0.7rem;
     padding: 0.52rem;
     border-radius: 1rem;
-    outline: 1px solid rgba(96, 165, 250, 0.34);
+    outline: 1px solid var(--area-strong);
     background: linear-gradient(180deg, rgba(13, 22, 38, 0.9), rgba(9, 16, 29, 0.96));
     box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.55);
 }
@@ -782,6 +871,21 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.06em;
+}
+
+.schichtplan-entry-fields .bemerkung-field span[b-2iorto2ci5] {
+    color: #fda4af;
+}
+
+.schichtplan-entry-fields .bemerkung-input[b-2iorto2ci5] {
+    border-color: rgba(248, 113, 113, 0.45) !important;
+    background: linear-gradient(180deg, rgba(69, 10, 10, 0.38), rgba(30, 41, 59, 0.88));
+    color: #fee2e2 !important;
+}
+
+.schichtplan-entry-fields .bemerkung-input:focus[b-2iorto2ci5] {
+    border-color: rgba(248, 113, 113, 0.72) !important;
+    box-shadow: 0 0 0 0.2rem rgba(248, 113, 113, 0.12);
 }
 
 .materials-card[b-2iorto2ci5] {
@@ -839,7 +943,8 @@
 
     .schichtplan-user-toolbar .schichtplan-search-field[b-2iorto2ci5],
     .schichtplan-user-toolbar > input[b-2iorto2ci5],
-    .schichtplan-board-filter[b-2iorto2ci5] {
+    .schichtplan-board-filter[b-2iorto2ci5],
+    .schichtplan-multi-toggle[b-2iorto2ci5] {
         min-width: 0;
     }
 
@@ -857,7 +962,7 @@
 }
 /* /Components/Shared/ShiftPlanBoard.razor.rz.scp.css */
 .shiftplan-shell[b-0pt4dimoqa] {
-    --shiftplan-grid: 15.8rem 13.6rem 13.6rem 13.6rem;
+    --shiftplan-grid: 18rem 15.4rem 15.4rem 15.4rem;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -870,7 +975,7 @@
 }
 
 .shiftplan-shell.is-fullscreen[b-0pt4dimoqa] {
-    --shiftplan-grid: 14rem 11.85rem 11.85rem 11.85rem;
+    --shiftplan-grid: 16.4rem 13.9rem 13.9rem 13.9rem;
     position: fixed;
     inset: 0;
     z-index: 1090;
@@ -1017,7 +1122,7 @@
 }
 
 .shiftplan-stage.is-monitor-stage[b-0pt4dimoqa] {
-    min-width: 49.6rem;
+    min-width: 64.2rem;
     position: absolute;
     top: 0;
     left: 50%;
@@ -1103,7 +1208,7 @@
 
 .shiftplan-stage.is-embedded-stage .shiftplan-table-grid[b-0pt4dimoqa],
 .shiftplan-stage.is-embedded-stage .shiftplan-row[b-0pt4dimoqa] {
-    grid-template-columns: minmax(14.5rem, 1.14fr) minmax(10.6rem, 1fr) minmax(10.6rem, 1fr) minmax(10.6rem, 1fr);
+    grid-template-columns: minmax(17rem, 1.14fr) minmax(12.6rem, 1fr) minmax(12.6rem, 1fr) minmax(12.6rem, 1fr);
 }
 
 .shiftplan-cell[b-0pt4dimoqa] {
@@ -1121,7 +1226,7 @@
 }
 
 .shiftplan-header-cell[b-0pt4dimoqa] {
-    padding: 0.82rem 0.9rem;
+    padding: 0.98rem 1.02rem;
     border-right: 1px solid rgba(148, 163, 184, 0.1);
     border-bottom: 1px solid rgba(148, 163, 184, 0.1);
     background: rgba(14, 25, 46, 0.98);
@@ -1140,16 +1245,22 @@
 
 .shiftplan-header-cell span[b-0pt4dimoqa] {
     color: #f8fafc;
-    font-size: 0.86rem;
+    font-size: 0.94rem;
     font-weight: 800;
     letter-spacing: 0.01em;
 }
 
 .shiftplan-header-cell small[b-0pt4dimoqa] {
     color: rgba(226, 232, 240, 0.56);
-    font-size: 0.62rem;
+    font-size: 0.68rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.shiftplan-empty-board[b-0pt4dimoqa] {
+    padding: 1.4rem 1.5rem;
+    color: rgba(226, 232, 240, 0.72);
+    font-size: 0.95rem;
 }
 
 .shift-night[b-0pt4dimoqa] {
@@ -1194,34 +1305,6 @@
     text-transform: uppercase;
 }
 
-.shiftplan-group-row.theme-thermo[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(15, 118, 110, 0.96), rgba(20, 184, 166, 0.82));
-}
-
-.shiftplan-group-row.theme-mill[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(153, 27, 27, 0.96), rgba(239, 68, 68, 0.82));
-}
-
-.shiftplan-group-row.theme-stanzen[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(180, 83, 9, 0.96), rgba(245, 158, 11, 0.84));
-}
-
-.shiftplan-group-row.theme-uv[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(29, 78, 216, 0.96), rgba(56, 189, 248, 0.82));
-}
-
-.shiftplan-group-row.theme-flex[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(71, 85, 105, 0.96), rgba(148, 163, 184, 0.82));
-}
-
-.shiftplan-group-row.theme-cleanroom[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(77, 124, 15, 0.96), rgba(132, 204, 22, 0.82));
-}
-
-.shiftplan-group-row.theme-misc[b-0pt4dimoqa] {
-    background: linear-gradient(90deg, rgba(109, 40, 217, 0.96), rgba(168, 85, 247, 0.82));
-}
-
 .shiftplan-data-row[b-0pt4dimoqa] {
     background: rgba(8, 15, 30, 0.72);
     border-top: 1px solid rgba(148, 163, 184, 0.06);
@@ -1233,8 +1316,8 @@
 
 .shiftplan-machine-cell[b-0pt4dimoqa],
 .shiftplan-shift-cell[b-0pt4dimoqa] {
-    min-height: 2.5rem;
-    padding: 0.22rem 0.26rem;
+    min-height: 3.45rem;
+    padding: 0.34rem;
     border-right: 1px solid rgba(148, 163, 184, 0.08);
 }
 
@@ -1243,8 +1326,8 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0.16rem;
-    padding: 0.28rem 0.56rem;
+    gap: 0.22rem;
+    padding: 0.42rem 0.72rem;
     background: rgba(10, 19, 35, 0.92);
 }
 
@@ -1267,140 +1350,157 @@
 
 .shiftplan-machine-number[b-0pt4dimoqa] {
     color: #cbd5e1;
-    font-size: 0.66rem;
+    font-size: 0.78rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     font-variant-numeric: tabular-nums;
 }
 
 .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    padding: 0.1rem 0.46rem;
+    padding: 0.16rem 0.56rem;
     border-radius: 999px;
     background: rgba(148, 163, 184, 0.12);
     color: rgba(226, 232, 240, 0.76);
-    font-size: 0.58rem;
+    font-size: 0.66rem;
     font-weight: 700;
     white-space: nowrap;
 }
 
 .shiftplan-machine-name[b-0pt4dimoqa] {
     color: #f8fafc;
-    font-size: 0.8rem;
-    line-height: 1.12;
+    font-size: 0.95rem;
+    line-height: 1.18;
 }
 
-.shiftplan-data-row.theme-thermo .shiftplan-machine-cell[b-0pt4dimoqa]::before,
-.shiftplan-data-row.theme-thermo .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background-color: rgba(20, 184, 166, 0.18);
+.theme-thermo[b-0pt4dimoqa] {
+    --area-color: #7dd3fc;
+    --area-label: #e0f2fe;
+    --area-badge: rgba(125, 211, 252, 0.18);
+    --group-start: rgba(14, 116, 144, 0.96);
+    --group-end: rgba(125, 211, 252, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(13, 41, 58, 0.98) 0%, rgba(10, 26, 39, 0.98) 100%);
+    --task-border: rgba(125, 211, 252, 0.28);
 }
 
-.shiftplan-data-row.theme-thermo .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #14b8a6;
+.theme-mill[b-0pt4dimoqa] {
+    --area-color: #22c55e;
+    --area-label: #dcfce7;
+    --area-badge: rgba(34, 197, 94, 0.18);
+    --group-start: rgba(21, 128, 61, 0.96);
+    --group-end: rgba(74, 222, 128, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(15, 52, 31, 0.98) 0%, rgba(11, 32, 22, 0.98) 100%);
+    --task-border: rgba(34, 197, 94, 0.28);
 }
 
-.shiftplan-data-row.theme-thermo .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #99f6e4;
+.theme-stanzen[b-0pt4dimoqa] {
+    --area-color: #ef4444;
+    --area-label: #fee2e2;
+    --area-badge: rgba(239, 68, 68, 0.18);
+    --group-start: rgba(153, 27, 27, 0.96);
+    --group-end: rgba(248, 113, 113, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(69, 18, 18, 0.98) 0%, rgba(38, 16, 16, 0.98) 100%);
+    --task-border: rgba(239, 68, 68, 0.28);
 }
 
-.shiftplan-data-row.theme-mill .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #ef4444;
+.theme-uv[b-0pt4dimoqa] {
+    --area-color: #a855f7;
+    --area-label: #f3e8ff;
+    --area-badge: rgba(168, 85, 247, 0.18);
+    --group-start: rgba(126, 34, 206, 0.96);
+    --group-end: rgba(192, 132, 252, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(55, 24, 82, 0.98) 0%, rgba(30, 16, 46, 0.98) 100%);
+    --task-border: rgba(168, 85, 247, 0.28);
 }
 
-.shiftplan-data-row.theme-mill .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #fecaca;
+.theme-bending[b-0pt4dimoqa],
+.theme-flex[b-0pt4dimoqa] {
+    --area-color: #94a3b8;
+    --area-label: #f1f5f9;
+    --area-badge: rgba(148, 163, 184, 0.18);
+    --group-start: rgba(71, 85, 105, 0.96);
+    --group-end: rgba(148, 163, 184, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(44, 56, 73, 0.98) 0%, rgba(25, 33, 46, 0.98) 100%);
+    --task-border: rgba(148, 163, 184, 0.24);
 }
 
-.shiftplan-data-row.theme-mill .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(239, 68, 68, 0.18);
+.theme-cleanroom[b-0pt4dimoqa] {
+    --area-color: #facc15;
+    --area-label: #fef9c3;
+    --area-badge: rgba(250, 204, 21, 0.2);
+    --group-start: rgba(161, 98, 7, 0.96);
+    --group-end: rgba(250, 204, 21, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(77, 54, 10, 0.98) 0%, rgba(44, 32, 12, 0.98) 100%);
+    --task-border: rgba(250, 204, 21, 0.28);
 }
 
-.shiftplan-data-row.theme-stanzen .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #f59e0b;
+.theme-misc[b-0pt4dimoqa] {
+    --area-color: #b45309;
+    --area-label: #fed7aa;
+    --area-badge: rgba(180, 83, 9, 0.18);
+    --group-start: rgba(120, 53, 15, 0.96);
+    --group-end: rgba(217, 119, 6, 0.84);
+    --task-bg: linear-gradient(180deg, rgba(67, 33, 12, 0.98) 0%, rgba(41, 21, 11, 0.98) 100%);
+    --task-border: rgba(180, 83, 9, 0.28);
 }
 
-.shiftplan-data-row.theme-stanzen .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #fde68a;
+.shiftplan-group-row[b-0pt4dimoqa] {
+    background: linear-gradient(90deg, var(--group-start, rgba(51, 65, 85, 0.96)), var(--group-end, rgba(100, 116, 139, 0.84)));
 }
 
-.shiftplan-data-row.theme-stanzen .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(245, 158, 11, 0.18);
+.shiftplan-machine-cell[b-0pt4dimoqa]::before {
+    background: var(--area-color, rgba(148, 163, 184, 0.28));
 }
 
-.shiftplan-data-row.theme-uv .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #38bdf8;
+.shiftplan-machine-number[b-0pt4dimoqa] {
+    color: var(--area-label, #cbd5e1);
 }
 
-.shiftplan-data-row.theme-uv .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #bae6fd;
-}
-
-.shiftplan-data-row.theme-uv .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(56, 189, 248, 0.18);
-}
-
-.shiftplan-data-row.theme-flex .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #94a3b8;
-}
-
-.shiftplan-data-row.theme-flex .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #e2e8f0;
-}
-
-.shiftplan-data-row.theme-flex .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(148, 163, 184, 0.18);
-}
-
-.shiftplan-data-row.theme-cleanroom .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #84cc16;
-}
-
-.shiftplan-data-row.theme-cleanroom .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #d9f99d;
-}
-
-.shiftplan-data-row.theme-cleanroom .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(132, 204, 22, 0.18);
-}
-
-.shiftplan-data-row.theme-misc .shiftplan-machine-cell[b-0pt4dimoqa]::before {
-    background: #a855f7;
-}
-
-.shiftplan-data-row.theme-misc .shiftplan-machine-number[b-0pt4dimoqa] {
-    color: #e9d5ff;
-}
-
-.shiftplan-data-row.theme-misc .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    background: rgba(168, 85, 247, 0.18);
+.shiftplan-machine-staffing[b-0pt4dimoqa] {
+    background: var(--area-badge, rgba(148, 163, 184, 0.12));
 }
 
 .shiftplan-shift-cell[b-0pt4dimoqa] {
     display: flex;
     align-items: stretch;
-    background: rgba(9, 18, 35, 0.7);
+    background: linear-gradient(180deg, rgba(9, 18, 35, 0.84), rgba(8, 15, 28, 0.94));
+}
+
+.shiftplan-task[b-0pt4dimoqa] {
+    background: var(--task-bg, linear-gradient(180deg, rgba(24, 37, 57, 0.98) 0%, rgba(17, 27, 42, 0.98) 100%));
+    border-color: var(--task-border, rgba(148, 163, 184, 0.12));
+}
+
+.shiftplan-task[b-0pt4dimoqa]::before {
+    background: linear-gradient(90deg, var(--area-color, rgba(148, 163, 184, 0.98)), rgba(255, 255, 255, 0.32));
+}
+
+.shiftplan-shift-cell[b-0pt4dimoqa] {
+    display: flex;
+    align-items: stretch;
+    background: linear-gradient(180deg, rgba(9, 18, 35, 0.84), rgba(8, 15, 28, 0.94));
 }
 
 .shiftplan-shift-cell.shift-night[b-0pt4dimoqa] {
-    background-color: rgba(148, 163, 184, 0.04);
+    background-color: transparent;
 }
 
 .shiftplan-shift-cell.shift-early[b-0pt4dimoqa] {
-    background-color: rgba(59, 130, 246, 0.05);
+    background-color: transparent;
 }
 
 .shiftplan-shift-cell.shift-late[b-0pt4dimoqa] {
-    background-color: rgba(251, 191, 36, 0.05);
+    background-color: transparent;
 }
 
 .shiftplan-empty-cell[b-0pt4dimoqa] {
     width: 100%;
-    border-radius: 0.52rem;
+    border-radius: 0.75rem;
     border: 1px dashed rgba(148, 163, 184, 0.12);
     display: flex;
     align-items: center;
     justify-content: center;
     color: rgba(148, 163, 184, 0.4);
-    font-size: 0.58rem;
+    font-size: 0.68rem;
     font-weight: 800;
     letter-spacing: 0.09em;
     text-transform: uppercase;
@@ -1409,15 +1509,15 @@
 .shiftplan-task[b-0pt4dimoqa] {
     position: relative;
     width: 100%;
-    border-radius: 0.56rem;
-    padding: 0.42rem 0.48rem 0.36rem;
+    border-radius: 0.82rem;
+    padding: 0.7rem 0.78rem 0.62rem;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    gap: 0.24rem;
-    background: linear-gradient(180deg, rgba(24, 37, 57, 0.98) 0%, rgba(17, 27, 42, 0.98) 100%);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-    box-shadow: 0 10px 22px rgba(2, 6, 23, 0.12);
+    gap: 0.4rem;
+    background: var(--task-bg, linear-gradient(180deg, rgba(24, 37, 57, 0.98) 0%, rgba(17, 27, 42, 0.98) 100%));
+    border: 1px solid var(--task-border, rgba(148, 163, 184, 0.12));
+    box-shadow: 0 18px 30px rgba(2, 6, 23, 0.18);
 }
 
 .shiftplan-task[b-0pt4dimoqa]::before {
@@ -1426,32 +1526,9 @@
     top: 0;
     left: 0;
     right: 0;
-    height: 0.2rem;
-    border-radius: 0.56rem 0.56rem 0 0;
-}
-
-.shiftplan-task.shift-night[b-0pt4dimoqa] {
-    background: linear-gradient(180deg, rgba(31, 42, 60, 0.98) 0%, rgba(19, 28, 42, 0.98) 100%);
-}
-
-.shiftplan-task.shift-night[b-0pt4dimoqa]::before {
-    background: linear-gradient(90deg, rgba(148, 163, 184, 0.98), rgba(203, 213, 225, 0.8));
-}
-
-.shiftplan-task.shift-early[b-0pt4dimoqa] {
-    background: linear-gradient(180deg, rgba(20, 39, 67, 0.98) 0%, rgba(16, 29, 47, 0.98) 100%);
-}
-
-.shiftplan-task.shift-early[b-0pt4dimoqa]::before {
-    background: linear-gradient(90deg, rgba(59, 130, 246, 0.98), rgba(125, 211, 252, 0.84));
-}
-
-.shiftplan-task.shift-late[b-0pt4dimoqa] {
-    background: linear-gradient(180deg, rgba(58, 41, 19, 0.98) 0%, rgba(35, 27, 18, 0.98) 100%);
-}
-
-.shiftplan-task.shift-late[b-0pt4dimoqa]::before {
-    background: linear-gradient(90deg, rgba(251, 191, 36, 0.98), rgba(253, 224, 71, 0.84));
+    height: 0.26rem;
+    border-radius: 0.82rem 0.82rem 0 0;
+    background: linear-gradient(90deg, var(--area-color, rgba(148, 163, 184, 0.98)), rgba(255, 255, 255, 0.32));
 }
 
 .shiftplan-task-head[b-0pt4dimoqa] {
@@ -1462,25 +1539,35 @@
     padding-top: 0.04rem;
 }
 
+.shiftplan-task-material-stack[b-0pt4dimoqa] {
+    min-width: 0;
+    display: grid;
+    gap: 0.22rem;
+}
+
 .shiftplan-task-material[b-0pt4dimoqa] {
     min-width: 0;
+    padding: 0.22rem 0.42rem;
+    border-radius: 0.58rem;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     color: #f8fafc;
-    font-size: 0.66rem;
+    font-size: 0.84rem;
     font-weight: 800;
-    line-height: 1.16;
+    line-height: 1.22;
 }
 
 .shiftplan-task-count[b-0pt4dimoqa] {
     flex-shrink: 0;
     display: inline-flex;
     align-items: center;
-    min-height: 1.15rem;
-    padding: 0 0.42rem;
+    min-height: 1.45rem;
+    padding: 0 0.55rem;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: rgba(226, 232, 240, 0.86);
-    font-size: 0.5rem;
+    font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.03em;
 }
@@ -1499,7 +1586,7 @@
 }
 
 .shiftplan-task-meta span[b-0pt4dimoqa] {
-    font-size: 0.48rem;
+    font-size: 0.62rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1507,41 +1594,41 @@
 
 .shiftplan-task-meta strong[b-0pt4dimoqa] {
     color: #e2e8f0;
-    font-size: 0.56rem;
+    font-size: 0.72rem;
     font-weight: 800;
 }
 
 .shiftplan-task-person[b-0pt4dimoqa] {
     min-width: 0;
-    padding: 0.18rem 0.34rem;
-    border-radius: 0.42rem;
+    padding: 0.34rem 0.5rem;
+    border-radius: 0.6rem;
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(148, 163, 184, 0.12);
     color: rgba(241, 245, 249, 0.88);
-    font-size: 0.56rem;
+    font-size: 0.74rem;
     font-weight: 700;
-    line-height: 1.12;
+    line-height: 1.18;
 }
 
 .shiftplan-task-note[b-0pt4dimoqa] {
-    margin-top: 0.02rem;
-    padding-top: 0.16rem;
-    border-top: 1px solid rgba(148, 163, 184, 0.12);
-    color: rgba(148, 163, 184, 0.84);
-    font-size: 0.52rem;
-    line-height: 1.08;
+    margin-top: 0.04rem;
+    padding: 0.46rem 0.56rem 0;
+    border-top: 1px solid rgba(248, 113, 113, 0.35);
+    color: #fecaca;
+    font-size: 0.7rem;
+    line-height: 1.25;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-header-cell[b-0pt4dimoqa] {
-    padding: 0.72rem 0.78rem;
+    padding: 0.84rem 0.9rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-header-cell span[b-0pt4dimoqa] {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-header-cell small[b-0pt4dimoqa] {
-    font-size: 0.58rem;
+    font-size: 0.66rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-group-content[b-0pt4dimoqa] {
@@ -1549,57 +1636,57 @@
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-group-content strong[b-0pt4dimoqa] {
-    font-size: 0.72rem;
+    font-size: 0.82rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-group-content span[b-0pt4dimoqa] {
-    font-size: 0.6rem;
+    font-size: 0.68rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-machine-cell[b-0pt4dimoqa],
 .shiftplan-shell.is-fullscreen .shiftplan-shift-cell[b-0pt4dimoqa] {
-    min-height: 2.1rem;
-    padding: 0.16rem 0.2rem;
+    min-height: 2.85rem;
+    padding: 0.28rem 0.3rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-machine-cell[b-0pt4dimoqa] {
-    padding: 0.2rem 0.44rem;
+    padding: 0.34rem 0.56rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-machine-number[b-0pt4dimoqa] {
-    font-size: 0.6rem;
+    font-size: 0.7rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-machine-staffing[b-0pt4dimoqa] {
-    font-size: 0.52rem;
+    font-size: 0.6rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-machine-name[b-0pt4dimoqa] {
-    font-size: 0.72rem;
+    font-size: 0.84rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task[b-0pt4dimoqa] {
-    padding: 0.28rem 0.36rem 0.3rem;
-    border-radius: 0.42rem;
+    padding: 0.54rem 0.62rem 0.5rem;
+    border-radius: 0.7rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task[b-0pt4dimoqa]::before {
-    height: 0.16rem;
-    border-radius: 0.42rem 0.42rem 0 0;
+    height: 0.22rem;
+    border-radius: 0.7rem 0.7rem 0 0;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-head[b-0pt4dimoqa] {
-    gap: 0.28rem;
+    gap: 0.38rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-material[b-0pt4dimoqa] {
-    font-size: 0.54rem;
+    font-size: 0.76rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-count[b-0pt4dimoqa] {
-    min-height: 0.96rem;
-    padding: 0 0.34rem;
-    font-size: 0.44rem;
+    min-height: 1.2rem;
+    padding: 0 0.44rem;
+    font-size: 0.56rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-people-grid[b-0pt4dimoqa] {
@@ -1607,25 +1694,25 @@
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-meta span[b-0pt4dimoqa] {
-    font-size: 0.42rem;
+    font-size: 0.54rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-meta strong[b-0pt4dimoqa] {
-    font-size: 0.48rem;
+    font-size: 0.62rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-person[b-0pt4dimoqa] {
-    padding: 0.13rem 0.28rem;
-    font-size: 0.47rem;
+    padding: 0.24rem 0.4rem;
+    font-size: 0.62rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-note[b-0pt4dimoqa],
 .shiftplan-shell.is-fullscreen .shiftplan-empty-cell[b-0pt4dimoqa] {
-    font-size: 0.44rem;
+    font-size: 0.58rem;
 }
 
 .shiftplan-shell.is-fullscreen .shiftplan-task-note[b-0pt4dimoqa] {
-    padding-top: 0.12rem;
+    padding-top: 0.28rem;
 }
 
 @media (max-width: 1100px) {
@@ -1645,7 +1732,7 @@
     }
 
     .shiftplan-stage.is-embedded-stage[b-0pt4dimoqa] {
-        min-width: 49rem;
+        min-width: 58rem;
     }
 
     .shiftplan-board-meta[b-0pt4dimoqa] {

@@ -236,6 +236,7 @@
                         <th>L&ouml;schen</th>
                         <th style="min-width: 100px;">Charge</th>
                         <th style="min-width: 100px;">FA-Nr</th>
+                        <th style="min-width: 120px;">Datum</th>
                         <th>Kunde</th>
                         <th>Projekt</th>
                         <th style="min-width: 200px;">Artikel</th>
@@ -260,7 +261,7 @@
                 <tbody>
                     @if (RecentEintraege.Count == 0)
                     {
-                        <tr><td colspan="24" class="text-muted text-center py-3">Keine Datens&auml;tze vorhanden</td></tr>
+                        <tr><td colspan="25" class="text-muted text-center py-3">Keine Datens&auml;tze vorhanden</td></tr>
                     }
                     @foreach (var e in RecentEintraege)
                     {
@@ -274,6 +275,7 @@
                             </td>
                             <td>@e.Charge</td>
                             <td>@e.FANr</td>
+                            <td>@e.Datum.ToString("dd.MM.yyyy")</td>
                             <td>@e.Kunde</td>
                             <td>@e.Projekt</td>
                             <td>@e.Artikel</td>

@@ -16,7 +16,7 @@
         <div class="schichtplan-admin-copy">
             <div class="schichtplan-admin-kicker">Verwaltung</div>
             <h2>Schichtplan</h2>
-            <p>Benutzer und Material per Drag-and-drop auf die Arbeitsplätze ziehen. Bereits zugeordnete Benutzer verschwinden oben automatisch aus der Liste.</p>
+            <p>Benutzer und Material per Drag-and-drop auf die Arbeitsplätze ziehen. Standardmäßig verschwinden bereits eingeplante Benutzer oben aus der Liste.</p>
         </div>
 
         <div class="schichtplan-admin-toolbar">
@@ -32,6 +32,22 @@
                 <span class="schichtplan-toolbar-pill">KW @ViewModel.Board.Kalenderwoche</span>
                 <span class="schichtplan-toolbar-pill">@LastUpdatedDisplay</span>
             </div>
+
+            <button type="button"
+                    class="btn btn-outline-info btn-lg schichtplan-copy-btn"
+                    @onclick="CopyPreviousDayAsync"
+                    disabled="@(IsCopyingPreviousDay || IsClearingPlan)">
+                <i class="fa-solid fa-copy me-2"></i>
+                @(IsCopyingPreviousDay ? "Wird übernommen..." : "Vortag übernehmen")
+            </button>
+
+            <button type="button"
+                    class="btn btn-outline-danger btn-lg schichtplan-delete-btn"
+                    @onclick="ClearPlanAsync"
+                    disabled="@(IsClearingPlan || IsCopyingPreviousDay)">
+                <i class="fa-solid fa-trash-can me-2"></i>
+                @(IsClearingPlan ? "Wird gel\u00F6scht..." : "Alles l\u00F6schen")
+            </button>
 
             <button type="button" class="btn btn-outline-light btn-lg schichtplan-refresh-btn" @onclick="ReloadAsync">
                 <i class="fa-solid fa-rotate-right me-2"></i>
@@ -90,12 +106,19 @@
                     <i class="fa-solid fa-user-plus me-2"></i>
                     Benutzer hinzufügen
                 </button>
+                <label class="form-check form-switch schichtplan-multi-toggle">
+                    <input class="form-check-input" type="checkbox" @bind="AllowMultipleAssignments" />
+                    <span class="schichtplan-multi-toggle-copy">
+                        <strong>Mehrfachzuordnung</strong>
+                        <small>Benutzer darf an mehreren Arbeitsplätzen eingeplant werden.</small>
+                    </span>
+                </label>
             </div>
 
             <div class="schichtplan-chip-scroll">
                 @if (VisibleUsers.Count == 0)
                 {
-                    <div class="schichtplan-pool-empty">Keine passenden Benutzer gefunden oder alle Benutzer sind bereits eingeplant.</div>
+                    <div class="schichtplan-pool-empty">@UsersEmptyMessage</div>
                 }
                 else
                 {
@@ -120,7 +143,6 @@
 
                                 <div class="schichtplan-chip-copy">
                                     <span class="chip-title">@user.DisplayName</span>
-                                    <span class="chip-subtitle">@GetUserSubtitle(user)</span>
                                 </div>
                             </div>
                         }
@@ -178,7 +200,7 @@
                             {
                                 <div class="@($"schichtplan-grid-cell header-cell {GetShiftClass(shift)}")">
                                     <span>@shift</span>
-                                    <small>Material, Benutzer, FA-Nr, Bemerkung</small>
+                                    <small>Material 1-2, Benutzer, FA-Nr, Bemerkung</small>
                                 </div>
                             }
                         </div>
@@ -205,18 +227,26 @@
                                              @ondrop="() => HandleDropAsync(workplace.ArbeitsplatzId, cell.Shift)">
                                             <div class="schichtplan-slot-topline">
                                                 <span class="schichtplan-slot-label">@cell.Shift</span>
-                                                @if (!string.IsNullOrWhiteSpace(cell.Material))
-                                                {
-                                                    <button type="button" class="schichtplan-clear-btn" @onclick="() => ClearMaterialAsync(workplace.ArbeitsplatzId, cell.Shift)">
-                                                        <i class="fa-solid fa-xmark"></i>
-                                                    </button>
-                                                }
+                                                <span class="schichtplan-slot-material-counter">@cell.Materials.Count/2 Materialien</span>
                                             </div>
 
-                                            @if (!string.IsNullOrWhiteSpace(cell.Material))
+                                            @if (cell.Materials.Count > 0)
                                             {
-                                                <div class="schichtplan-material-card">
-                                                    <strong>@cell.Material</strong>
+                                                <div class="schichtplan-material-stack">
+                                                    @foreach (var materialSlot in cell.Materials)
+                                                    {
+                                                        <div class="schichtplan-material-card">
+                                                            <div class="schichtplan-material-card-head">
+                                                                <div class="schichtplan-material-card-copy">
+                                                                    <span class="schichtplan-material-card-slot">Material @materialSlot.Slot</span>
+                                                                    <strong>@materialSlot.Material</strong>
+                                                                </div>
+                                                                <button type="button" class="schichtplan-clear-btn" @onclick="() => ClearMaterialAsync(workplace.ArbeitsplatzId, cell.Shift, materialSlot.Slot)">
+                                                                    <i class="fa-solid fa-xmark"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    }
                                                 </div>
                                             }
 
@@ -243,9 +273,9 @@
                                                            value="@cell.FANr"
                                                            @onchange="args => SaveEntryDetailsAsync(workplace.ArbeitsplatzId, cell.Shift, args.Value?.ToString(), cell.Bemerkung)" />
                                                 </label>
-                                                <label>
+                                                <label class="bemerkung-field">
                                                     <span>Bemerkung</span>
-                                                    <textarea class="form-control form-control-sm bg-dark text-white border-secondary"
+                                                    <textarea class="form-control form-control-sm bg-dark text-white border-secondary bemerkung-input"
                                                               rows="1"
                                                               @onchange="args => SaveEntryDetailsAsync(workplace.ArbeitsplatzId, cell.Shift, cell.FANr, args.Value?.ToString())">@cell.Bemerkung</textarea>
                                                 </label>
@@ -354,6 +384,9 @@
     private string NewMaterialName { get; set; } = string.Empty;
     private string MaterialSearchTerm { get; set; } = string.Empty;
     private string UserSearchTerm { get; set; } = string.Empty;
+    private bool AllowMultipleAssignments { get; set; }
+    private bool IsCopyingPreviousDay { get; set; }
+    private bool IsClearingPlan { get; set; }
     private string SelectedAreaFilter { get; set; } = AllAreasFilter;
     private DragItem? CurrentDrag { get; set; }
 
@@ -377,8 +410,22 @@
                 .Where(section => string.Equals(section.Name, SelectedAreaFilter, StringComparison.OrdinalIgnoreCase))
                 .ToList();
 
+    private HashSet<string> AssignedUserKeys =>
+        ViewModel.Board.Sections
+            .SelectMany(section => section.Workplaces)
+            .SelectMany(workplace => workplace.Shifts)
+            .SelectMany(cell => cell.AssignedUsers)
+            .Select(user => $"{user.Source}|{user.Key}")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    private string UsersEmptyMessage =>
+        AllowMultipleAssignments
+            ? "Keine passenden Benutzer gefunden."
+            : "Keine passenden Benutzer gefunden oder alle berechtigten Benutzer sind bereits eingeplant.";
+
     private List<SchichtplanAvailableUserModel> VisibleUsers =>
         ViewModel.AvailableUsers
+            .Where(user => AllowMultipleAssignments || !AssignedUserKeys.Contains($"{user.Source}|{user.Key}"))
             .Where(user =>
                 string.IsNullOrWhiteSpace(UserSearchTerm) ||
                 (user.DisplayName?.Contains(UserSearchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
@@ -391,8 +438,7 @@
             .Where(material =>
                 string.IsNullOrWhiteSpace(MaterialSearchTerm) ||
                 material.Material.Contains(MaterialSearchTerm, StringComparison.OrdinalIgnoreCase))
-            .OrderBy(material => material.Sortierung)
-            .ThenBy(material => material.Material, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
+            .OrderBy(material => material.Material, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
             .ToList();
 
     protected override async Task OnInitializedAsync()
@@ -417,6 +463,69 @@
     {
         await LoadAsync();
         SetStatus("Schichtplan neu geladen.", true);
+    }
+
+    private async Task CopyPreviousDayAsync()
+    {
+        var sourceDate = SelectedDate.AddDays(-1).Date;
+        var targetDate = SelectedDate.Date;
+        var shouldOverwrite = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"Schichtplan vom {sourceDate:dd.MM.yyyy} auf {targetDate:dd.MM.yyyy} übernehmen? Vorhandene Einträge am Zieldatum werden überschrieben.");
+
+        if (!shouldOverwrite)
+        {
+            return;
+        }
+
+        try
+        {
+            IsCopyingPreviousDay = true;
+            var copiedEntries = await SchichtplanService.CopyPlanAsync(sourceDate, targetDate, CurrentUserName);
+            await LoadAsync();
+            SetStatus($"Schichtplan vom {sourceDate:dd.MM.yyyy} wurde mit {copiedEntries} Karten übernommen.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+        finally
+        {
+            IsCopyingPreviousDay = false;
+        }
+    }
+
+    private async Task ClearPlanAsync()
+    {
+        var targetDate = SelectedDate.Date;
+        var shouldDelete = await JS.InvokeAsync<bool>(
+            "confirm",
+            $"Den kompletten Schichtplan f\u00FCr den {targetDate:dd.MM.yyyy} l\u00F6schen? Alle Karten, Benutzer, Materialien, FA-Nr und Bemerkungen werden entfernt.");
+
+        if (!shouldDelete)
+        {
+            return;
+        }
+
+        try
+        {
+            IsClearingPlan = true;
+            var deletedEntries = await SchichtplanService.ClearPlanAsync(targetDate, CurrentUserName);
+            await LoadAsync();
+            SetStatus(
+                deletedEntries > 0
+                    ? $"Schichtplan vom {targetDate:dd.MM.yyyy} wurde komplett gel\u00F6scht. {deletedEntries} Karten wurden entfernt."
+                    : $"Am {targetDate:dd.MM.yyyy} gab es keinen Schichtplan zum L\u00F6schen.",
+                true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+        finally
+        {
+            IsClearingPlan = false;
+        }
     }
 
     private async Task OnDateChangedAsync(ChangeEventArgs args)
@@ -466,7 +575,7 @@
 
         if (!hasAreaFilterInitialized)
         {
-            SelectedAreaFilter = areas[0];
+            SelectedAreaFilter = AllAreasFilter;
             hasAreaFilterInitialized = true;
             return;
         }
@@ -474,7 +583,7 @@
         if (SelectedAreaFilter != AllAreasFilter &&
             !areas.Contains(SelectedAreaFilter, StringComparer.OrdinalIgnoreCase))
         {
-            SelectedAreaFilter = areas[0];
+            SelectedAreaFilter = AllAreasFilter;
         }
     }
 
@@ -514,7 +623,7 @@
         {
             if (draggedItem.Type == "user")
             {
-                await SchichtplanService.AssignUserAsync(
+                var wasAssigned = await SchichtplanService.AssignUserAsync(
                     SelectedDate,
                     workplaceId,
                     shift,
@@ -526,17 +635,36 @@
                         Personalnummer = draggedItem.Personalnummer,
                         IsManual = string.Equals(draggedItem.Source, "Manuell", StringComparison.OrdinalIgnoreCase)
                     },
+                    AllowMultipleAssignments,
                     CurrentUserName);
 
-                SetStatus($"Benutzer '{draggedItem.DisplayLabel}' wurde zugeordnet.", true);
+                SetStatus(
+                    wasAssigned
+                        ? $"Benutzer '{draggedItem.DisplayLabel}' wurde zugeordnet."
+                        : AllowMultipleAssignments
+                            ? $"Benutzer '{draggedItem.DisplayLabel}' ist auf dieser Karte bereits eingeplant."
+                            : $"Benutzer '{draggedItem.DisplayLabel}' ist heute bereits eingeplant.",
+                    true);
             }
             else if (draggedItem.Type == "material" && draggedItem.MaterialId.HasValue)
             {
-                await SchichtplanService.AssignMaterialAsync(SelectedDate, workplaceId, shift, draggedItem.MaterialId.Value, CurrentUserName);
-                SetStatus($"Material '{draggedItem.DisplayLabel}' wurde gesetzt.", true);
+                var materialResult = await SchichtplanService.AssignMaterialAsync(SelectedDate, workplaceId, shift, draggedItem.MaterialId.Value, CurrentUserName);
+                SetStatus(
+                    materialResult switch
+                    {
+                        SchichtplanMaterialAssignResult.AddedPrimary => $"Material '{draggedItem.DisplayLabel}' wurde als Material 1 gesetzt.",
+                        SchichtplanMaterialAssignResult.AddedSecondary => $"Material '{draggedItem.DisplayLabel}' wurde als Material 2 gesetzt.",
+                        SchichtplanMaterialAssignResult.AlreadyAssigned => $"Material '{draggedItem.DisplayLabel}' ist auf dieser Karte bereits gesetzt.",
+                        SchichtplanMaterialAssignResult.NoFreeSlot => "Auf dieser Karte sind bereits 2 Materialien gesetzt.",
+                        _ => $"Material '{draggedItem.DisplayLabel}' konnte nicht gesetzt werden."
+                    },
+                    materialResult is SchichtplanMaterialAssignResult.AddedPrimary or SchichtplanMaterialAssignResult.AddedSecondary);
             }
 
-            await LoadAsync();
+            if (draggedItem.Type == "user" || draggedItem.Type == "material")
+            {
+                await LoadAsync();
+            }
         }
         catch (Exception ex)
         {
@@ -563,13 +691,13 @@
         }
     }
 
-    private async Task ClearMaterialAsync(int workplaceId, string shift)
+    private async Task ClearMaterialAsync(int workplaceId, string shift, int materialSlot)
     {
         try
         {
-            await SchichtplanService.ClearMaterialAsync(SelectedDate, workplaceId, shift, CurrentUserName);
+            await SchichtplanService.ClearMaterialAsync(SelectedDate, workplaceId, shift, materialSlot, CurrentUserName);
             await LoadAsync();
-            SetStatus("Material wurde entfernt.", true);
+            SetStatus($"Material {materialSlot} wurde entfernt.", true);
         }
         catch (Exception ex)
         {
@@ -690,21 +818,6 @@
 
     private static string GetWorkplaceNumber(string? workplaceNr) =>
         string.IsNullOrWhiteSpace(workplaceNr) ? "Sonderplatz" : workplaceNr;
-
-    private static string GetUserSubtitle(SchichtplanAvailableUserModel user)
-    {
-        if (user.IsManual)
-        {
-            return "Manuell";
-        }
-
-        if (!string.IsNullOrWhiteSpace(user.Bereich))
-        {
-            return user.Bereich!;
-        }
-
-        return "Produktiv";
-    }
 
     private sealed record DragItem(
         string Type,

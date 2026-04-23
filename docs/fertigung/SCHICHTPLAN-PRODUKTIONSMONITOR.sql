@@ -103,6 +103,8 @@ BEGIN TRY
             Schicht             NVARCHAR(20) NOT NULL,
             MaterialStammID     INT NULL,
             Material            NVARCHAR(200) NULL,
+            MaterialStammID2    INT NULL,
+            Material2           NVARCHAR(200) NULL,
             FA_Nr               NVARCHAR(50) NULL,
             Bemerkung           NVARCHAR(500) NULL,
             CreatedAt           DATETIME2(0) NOT NULL
@@ -154,6 +156,18 @@ BEGIN TRY
     BEGIN
         ALTER TABLE dbo.SchichtplanEintrag
             ADD MaterialStammID INT NULL;
+    END;
+
+    IF COL_LENGTH(N'dbo.SchichtplanEintrag', N'MaterialStammID2') IS NULL
+    BEGIN
+        ALTER TABLE dbo.SchichtplanEintrag
+            ADD MaterialStammID2 INT NULL;
+    END;
+
+    IF COL_LENGTH(N'dbo.SchichtplanEintrag', N'Material2') IS NULL
+    BEGIN
+        ALTER TABLE dbo.SchichtplanEintrag
+            ADD Material2 NVARCHAR(200) NULL;
     END;
 
     IF COL_LENGTH(N'dbo.SchichtplanEintragBenutzer', N'SchichtplanPlanID') IS NULL
@@ -260,6 +274,19 @@ BEGIN TRY
     IF NOT EXISTS (
         SELECT 1
         FROM sys.foreign_keys
+        WHERE name = N'FK_SchichtplanEintrag_MaterialStamm2'
+    )
+    BEGIN
+        EXEC(N'
+            ALTER TABLE dbo.SchichtplanEintrag
+                ADD CONSTRAINT FK_SchichtplanEintrag_MaterialStamm2
+                    FOREIGN KEY (MaterialStammID2) REFERENCES dbo.SchichtplanMaterialStamm(ID);
+        ');
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.foreign_keys
         WHERE name = N'FK_SchichtplanEintragBenutzer_Plan'
     )
     BEGIN
@@ -316,7 +343,7 @@ BEGIN TRY
             ON dbo.SchichtplanEintragBenutzer (SchichtplanEintragID, Sortierung);
     END;
 
-    IF NOT EXISTS (
+    IF EXISTS (
         SELECT 1
         FROM sys.indexes
         WHERE name = N'UX_SchichtplanEintragBenutzer_Plan_Mitarbeiter'
@@ -324,8 +351,34 @@ BEGIN TRY
     )
     BEGIN
         EXEC(N'
-            CREATE UNIQUE INDEX UX_SchichtplanEintragBenutzer_Plan_Mitarbeiter
+            DROP INDEX UX_SchichtplanEintragBenutzer_Plan_Mitarbeiter
+            ON dbo.SchichtplanEintragBenutzer;
+        ');
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE name = N'IX_SchichtplanEintragBenutzer_Plan_Mitarbeiter'
+          AND object_id = OBJECT_ID(N'dbo.SchichtplanEintragBenutzer')
+    )
+    BEGIN
+        EXEC(N'
+            CREATE INDEX IX_SchichtplanEintragBenutzer_Plan_Mitarbeiter
                 ON dbo.SchichtplanEintragBenutzer (SchichtplanPlanID, BenutzerQuelle, BenutzerSchluessel);
+        ');
+    END;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM sys.indexes
+        WHERE name = N'UX_SchichtplanEintragBenutzer_Eintrag_Mitarbeiter'
+          AND object_id = OBJECT_ID(N'dbo.SchichtplanEintragBenutzer')
+    )
+    BEGIN
+        EXEC(N'
+            CREATE UNIQUE INDEX UX_SchichtplanEintragBenutzer_Eintrag_Mitarbeiter
+                ON dbo.SchichtplanEintragBenutzer (SchichtplanEintragID, BenutzerQuelle, BenutzerSchluessel);
         ');
     END;
 
@@ -389,6 +442,38 @@ BEGIN TRY
             ON source.ID = target.ID;
     END;
 
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.SchichtplanArbeitsplatz
+        WHERE ArbeitsplatzName = N'Biegemaschine'
+    )
+    BEGIN
+        ;WITH BiegemaschinePrimar AS
+        (
+            SELECT TOP (1) a.ID
+            FROM dbo.SchichtplanArbeitsplatz a
+            WHERE a.ArbeitsplatzName = N'Biegemaschine'
+            ORDER BY
+                CASE WHEN a.Bereich = N'Biegemaschine' THEN 0 ELSE 1 END,
+                CASE WHEN EXISTS (
+                    SELECT 1
+                    FROM dbo.SchichtplanEintrag e
+                    WHERE e.ArbeitsplatzID = a.ID
+                ) THEN 0 ELSE 1 END,
+                a.ID
+        )
+        UPDATE target
+        SET Bereich = N'Biegemaschine',
+            BereichSortierung = 50,
+            ArbeitsplatzNr = N'005250',
+            ArbeitsplatzSortierung = 10,
+            Aktiv = 1,
+            UpdatedAt = SYSDATETIME()
+        FROM dbo.SchichtplanArbeitsplatz target
+        INNER JOIN BiegemaschinePrimar source
+            ON source.ID = target.ID;
+    END;
+
     ;WITH ArbeitsplatzSeed AS
     (
         SELECT *
@@ -416,7 +501,7 @@ BEGIN TRY
 
             (40, N'UV', 10, N'005410', N'UV-Anlage'),
 
-            (50, N'Ohne Bereich', 10, NULL, N'Biegemaschine'),
+            (50, N'Biegemaschine', 10, N'005250', N'Biegemaschine'),
 
             (60, N'Sauberraum', 10, N'005591', N'Tisch 1'),
             (60, N'Sauberraum', 20, N'005592', N'Tisch 2'),
@@ -448,6 +533,59 @@ BEGIN TRY
     WHEN NOT MATCHED BY TARGET THEN
         INSERT (Bereich, BereichSortierung, ArbeitsplatzNr, ArbeitsplatzName, ArbeitsplatzSortierung, Aktiv)
         VALUES (source.Bereich, source.BereichSortierung, source.ArbeitsplatzNr, source.ArbeitsplatzName, source.ArbeitsplatzSortierung, 1);
+
+    ;WITH BiegemaschineKanonisch AS
+    (
+        SELECT TOP (1) ID
+        FROM dbo.SchichtplanArbeitsplatz
+        WHERE Bereich = N'Biegemaschine'
+          AND ArbeitsplatzName = N'Biegemaschine'
+          AND ArbeitsplatzNr = N'005250'
+        ORDER BY ArbeitsplatzSortierung, ID
+    )
+    UPDATE eintrag
+    SET ArbeitsplatzID = ziel.ID
+    FROM dbo.SchichtplanEintrag eintrag
+    INNER JOIN dbo.SchichtplanArbeitsplatz quelle
+        ON quelle.ID = eintrag.ArbeitsplatzID
+    CROSS JOIN BiegemaschineKanonisch ziel
+    WHERE quelle.ArbeitsplatzName = N'Biegemaschine'
+      AND quelle.ID <> ziel.ID
+      AND NOT EXISTS (
+            SELECT 1
+            FROM dbo.SchichtplanEintrag konflikt
+            WHERE konflikt.SchichtplanPlanID = eintrag.SchichtplanPlanID
+              AND konflikt.ArbeitsplatzID = ziel.ID
+              AND konflikt.Schicht = eintrag.Schicht
+      );
+
+    IF EXISTS (
+        SELECT 1
+        FROM dbo.SchichtplanEintrag eintrag
+        INNER JOIN dbo.SchichtplanArbeitsplatz platz
+            ON platz.ID = eintrag.ArbeitsplatzID
+        WHERE platz.ArbeitsplatzName = N'Biegemaschine'
+          AND NOT (
+                platz.Bereich = N'Biegemaschine'
+                AND ISNULL(platz.ArbeitsplatzNr, N'') = N'005250'
+          )
+    )
+    BEGIN
+        THROW 51000, N'Biegemaschine-Einträge konnten nicht vollständig auf den Arbeitsplatz 005250 konsolidiert werden.', 1;
+    END;
+
+    DELETE platz
+    FROM dbo.SchichtplanArbeitsplatz platz
+    WHERE platz.ArbeitsplatzName = N'Biegemaschine'
+      AND NOT (
+            platz.Bereich = N'Biegemaschine'
+            AND ISNULL(platz.ArbeitsplatzNr, N'') = N'005250'
+      )
+      AND NOT EXISTS (
+            SELECT 1
+            FROM dbo.SchichtplanEintrag eintrag
+            WHERE eintrag.ArbeitsplatzID = platz.ID
+      );
 
     ;WITH SonstigesKanonisch AS
     (

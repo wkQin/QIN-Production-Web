@@ -28,7 +28,7 @@ public class SchichtplanService
               ORDER BY BereichSortierung, ArbeitsplatzSortierung, ArbeitsplatzName;")).ToList();
 
         var entries = (await connection.QueryAsync<EntryRow>(
-            @"SELECT e.ID, e.ArbeitsplatzID, e.Schicht, e.MaterialStammID, e.Material, e.FA_Nr, e.Bemerkung, e.ZuletztGeaendertAm
+            @"SELECT e.ID, e.ArbeitsplatzID, e.Schicht, e.MaterialStammID, e.Material, e.MaterialStammID2, e.Material2, e.FA_Nr, e.Bemerkung, e.ZuletztGeaendertAm
               FROM dbo.SchichtplanEintrag e
               INNER JOIN dbo.SchichtplanPlan p ON p.ID = e.SchichtplanPlanID
               WHERE p.PlanDatum = @PlanDatum;",
@@ -49,7 +49,7 @@ public class SchichtplanService
     {
         var normalizedDate = planDate.Date;
         var boardTask = GetBoardAsync(normalizedDate);
-        var usersTask = GetAvailableUsersAsync(normalizedDate);
+        var usersTask = GetAvailableUsersAsync();
         var materialsTask = GetMaterialsAsync();
 
         await Task.WhenAll(boardTask, usersTask, materialsTask);
@@ -60,6 +60,211 @@ public class SchichtplanService
             AvailableUsers = await usersTask,
             Materials = await materialsTask
         };
+    }
+
+    public async Task<int> CopyPlanAsync(DateTime sourceDate, DateTime targetDate, string changedBy)
+    {
+        var normalizedSourceDate = sourceDate.Date;
+        var normalizedTargetDate = targetDate.Date;
+
+        if (normalizedSourceDate == normalizedTargetDate)
+        {
+            throw new InvalidOperationException("Quell- und Zieldatum dürfen nicht identisch sein.");
+        }
+
+        using var connection = new SqlConnection(_fertigungConnectionString);
+        await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
+
+        var sourcePlan = await connection.QuerySingleOrDefaultAsync<PlanCopyRow>(
+            @"SELECT TOP (1) ID, Titel, Bemerkung
+              FROM dbo.SchichtplanPlan
+              WHERE PlanDatum = @PlanDatum;",
+            new { PlanDatum = normalizedSourceDate },
+            transaction);
+
+        if (sourcePlan is null)
+        {
+            throw new InvalidOperationException($"Am {normalizedSourceDate:dd.MM.yyyy} gibt es keinen Schichtplan zum Übernehmen.");
+        }
+
+        var sourceEntryCount = await connection.ExecuteScalarAsync<int>(
+            @"SELECT COUNT(*)
+              FROM dbo.SchichtplanEintrag
+              WHERE SchichtplanPlanID = @PlanId;",
+            new { PlanId = sourcePlan.ID },
+            transaction);
+
+        if (sourceEntryCount == 0)
+        {
+            throw new InvalidOperationException($"Am {normalizedSourceDate:dd.MM.yyyy} gibt es keine Schichtplan-Einträge zum Übernehmen.");
+        }
+
+        var targetPlanId = await EnsurePlanAsync(connection, transaction, normalizedTargetDate, changedBy);
+
+        await connection.ExecuteAsync(
+            @"UPDATE dbo.SchichtplanPlan
+              SET Titel = @Titel,
+                  Bemerkung = @Bemerkung
+              WHERE ID = @PlanId;",
+            new
+            {
+                PlanId = targetPlanId,
+                sourcePlan.Titel,
+                sourcePlan.Bemerkung
+            },
+            transaction);
+
+        await connection.ExecuteAsync(
+            @"DELETE FROM dbo.SchichtplanEintrag
+              WHERE SchichtplanPlanID = @PlanId;",
+            new { PlanId = targetPlanId },
+            transaction);
+
+        await connection.ExecuteAsync(
+            @"
+DECLARE @EntryMap TABLE
+(
+    SourceEntryId INT NOT NULL,
+    TargetEntryId INT NOT NULL
+);
+
+MERGE dbo.SchichtplanEintrag AS target
+USING
+(
+    SELECT
+        source.ID AS SourceEntryId,
+        source.ArbeitsplatzID,
+        source.Schicht,
+        source.MaterialStammID,
+        source.Material,
+        source.MaterialStammID2,
+        source.Material2,
+        source.FA_Nr,
+        source.Bemerkung
+    FROM dbo.SchichtplanEintrag source
+    WHERE source.SchichtplanPlanID = @SourcePlanId
+) AS source
+    ON 1 = 0
+WHEN NOT MATCHED THEN
+    INSERT
+    (
+        SchichtplanPlanID,
+        ArbeitsplatzID,
+        Schicht,
+        MaterialStammID,
+        Material,
+        MaterialStammID2,
+        Material2,
+        FA_Nr,
+        Bemerkung,
+        CreatedBy,
+        ZuletztGeaendertVon
+    )
+    VALUES
+    (
+        @TargetPlanId,
+        source.ArbeitsplatzID,
+        source.Schicht,
+        source.MaterialStammID,
+        source.Material,
+        source.MaterialStammID2,
+        source.Material2,
+        source.FA_Nr,
+        source.Bemerkung,
+        @ChangedBy,
+        @ChangedBy
+    )
+OUTPUT source.SourceEntryId, INSERTED.ID
+    INTO @EntryMap (SourceEntryId, TargetEntryId);
+
+INSERT INTO dbo.SchichtplanEintragBenutzer
+(
+    SchichtplanEintragID,
+    SchichtplanPlanID,
+    BenutzerQuelle,
+    BenutzerSchluessel,
+    Personalnummer,
+    Benutzer,
+    Sortierung
+)
+SELECT
+    map.TargetEntryId,
+    @TargetPlanId,
+    source.BenutzerQuelle,
+    source.BenutzerSchluessel,
+    source.Personalnummer,
+    source.Benutzer,
+    source.Sortierung
+FROM dbo.SchichtplanEintragBenutzer source
+INNER JOIN @EntryMap map
+    ON map.SourceEntryId = source.SchichtplanEintragID
+WHERE source.SchichtplanPlanID = @SourcePlanId;",
+            new
+            {
+                SourcePlanId = sourcePlan.ID,
+                TargetPlanId = targetPlanId,
+                ChangedBy = NormalizeAuditName(changedBy)
+            },
+            transaction);
+
+        await TouchPlanAsync(connection, transaction, targetPlanId, normalizedTargetDate, changedBy);
+        transaction.Commit();
+
+        await ActivityLogService.InsertLogAsync(
+            NormalizeAuditName(changedBy),
+            $"[Schichtplan] Plan vom {normalizedSourceDate:dd.MM.yyyy} auf {normalizedTargetDate:dd.MM.yyyy} übernommen.");
+
+        return sourceEntryCount;
+    }
+
+    public async Task<int> ClearPlanAsync(DateTime planDate, string changedBy)
+    {
+        var normalizedDate = planDate.Date;
+
+        using var connection = new SqlConnection(_fertigungConnectionString);
+        await connection.OpenAsync();
+        using var transaction = connection.BeginTransaction();
+
+        var planId = await connection.ExecuteScalarAsync<int?>(
+            @"SELECT TOP (1) ID
+              FROM dbo.SchichtplanPlan
+              WHERE PlanDatum = @PlanDatum;",
+            new { PlanDatum = normalizedDate },
+            transaction);
+
+        if (!planId.HasValue)
+        {
+            transaction.Commit();
+            return 0;
+        }
+
+        var deletedEntryCount = await connection.ExecuteScalarAsync<int>(
+            @"SELECT COUNT(*)
+              FROM dbo.SchichtplanEintrag
+              WHERE SchichtplanPlanID = @PlanId;",
+            new { PlanId = planId.Value },
+            transaction);
+
+        await connection.ExecuteAsync(
+            @"DELETE FROM dbo.SchichtplanEintrag
+              WHERE SchichtplanPlanID = @PlanId;",
+            new { PlanId = planId.Value },
+            transaction);
+
+        await connection.ExecuteAsync(
+            @"DELETE FROM dbo.SchichtplanPlan
+              WHERE ID = @PlanId;",
+            new { PlanId = planId.Value },
+            transaction);
+
+        transaction.Commit();
+
+        await ActivityLogService.InsertLogAsync(
+            NormalizeAuditName(changedBy),
+            $"[Schichtplan] Plan vom {normalizedDate:dd.MM.yyyy} komplett gel\u00F6scht.");
+
+        return deletedEntryCount;
     }
 
     public async Task<SchichtplanAvailableUserModel?> CreateManualUserAsync(string displayName, string changedBy)
@@ -262,7 +467,7 @@ END;",
         return rows > 0;
     }
 
-    public async Task AssignUserAsync(DateTime planDate, int workplaceId, string shift, SchichtplanAvailableUserModel user, string changedBy)
+    public async Task<bool> AssignUserAsync(DateTime planDate, int workplaceId, string shift, SchichtplanAvailableUserModel user, bool allowMultipleAssignments, string changedBy)
     {
         ValidateShift(shift);
 
@@ -287,27 +492,52 @@ END;",
         using var transaction = connection.BeginTransaction();
 
         var planId = await EnsurePlanAsync(connection, transaction, planDate.Date, changedBy);
-        var existingAssignment = await connection.ExecuteScalarAsync<int?>(
+
+        if (!allowMultipleAssignments)
+        {
+            var existingPlanAssignment = await connection.ExecuteScalarAsync<int?>(
+                @"SELECT TOP (1) ID
+                  FROM dbo.SchichtplanEintragBenutzer
+                  WHERE SchichtplanPlanID = @PlanId
+                    AND BenutzerQuelle = @BenutzerQuelle
+                    AND BenutzerSchluessel = @BenutzerSchluessel;",
+                new
+                {
+                    PlanId = planId,
+                    BenutzerQuelle = source,
+                    BenutzerSchluessel = userKey
+                },
+                transaction);
+
+            if (existingPlanAssignment.HasValue)
+            {
+                transaction.Commit();
+                return false;
+            }
+        }
+
+        var entryId = await EnsureEntryAsync(connection, transaction, planId, workplaceId, shift, changedBy);
+        var existingEntryAssignment = await connection.ExecuteScalarAsync<int?>(
             @"SELECT TOP (1) ID
               FROM dbo.SchichtplanEintragBenutzer
-              WHERE SchichtplanPlanID = @PlanId
+              WHERE SchichtplanEintragID = @EntryId
                 AND BenutzerQuelle = @BenutzerQuelle
                 AND BenutzerSchluessel = @BenutzerSchluessel;",
             new
             {
-                PlanId = planId,
+                EntryId = entryId,
                 BenutzerQuelle = source,
                 BenutzerSchluessel = userKey
             },
             transaction);
 
-        if (existingAssignment.HasValue)
+        if (existingEntryAssignment.HasValue)
         {
+            await CleanupEntryIfEmptyAsync(connection, transaction, entryId);
             transaction.Commit();
-            return;
+            return false;
         }
 
-        var entryId = await EnsureEntryAsync(connection, transaction, planId, workplaceId, shift, changedBy);
         var usedSlots = (await connection.QueryAsync<byte>(
             @"SELECT Sortierung
               FROM dbo.SchichtplanEintragBenutzer
@@ -346,6 +576,7 @@ END;",
         transaction.Commit();
 
         await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Mitarbeiter '{user.DisplayName}' zu {shift} am Arbeitsplatz {workplaceId} zugeordnet.");
+        return true;
     }
 
     public async Task RemoveUserAsync(int assignmentId, string changedBy)
@@ -385,7 +616,7 @@ END;",
         await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Mitarbeiter '{assignment.Benutzer}' aus dem Plan entfernt.");
     }
 
-    public async Task AssignMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialId, string changedBy)
+    public async Task<SchichtplanMaterialAssignResult> AssignMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialId, string changedBy)
     {
         ValidateShift(shift);
 
@@ -404,19 +635,58 @@ END;",
         if (material is null)
         {
             transaction.Commit();
-            return;
+            return SchichtplanMaterialAssignResult.MaterialNotFound;
         }
 
         var planId = await EnsurePlanAsync(connection, transaction, planDate.Date, changedBy);
         var entryId = await EnsureEntryAsync(connection, transaction, planId, workplaceId, shift, changedBy);
 
-        await connection.ExecuteAsync(
-            @"UPDATE dbo.SchichtplanEintrag
-              SET MaterialStammID = @MaterialId,
-                  Material = @Material,
-                  ZuletztGeaendertAm = SYSDATETIME(),
-                  ZuletztGeaendertVon = @ChangedBy
+        var entry = await connection.QuerySingleAsync<EntryRow>(
+            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialStammID2, Material2, FA_Nr, Bemerkung, ZuletztGeaendertAm
+              FROM dbo.SchichtplanEintrag
               WHERE ID = @EntryId;",
+            new { EntryId = entryId },
+            transaction);
+
+        if (entry.MaterialStammID == material.Id || entry.MaterialStammID2 == material.Id)
+        {
+            transaction.Commit();
+            return SchichtplanMaterialAssignResult.AlreadyAssigned;
+        }
+
+        string updateSql;
+        SchichtplanMaterialAssignResult result;
+
+        if (!entry.MaterialStammID.HasValue && string.IsNullOrWhiteSpace(entry.Material))
+        {
+            updateSql =
+                @"UPDATE dbo.SchichtplanEintrag
+                  SET MaterialStammID = @MaterialId,
+                      Material = @Material,
+                      ZuletztGeaendertAm = SYSDATETIME(),
+                      ZuletztGeaendertVon = @ChangedBy
+                  WHERE ID = @EntryId;";
+            result = SchichtplanMaterialAssignResult.AddedPrimary;
+        }
+        else if (!entry.MaterialStammID2.HasValue && string.IsNullOrWhiteSpace(entry.Material2))
+        {
+            updateSql =
+                @"UPDATE dbo.SchichtplanEintrag
+                  SET MaterialStammID2 = @MaterialId,
+                      Material2 = @Material,
+                      ZuletztGeaendertAm = SYSDATETIME(),
+                      ZuletztGeaendertVon = @ChangedBy
+                  WHERE ID = @EntryId;";
+            result = SchichtplanMaterialAssignResult.AddedSecondary;
+        }
+        else
+        {
+            transaction.Commit();
+            return SchichtplanMaterialAssignResult.NoFreeSlot;
+        }
+
+        await connection.ExecuteAsync(
+            updateSql,
             new
             {
                 EntryId = entryId,
@@ -430,11 +700,13 @@ END;",
         transaction.Commit();
 
         await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Material '{material.Material}' für {shift} am Arbeitsplatz {workplaceId} gesetzt.");
+        return result;
     }
 
-    public async Task ClearMaterialAsync(DateTime planDate, int workplaceId, string shift, string changedBy)
+    public async Task ClearMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialSlot, string changedBy)
     {
         ValidateShift(shift);
+        ValidateMaterialSlot(materialSlot);
 
         using var connection = new SqlConnection(_fertigungConnectionString);
         await connection.OpenAsync();
@@ -447,16 +719,47 @@ END;",
             return;
         }
 
+        var entry = await connection.QuerySingleAsync<EntryRow>(
+            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialStammID2, Material2, FA_Nr, Bemerkung, ZuletztGeaendertAm
+              FROM dbo.SchichtplanEintrag
+              WHERE ID = @EntryId;",
+            new { EntryId = entryId.Value },
+            transaction);
+
+        var primaryMaterialId = entry.MaterialStammID;
+        var primaryMaterial = NormalizeNullable(entry.Material);
+        var secondaryMaterialId = entry.MaterialStammID2;
+        var secondaryMaterial = NormalizeNullable(entry.Material2);
+
+        if (materialSlot == 1)
+        {
+            primaryMaterialId = secondaryMaterialId;
+            primaryMaterial = secondaryMaterial;
+            secondaryMaterialId = null;
+            secondaryMaterial = null;
+        }
+        else
+        {
+            secondaryMaterialId = null;
+            secondaryMaterial = null;
+        }
+
         await connection.ExecuteAsync(
             @"UPDATE dbo.SchichtplanEintrag
-              SET MaterialStammID = NULL,
-                  Material = NULL,
+              SET MaterialStammID = @PrimaryMaterialId,
+                  Material = @PrimaryMaterial,
+                  MaterialStammID2 = @SecondaryMaterialId,
+                  Material2 = @SecondaryMaterial,
                   ZuletztGeaendertAm = SYSDATETIME(),
                   ZuletztGeaendertVon = @ChangedBy
               WHERE ID = @EntryId;",
             new
             {
                 EntryId = entryId.Value,
+                PrimaryMaterialId = primaryMaterialId,
+                PrimaryMaterial = primaryMaterial,
+                SecondaryMaterialId = secondaryMaterialId,
+                SecondaryMaterial = secondaryMaterial,
                 ChangedBy = NormalizeAuditName(changedBy)
             },
             transaction);
@@ -518,25 +821,8 @@ END;",
         transaction.Commit();
     }
 
-    private async Task<List<SchichtplanAvailableUserModel>> GetAvailableUsersAsync(DateTime planDate)
+    private async Task<List<SchichtplanAvailableUserModel>> GetAvailableUsersAsync()
     {
-        HashSet<string> assignedKeys;
-
-        using (var fertigungConnection = new SqlConnection(_fertigungConnectionString))
-        {
-            await fertigungConnection.OpenAsync();
-            var assigned = await fertigungConnection.QueryAsync<AssignedWorkerKeyRow>(
-                @"SELECT BenutzerQuelle AS Source, BenutzerSchluessel AS [Key]
-                  FROM dbo.SchichtplanEintragBenutzer ben
-                  INNER JOIN dbo.SchichtplanPlan sp ON sp.ID = ben.SchichtplanPlanID
-                  WHERE sp.PlanDatum = @PlanDatum;",
-                new { PlanDatum = planDate.Date });
-
-            assignedKeys = assigned
-                .Select(item => $"{item.Source}|{item.Key}")
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        }
-
         List<SchichtplanAvailableUserModel> loginUsers;
         using (var mainConnection = new SqlConnection(_mainConnectionString))
         {
@@ -556,7 +842,11 @@ END;",
                         CAST(0 AS bit) AS IsManual
                   FROM dbo.LoginDaten
                   WHERE ISNULL(LTRIM(RTRIM(Benutzer)), N'') <> N''
-                    AND ISNULL(LTRIM(RTRIM(Rechte)), N'') NOT IN (N'Verwaltung', N'Admin');"))
+                    AND
+                    (
+                        LTRIM(RTRIM(ISNULL(Rechte, N''))) LIKE N'%Thermoformung%'
+                        OR LTRIM(RTRIM(ISNULL(Rechte, N''))) LIKE N'%Sauberraum%'
+                    );"))
                 .ToList();
         }
 
@@ -580,7 +870,6 @@ END;",
         return loginUsers
             .Concat(manualUsers)
             .Where(user => !string.IsNullOrWhiteSpace(user.DisplayName))
-            .Where(user => !assignedKeys.Contains($"{user.Source}|{user.Key}"))
             .GroupBy(user => $"{user.Source}|{user.Key}", StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
             .OrderBy(user => user.DisplayName ?? string.Empty, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
@@ -596,7 +885,7 @@ END;",
             @"SELECT ID, Material, Sortierung, IstStandard
               FROM dbo.SchichtplanMaterialStamm
               WHERE Aktiv = 1
-              ORDER BY Sortierung, Material;")).ToList();
+              ORDER BY Material;")).ToList();
     }
 
     private static SchichtplanBoardModel BuildBoard(
@@ -628,25 +917,31 @@ END;",
             entry => entry);
 
         var sections = workplaces
-            .GroupBy(item => new { item.Bereich, item.BereichSortierung })
-            .OrderBy(group => group.Key.BereichSortierung)
+            .Select(item => new
+            {
+                Workplace = item,
+                DisplayArea = NormalizeAreaName(item.Bereich, item.ArbeitsplatzName),
+                DisplaySort = NormalizeAreaSort(item.Bereich, item.ArbeitsplatzName, item.BereichSortierung)
+            })
+            .GroupBy(item => new { item.DisplayArea, item.DisplaySort })
+            .OrderBy(group => group.Key.DisplaySort)
             .Select(group => new SchichtplanSectionModel
             {
-                Name = group.Key.Bereich,
-                ThemeClass = MapThemeClass(group.Key.Bereich),
-                Sortierung = group.Key.BereichSortierung,
+                Name = group.Key.DisplayArea,
+                ThemeClass = MapBoardThemeClass(group.Key.DisplayArea),
+                Sortierung = group.Key.DisplaySort,
                 Workplaces = group
-                    .OrderBy(item => item.ArbeitsplatzSortierung)
-                    .ThenBy(item => item.ArbeitsplatzName)
+                    .OrderBy(item => item.Workplace.ArbeitsplatzSortierung)
+                    .ThenBy(item => item.Workplace.ArbeitsplatzName)
                     .Select(item => new SchichtplanWorkplaceModel
                     {
-                        ArbeitsplatzId = item.ID,
-                        ArbeitsplatzNr = NormalizeNullable(item.ArbeitsplatzNr),
-                        ArbeitsplatzName = item.ArbeitsplatzName,
+                        ArbeitsplatzId = item.Workplace.ID,
+                        ArbeitsplatzNr = NormalizeWorkplaceNumber(item.Workplace.ArbeitsplatzNr, item.Workplace.ArbeitsplatzName),
+                        ArbeitsplatzName = item.Workplace.ArbeitsplatzName,
                         Shifts = SchichtplanKonstanten.AlleSchichten
                             .Select(shift =>
                             {
-                                entryLookup.TryGetValue($"{item.ID}|{shift}", out var entry);
+                                entryLookup.TryGetValue($"{item.Workplace.ID}|{shift}", out var entry);
 
                                 return new SchichtplanCellModel
                                 {
@@ -654,6 +949,8 @@ END;",
                                     Shift = shift,
                                     MaterialStammId = entry?.MaterialStammID,
                                     Material = NormalizeNullable(entry?.Material),
+                                    MaterialStammId2 = entry?.MaterialStammID2,
+                                    Material2 = NormalizeNullable(entry?.Material2),
                                     FANr = NormalizeNullable(entry?.FA_Nr),
                                     Bemerkung = NormalizeNullable(entry?.Bemerkung),
                                     LastUpdatedAt = entry?.ZuletztGeaendertAm,
@@ -690,11 +987,72 @@ END;",
         _ => "theme-misc"
     };
 
+    private static string MapBoardThemeClass(string area) => area switch
+    {
+        "Thermoformung" => "theme-thermo",
+        "Fräsen" => "theme-mill",
+        "Stanzen" => "theme-stanzen",
+        "UV" => "theme-uv",
+        "UV-Anlage" => "theme-uv",
+        "Biegemaschine" => "theme-bending",
+        "Ohne Bereich" => "theme-bending",
+        "Sauberraum" => "theme-cleanroom",
+        "Sonstiges" => "theme-misc",
+        _ => "theme-misc"
+    };
+
+    private static string NormalizeAreaName(string? area, string? workplaceName)
+    {
+        if (string.Equals(workplaceName, "Biegemaschine", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Biegemaschine";
+        }
+
+        if (string.Equals(area, "Ohne Bereich", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Biegemaschine";
+        }
+
+        if (string.Equals(area, "UV", StringComparison.OrdinalIgnoreCase))
+        {
+            return "UV-Anlage";
+        }
+
+        return NormalizeNullable(area) ?? "Sonstiges";
+    }
+
+    private static int NormalizeAreaSort(string? area, string? workplaceName, int areaSort) =>
+        string.Equals(workplaceName, "Biegemaschine", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(area, "Ohne Bereich", StringComparison.OrdinalIgnoreCase)
+            ? 50
+            : areaSort;
+
+    private static string? NormalizeWorkplaceNumber(string? workplaceNumber, string? workplaceName)
+    {
+        var normalizedNumber = NormalizeNullable(workplaceNumber);
+        if (normalizedNumber is not null)
+        {
+            return normalizedNumber;
+        }
+
+        return string.Equals(workplaceName, "Biegemaschine", StringComparison.OrdinalIgnoreCase)
+            ? "005250"
+            : null;
+    }
+
     private static void ValidateShift(string shift)
     {
         if (!SchichtplanKonstanten.AlleSchichten.Contains(shift))
         {
             throw new InvalidOperationException("Unbekannte Schicht.");
+        }
+    }
+
+    private static void ValidateMaterialSlot(int materialSlot)
+    {
+        if (materialSlot is < 1 or > 2)
+        {
+            throw new InvalidOperationException("Unbekannter Material-Slot.");
         }
     }
 
@@ -833,6 +1191,7 @@ IF EXISTS
     FROM dbo.SchichtplanEintrag entryRow
     WHERE entryRow.ID = @EntryId
       AND ISNULL(LTRIM(RTRIM(entryRow.Material)), N'') = N''
+      AND ISNULL(LTRIM(RTRIM(entryRow.Material2)), N'') = N''
       AND ISNULL(LTRIM(RTRIM(entryRow.FA_Nr)), N'') = N''
       AND ISNULL(LTRIM(RTRIM(entryRow.Bemerkung)), N'') = N''
       AND NOT EXISTS
@@ -859,6 +1218,13 @@ END;",
         public string? ZuletztGeaendertVon { get; set; }
     }
 
+    private sealed class PlanCopyRow
+    {
+        public int ID { get; set; }
+        public string? Titel { get; set; }
+        public string? Bemerkung { get; set; }
+    }
+
     private sealed class WorkplaceRow
     {
         public int ID { get; set; }
@@ -876,6 +1242,8 @@ END;",
         public string Schicht { get; set; } = string.Empty;
         public int? MaterialStammID { get; set; }
         public string? Material { get; set; }
+        public int? MaterialStammID2 { get; set; }
+        public string? Material2 { get; set; }
         public string? FA_Nr { get; set; }
         public string? Bemerkung { get; set; }
         public DateTime? ZuletztGeaendertAm { get; set; }
@@ -905,11 +1273,5 @@ END;",
     {
         public int Id { get; set; }
         public string Material { get; set; } = string.Empty;
-    }
-
-    private sealed class AssignedWorkerKeyRow
-    {
-        public string Source { get; set; } = string.Empty;
-        public string Key { get; set; } = string.Empty;
     }
 }

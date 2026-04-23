@@ -50,16 +50,56 @@ public sealed class SchichtplanCellModel
     public string Shift { get; set; } = string.Empty;
     public int? MaterialStammId { get; set; }
     public string? Material { get; set; }
+    public int? MaterialStammId2 { get; set; }
+    public string? Material2 { get; set; }
     public string? FANr { get; set; }
     public string? Bemerkung { get; set; }
     public DateTime? LastUpdatedAt { get; set; }
     public List<SchichtplanAssignedUserModel> AssignedUsers { get; set; } = [];
 
+    public List<SchichtplanCellMaterialModel> Materials
+    {
+        get
+        {
+            var materials = new List<SchichtplanCellMaterialModel>();
+
+            if (!string.IsNullOrWhiteSpace(Material))
+            {
+                materials.Add(new SchichtplanCellMaterialModel
+                {
+                    Slot = 1,
+                    MaterialStammId = MaterialStammId,
+                    Material = Material
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(Material2))
+            {
+                materials.Add(new SchichtplanCellMaterialModel
+                {
+                    Slot = 2,
+                    MaterialStammId = MaterialStammId2,
+                    Material = Material2
+                });
+            }
+
+            return materials;
+        }
+    }
+
     public bool HasContent =>
         !string.IsNullOrWhiteSpace(Material) ||
+        !string.IsNullOrWhiteSpace(Material2) ||
         !string.IsNullOrWhiteSpace(FANr) ||
         !string.IsNullOrWhiteSpace(Bemerkung) ||
         AssignedUsers.Count > 0;
+}
+
+public sealed class SchichtplanCellMaterialModel
+{
+    public int Slot { get; set; }
+    public int? MaterialStammId { get; set; }
+    public string Material { get; set; } = string.Empty;
 }
 
 public sealed class SchichtplanAssignedUserModel
@@ -88,6 +128,15 @@ public sealed class SchichtplanMaterialModel
     public string Material { get; set; } = string.Empty;
     public int Sortierung { get; set; }
     public bool IstStandard { get; set; }
+}
+
+public enum SchichtplanMaterialAssignResult
+{
+    AddedPrimary = 1,
+    AddedSecondary = 2,
+    AlreadyAssigned = 3,
+    NoFreeSlot = 4,
+    MaterialNotFound = 5
 }
 
 public sealed class SchichtplanManagementModel

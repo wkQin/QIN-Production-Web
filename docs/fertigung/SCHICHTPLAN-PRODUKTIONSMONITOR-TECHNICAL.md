@@ -11,7 +11,7 @@ Aktueller Hinweis zum Arbeitsplatzstamm:
 - Die früheren Einträge `Springer`, `Materialversorgung` und `Reserve / Einarbeitung` werden per SQL-Konsolidierung auf diesen einen Arbeitsplatz zusammengeführt und danach aus dem Arbeitsplatzstamm entfernt.
 - Bestehende Schichtplan-Einträge werden dabei zuerst auf den kanonischen Arbeitsplatz `Sonstiges` umgehängt.
 
-Der Schichtplan ist aktuell ein UI-Prototyp für die Fertigung. Die Daten kommen noch nicht aus der Datenbank, sondern aus statischen Demo-Daten im Komponenten-Code.
+Der Schichtplan ist nicht mehr nur ein UI-Prototyp. Dashboard, Monitoransicht und Verwaltungsseite arbeiten inzwischen mit den Tabellen in `Fertigung` und laden die Belegung über `SchichtplanService`.
 
 Relevante Dateien:
 
@@ -65,10 +65,9 @@ Der aktuelle Stand umfasst:
 
 Nicht enthalten im aktuellen Stand:
 
-- Datenbankanbindung
-- Bearbeiten oder Speichern von Schichtplandaten
-- Benutzerrollen oder Freigabeworkflow
 - Druckfunktion
+- Benutzerrollen oder Freigabeworkflow
+- automatische Freigabelogik
 
 ## UI-Aufbau
 
@@ -94,11 +93,15 @@ Merkmale:
 
 ## Datenquelle im aktuellen Stand
 
-Die Daten sind momentan statisch im Komponenten-Code definiert.
+Die Daten kommen aktuell aus der Datenbank:
 
-Siehe:
+- `dbo.SchichtplanPlan`
+- `dbo.SchichtplanArbeitsplatz`
+- `dbo.SchichtplanEintrag`
+- `dbo.SchichtplanEintragBenutzer`
+- `dbo.SchichtplanMaterialStamm`
 
-- `BuildSections()` in [ShiftPlanBoard.razor](/Components/Shared/ShiftPlanBoard.razor:174)
+Die Verwaltungsseite lädt zusätzlich verfügbare Benutzer aus `dbo.LoginDaten` aus der Hauptdatenbank und kombiniert diese mit manuellen Zusatzbenutzern aus `dbo.SchichtplanZusatzBenutzer`.
 
 Aktuell sind folgende Bereiche enthalten:
 
@@ -106,7 +109,7 @@ Aktuell sind folgende Bereiche enthalten:
 - `Fräsen`
 - `Stanzen`
 - `UV`
-- `Ohne Bereich`
+- `Biegemaschine`
 - `Sauberraum`
 - `Sonstiges`
 
@@ -267,15 +270,14 @@ Siehe:
 
 Aus dem sichtbaren Code ergeben sich aktuell diese technischen Einschränkungen:
 
-- alle Daten sind fest im Quellcode hinterlegt
-- `Zuletzt aktualisiert` zeigt aktuell die Renderzeit der Komponente, nicht den echten letzten Bearbeitungszeitpunkt aus einer Datenquelle
-- es gibt noch keine Eingabemaske für Schichtplandaten
-- die Maschinenlisten sind noch nicht an eine zentrale Konfiguration oder Tabelle angebunden
-- Änderungen am Schichtplan erfordern aktuell Code-Anpassungen
+- es gibt noch keinen formalen Freigabe- oder Veröffentlichungsstatus für einen Plan
+- die Kopierfunktion übernimmt aktuell immer einen kompletten Tag und überschreibt das Zieldatum vollständig
+- die Benutzerrechte für die obere Liste sind derzeit auf `Thermoformung` und `Sauberraum` fest gefiltert
+- Farben und Bereichsnamen sind im UI und im SQL-Seed hinterlegt und nicht separat konfigurierbar
 
 ## Vorschlag für die nächste Ausbaustufe
 
-Für die spätere Datenbankanbindung ist folgende Richtung sinnvoll:
+Für die nächste Ausbaustufe ist folgende Richtung sinnvoll:
 
 1. Tabelle für Schichtplan-Kopf mit Datum, KW, Status, Änderungszeitpunkt
 2. Tabelle für Bereiche und Maschinen
@@ -283,7 +285,7 @@ Für die spätere Datenbankanbindung ist folgende Richtung sinnvoll:
 4. separate Tabelle für zugeordnete Personen je Schichtkarte
 5. optionale Notiz oder Zusatztext je Karte
 
-Dann kann `BuildSections()` durch einen Service ersetzt werden.
+Zusätzlich wäre eine eigene Konfiguration für Bereichsfarben und Sichtbarkeitsregeln sinnvoll.
 
 ## Relevante technische Stellen
 

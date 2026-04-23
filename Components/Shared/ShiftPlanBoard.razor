@@ -1,4 +1,5 @@
 @using System.Globalization
+@using System.Threading
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject SchichtplanService SchichtplanService
@@ -58,82 +59,98 @@
                             <small>Nummer und Planung</small>
                         </div>
 
-                        @for (var shiftIndex = 0; shiftIndex < shiftHeaders.Length; shiftIndex++)
+                        @foreach (var shiftHeader in shiftHeaders)
                         {
-                            <div class="@($"shiftplan-cell shiftplan-header-cell {shiftHeaders[shiftIndex].ColumnClass}")">
-                                <span>@shiftHeaders[shiftIndex].Label</span>
-                                <small>Material, Mitarbeiter, Notiz</small>
+                            <div class="shiftplan-cell shiftplan-header-cell">
+                                <span>@shiftHeader.Label</span>
+                                <small>Materialien, Mitarbeiter, Notiz</small>
                             </div>
                         }
                     </div>
 
-                    @foreach (var group in board.Sections)
+                    @if (VisibleSections.Count == 0)
                     {
-                        <div class="@($"shiftplan-row shiftplan-group-row {group.ThemeClass}")">
-                            <div class="shiftplan-group-content">
-                                <strong>@group.Name</strong>
-                                <span>@group.Workplaces.Count Arbeitsplätze</span>
-                            </div>
-                        </div>
-
-                        @for (var machineIndex = 0; machineIndex < group.Workplaces.Count; machineIndex++)
+                        <div class="shiftplan-empty-board">Noch keine belegten Arbeitsplätze vorhanden.</div>
+                    }
+                    else
+                    {
+                        @foreach (var group in VisibleSections)
                         {
-                            var machine = group.Workplaces[machineIndex];
-
-                            <div class="@($"shiftplan-row shiftplan-data-row {group.ThemeClass} {(machineIndex % 2 == 1 ? "is-alt" : string.Empty)}")">
-                                <div class="shiftplan-cell shiftplan-machine-cell">
-                                    <div class="shiftplan-machine-meta">
-                                        <span class="shiftplan-machine-number">@GetWorkplaceNumber(machine.ArbeitsplatzNr)</span>
-                                        <span class="shiftplan-machine-staffing">Arbeitsplatz</span>
-                                    </div>
-                                    <strong class="shiftplan-machine-name">@machine.ArbeitsplatzName</strong>
+                            <div class="@($"shiftplan-row shiftplan-group-row {group.ThemeClass}")">
+                                <div class="shiftplan-group-content">
+                                    <strong>@group.Name</strong>
+                                    <span>@group.Workplaces.Count Arbeitsplätze</span>
                                 </div>
-
-                                @for (var shiftIndex = 0; shiftIndex < machine.Shifts.Count; shiftIndex++)
-                                {
-                                    var cell = machine.Shifts[shiftIndex];
-                                    var columnClass = shiftHeaders[shiftIndex].ColumnClass;
-
-                                    <div class="@($"shiftplan-cell shiftplan-shift-cell {columnClass}")">
-                                        @if (!cell.HasContent)
-                                        {
-                                            <div class="shiftplan-empty-cell">frei</div>
-                                        }
-                                        else
-                                        {
-                                            <article class="@($"shiftplan-task {columnClass}")">
-                                                <div class="shiftplan-task-head">
-                                                    <div class="shiftplan-task-material">@GetMaterialLabel(cell.Material)</div>
-                                                    <span class="shiftplan-task-count">@GetPeopleCountLabel(cell.AssignedUsers.Count)</span>
-                                                </div>
-
-                                                @if (!string.IsNullOrWhiteSpace(cell.FANr))
-                                                {
-                                                    <div class="shiftplan-task-meta">
-                                                        <span>FA-Nr</span>
-                                                        <strong>@cell.FANr</strong>
-                                                    </div>
-                                                }
-
-                                                @if (cell.AssignedUsers.Count > 0)
-                                                {
-                                                    <div class="shiftplan-task-people-grid">
-                                                        @foreach (var person in cell.AssignedUsers)
-                                                        {
-                                                            <span class="shiftplan-task-person">@person.DisplayName</span>
-                                                        }
-                                                    </div>
-                                                }
-
-                                                @if (!string.IsNullOrWhiteSpace(cell.Bemerkung))
-                                                {
-                                                    <div class="shiftplan-task-note">@cell.Bemerkung</div>
-                                                }
-                                            </article>
-                                        }
-                                    </div>
-                                }
                             </div>
+
+                            @for (var machineIndex = 0; machineIndex < group.Workplaces.Count; machineIndex++)
+                            {
+                                var machine = group.Workplaces[machineIndex];
+
+                                <div class="@($"shiftplan-row shiftplan-data-row {group.ThemeClass} {(machineIndex % 2 == 1 ? "is-alt" : string.Empty)}")">
+                                    <div class="shiftplan-cell shiftplan-machine-cell">
+                                        <div class="shiftplan-machine-meta">
+                                            <span class="shiftplan-machine-number">@GetWorkplaceNumber(machine.ArbeitsplatzNr)</span>
+                                            <span class="shiftplan-machine-staffing">Arbeitsplatz</span>
+                                        </div>
+                                        <strong class="shiftplan-machine-name">@machine.ArbeitsplatzName</strong>
+                                    </div>
+
+                                    @foreach (var cell in machine.Shifts)
+                                    {
+                                        <div class="shiftplan-cell shiftplan-shift-cell">
+                                            @if (!cell.HasContent)
+                                            {
+                                                <div class="shiftplan-empty-cell">frei</div>
+                                            }
+                                            else
+                                            {
+                                                <article class="@($"shiftplan-task {group.ThemeClass}")">
+                                                    <div class="shiftplan-task-head">
+                                                        <div class="shiftplan-task-material-stack">
+                                                            @if (cell.Materials.Count == 0)
+                                                            {
+                                                                <div class="shiftplan-task-material">Noch kein Material</div>
+                                                            }
+                                                            else
+                                                            {
+                                                                @foreach (var material in cell.Materials)
+                                                                {
+                                                                    <div class="shiftplan-task-material">@material.Material</div>
+                                                                }
+                                                            }
+                                                        </div>
+                                                        <span class="shiftplan-task-count">@GetPeopleCountLabel(cell.AssignedUsers.Count)</span>
+                                                    </div>
+
+                                                    @if (!string.IsNullOrWhiteSpace(cell.FANr))
+                                                    {
+                                                        <div class="shiftplan-task-meta">
+                                                            <span>FA-Nr</span>
+                                                            <strong>@cell.FANr</strong>
+                                                        </div>
+                                                    }
+
+                                                    @if (cell.AssignedUsers.Count > 0)
+                                                    {
+                                                        <div class="shiftplan-task-people-grid">
+                                                            @foreach (var person in cell.AssignedUsers)
+                                                            {
+                                                                <span class="shiftplan-task-person">@person.DisplayName</span>
+                                                            }
+                                                        </div>
+                                                    }
+
+                                                    @if (!string.IsNullOrWhiteSpace(cell.Bemerkung))
+                                                    {
+                                                        <div class="shiftplan-task-note">@cell.Bemerkung</div>
+                                                    }
+                                                </article>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
                         }
                     }
                 </section>
@@ -152,10 +169,11 @@
 
     private readonly ShiftHeader[] shiftHeaders =
     [
-        new(SchichtplanKonstanten.Nachtschicht, "shift-night"),
-        new(SchichtplanKonstanten.Frühschicht, "shift-early"),
-        new(SchichtplanKonstanten.Spätschicht, "shift-late")
+        new(SchichtplanKonstanten.Nachtschicht),
+        new(SchichtplanKonstanten.Frühschicht),
+        new(SchichtplanKonstanten.Spätschicht)
     ];
+    private static readonly TimeSpan MonitorAutoRefreshInterval = TimeSpan.FromSeconds(60);
 
     private SchichtplanBoardModel board = new()
     {
@@ -168,6 +186,8 @@
     private string? loadError;
     private bool isFullscreen;
     private bool activateMonitorView;
+    private bool isBackgroundRefreshing;
+    private CancellationTokenSource? monitorRefreshCts;
 
     private string boardDateLabel =>
         board.PlanDatum.ToString("dddd, dd.MM.yyyy", CultureInfo.GetCultureInfo("de-DE"));
@@ -180,37 +200,65 @@
             ? board.LastUpdatedAt.Value.ToString("dd.MM.yyyy HH:mm", CultureInfo.GetCultureInfo("de-DE")) + " Uhr"
             : "Noch nicht geändert";
 
+    private List<SchichtplanSectionModel> VisibleSections =>
+        board.Sections
+            .Select(section => new SchichtplanSectionModel
+            {
+                Name = section.Name,
+                ThemeClass = section.ThemeClass,
+                Sortierung = section.Sortierung,
+                Workplaces = section.Workplaces
+                    .Where(HasAssignedUsers)
+                    .ToList()
+            })
+            .Where(section => section.Workplaces.Count > 0)
+            .ToList();
+
+    private DateTime ResolveRequestedDate() =>
+        (PlanDate ?? DateTime.Today).Date;
+
     protected override async Task OnParametersSetAsync()
     {
-        var requestedDate = (PlanDate ?? DateTime.Today).Date;
+        var requestedDate = ResolveRequestedDate();
         if (lastLoadedDate != requestedDate || !string.IsNullOrWhiteSpace(loadError))
         {
             await LoadBoardAsync(requestedDate);
         }
     }
 
-    private async Task LoadBoardAsync(DateTime requestedDate)
+    private async Task LoadBoardAsync(DateTime requestedDate, bool showLoadingState = true)
     {
-        isLoading = true;
-        loadError = null;
+        if (showLoadingState)
+        {
+            isLoading = true;
+            loadError = null;
+        }
 
         try
         {
             board = await SchichtplanService.GetBoardAsync(requestedDate);
             lastLoadedDate = requestedDate;
+            loadError = null;
         }
         catch (Exception ex)
         {
-            board = new SchichtplanBoardModel
+            if (showLoadingState || lastLoadedDate is null)
             {
-                PlanDatum = requestedDate,
-                Kalenderwoche = SchichtplanKonstanten.Kalenderwoche(requestedDate)
-            };
-            loadError = ex.Message;
+                board = new SchichtplanBoardModel
+                {
+                    PlanDatum = requestedDate,
+                    Kalenderwoche = SchichtplanKonstanten.Kalenderwoche(requestedDate)
+                };
+                loadError = ex.Message;
+            }
         }
         finally
         {
-            isLoading = false;
+            if (showLoadingState)
+            {
+                isLoading = false;
+            }
+
             if (isFullscreen)
             {
                 activateMonitorView = true;
@@ -228,10 +276,13 @@
 
         isFullscreen = true;
         activateMonitorView = true;
+        StartMonitorAutoRefresh();
     }
 
     private async Task CloseFullscreenAsync()
     {
+        StopMonitorAutoRefresh();
+
         if (isFullscreen)
         {
             await JS.InvokeVoidAsync("shiftPlanBoard.deactivate", shellId, stageShellId, stageId);
@@ -256,9 +307,63 @@
     {
         try
         {
+            StopMonitorAutoRefresh();
             await JS.InvokeVoidAsync("shiftPlanBoard.deactivate", shellId, stageShellId, stageId);
         }
         catch (JSDisconnectedException)
+        {
+        }
+    }
+
+    private void StartMonitorAutoRefresh()
+    {
+        StopMonitorAutoRefresh();
+        monitorRefreshCts = new CancellationTokenSource();
+        _ = RunMonitorAutoRefreshAsync(monitorRefreshCts.Token);
+    }
+
+    private void StopMonitorAutoRefresh()
+    {
+        if (monitorRefreshCts is null)
+        {
+            return;
+        }
+
+        monitorRefreshCts.Cancel();
+        monitorRefreshCts.Dispose();
+        monitorRefreshCts = null;
+    }
+
+    private async Task RunMonitorAutoRefreshAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(MonitorAutoRefreshInterval);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken))
+            {
+                await InvokeAsync(async () =>
+                {
+                    if (!isFullscreen || isLoading || isBackgroundRefreshing)
+                    {
+                        return;
+                    }
+
+                    isBackgroundRefreshing = true;
+
+                    try
+                    {
+                        await LoadBoardAsync(ResolveRequestedDate(), showLoadingState: false);
+                        StateHasChanged();
+                    }
+                    finally
+                    {
+                        isBackgroundRefreshing = false;
+                    }
+                });
+            }
+        }
+        catch (OperationCanceledException)
         {
         }
     }
@@ -270,11 +375,11 @@
         _ => $"{count} Personen"
     };
 
-    private static string GetMaterialLabel(string? material) =>
-        string.IsNullOrWhiteSpace(material) ? "Noch kein Material" : material;
-
     private static string GetWorkplaceNumber(string? workplaceNumber) =>
         string.IsNullOrWhiteSpace(workplaceNumber) ? "Sonderplatz" : workplaceNumber;
 
-    private sealed record ShiftHeader(string Label, string ColumnClass);
+    private static bool HasAssignedUsers(SchichtplanWorkplaceModel workplace) =>
+        workplace.Shifts.Any(cell => cell.AssignedUsers.Count > 0);
+
+    private sealed record ShiftHeader(string Label);
 }
