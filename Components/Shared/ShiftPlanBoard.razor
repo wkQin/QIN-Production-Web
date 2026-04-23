@@ -46,8 +46,42 @@
                         <strong>KW @calendarWeekLabel</strong>
                     </div>
 
+                    <div class="shiftplan-date-control" aria-label="Plan-Datum">
+                        <button type="button"
+                                class="shiftplan-date-step"
+                                title="Vortag anzeigen"
+                                aria-label="Vortag anzeigen"
+                                @onclick="ShowPreviousDayAsync">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+
+                        <label class="shiftplan-date-picker">
+                            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                            <span class="shiftplan-date-label">@boardDateLabel</span>
+                            <input type="date"
+                                   class="shiftplan-date-input"
+                                   value="@selectedDateInputValue"
+                                   aria-label="Plan-Datum auswaehlen"
+                                   @onchange="OnBoardDateChangedAsync" />
+                        </label>
+
+                        <button type="button"
+                                class="shiftplan-date-step"
+                                title="Naechsten Tag anzeigen"
+                                aria-label="Naechsten Tag anzeigen"
+                                @onclick="ShowNextDayAsync">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+
+                        <button type="button"
+                                class="shiftplan-today-btn"
+                                disabled="@isTodayButtonDisabled"
+                                @onclick="SelectTodayAsync">
+                            Heute
+                        </button>
+                    </div>
+
                     <div class="shiftplan-board-status">
-                        <span>@boardDateLabel</span>
                         <span>Zuletzt aktualisiert: @lastUpdatedLabel</span>
                     </div>
                 </div>
@@ -182,6 +216,9 @@
     };
 
     private DateTime? lastLoadedDate;
+    private DateTime selectedBoardDate = DateTime.Today;
+    private DateTime? previousPlanDateParameter;
+    private bool hasManualDateSelection;
     private bool isLoading = true;
     private string? loadError;
     private bool isFullscreen;
@@ -191,6 +228,15 @@
 
     private string boardDateLabel =>
         board.PlanDatum.ToString("dddd, dd.MM.yyyy", CultureInfo.GetCultureInfo("de-DE"));
+
+    private string selectedDateInputValue =>
+        selectedBoardDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+    private bool isTodaySelected =>
+        selectedBoardDate.Date == DateTime.Today;
+
+    private bool isTodayButtonDisabled =>
+        isTodaySelected && !hasManualDateSelection;
 
     private string calendarWeekLabel =>
         board.Kalenderwoche.ToString("00", CultureInfo.InvariantCulture);
@@ -215,10 +261,25 @@
             .ToList();
 
     private DateTime ResolveRequestedDate() =>
-        (PlanDate ?? DateTime.Today).Date;
+        PlanDate.HasValue || hasManualDateSelection
+            ? selectedBoardDate.Date
+            : DateTime.Today;
 
     protected override async Task OnParametersSetAsync()
     {
+        var parameterDate = PlanDate?.Date;
+        if (parameterDate.HasValue && previousPlanDateParameter != parameterDate)
+        {
+            selectedBoardDate = parameterDate.Value;
+            hasManualDateSelection = false;
+        }
+        else if (!parameterDate.HasValue && !hasManualDateSelection)
+        {
+            selectedBoardDate = DateTime.Today;
+        }
+
+        previousPlanDateParameter = parameterDate;
+
         var requestedDate = ResolveRequestedDate();
         if (lastLoadedDate != requestedDate || !string.IsNullOrWhiteSpace(loadError))
         {
@@ -228,6 +289,8 @@
 
     private async Task LoadBoardAsync(DateTime requestedDate, bool showLoadingState = true)
     {
+        selectedBoardDate = requestedDate.Date;
+
         if (showLoadingState)
         {
             isLoading = true;
@@ -264,6 +327,47 @@
                 activateMonitorView = true;
             }
         }
+    }
+
+    private async Task OnBoardDateChangedAsync(ChangeEventArgs args)
+    {
+        if (DateTime.TryParseExact(
+            args.Value?.ToString(),
+            "yyyy-MM-dd",
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.None,
+            out var parsedDate))
+        {
+            await SelectBoardDateAsync(parsedDate, true);
+        }
+    }
+
+    private Task ShowPreviousDayAsync() =>
+        SelectBoardDateAsync(selectedBoardDate.AddDays(-1), true);
+
+    private Task ShowNextDayAsync() =>
+        SelectBoardDateAsync(selectedBoardDate.AddDays(1), true);
+
+    private async Task SelectTodayAsync()
+    {
+        hasManualDateSelection = false;
+        await SelectBoardDateAsync(DateTime.Today, false);
+    }
+
+    private async Task SelectBoardDateAsync(DateTime requestedDate, bool markAsManualSelection)
+    {
+        var date = requestedDate.Date;
+        if (markAsManualSelection)
+        {
+            hasManualDateSelection = true;
+        }
+
+        if (selectedBoardDate == date && lastLoadedDate == date && string.IsNullOrWhiteSpace(loadError))
+        {
+            return;
+        }
+
+        await LoadBoardAsync(date);
     }
 
     private async Task ToggleFullscreenAsync()

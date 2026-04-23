@@ -167,9 +167,9 @@
 }
 
 .shiftplan-board-meta {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
     padding: 0.82rem 0.92rem;
     border: 1px solid rgba(148, 163, 184, 0.12);
@@ -189,6 +189,7 @@
     align-items: center;
     gap: 0.7rem;
     min-width: 0;
+    justify-self: start;
 }
 
 .shiftplan-board-copy strong {
@@ -198,10 +199,103 @@
     white-space: nowrap;
 }
 
+.shiftplan-date-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.42rem;
+    justify-self: center;
+    min-width: 0;
+}
+
+.shiftplan-date-step,
+.shiftplan-today-btn {
+    min-height: 2.35rem;
+    border-radius: 999px;
+    border: 1px solid rgba(96, 165, 250, 0.28);
+    background: rgba(15, 23, 42, 0.74);
+    color: rgba(226, 232, 240, 0.9);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.shiftplan-date-step {
+    width: 2.35rem;
+    flex: 0 0 2.35rem;
+}
+
+.shiftplan-today-btn {
+    padding: 0 0.78rem;
+    font-size: 0.76rem;
+}
+
+.shiftplan-date-step:hover,
+.shiftplan-today-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: rgba(125, 211, 252, 0.52);
+    background: rgba(14, 165, 233, 0.18);
+}
+
+.shiftplan-today-btn:disabled {
+    cursor: default;
+    opacity: 0.46;
+}
+
+.shiftplan-date-picker {
+    position: relative;
+    min-height: 2.86rem;
+    min-width: 20rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(125, 211, 252, 0.3);
+    background: linear-gradient(135deg, rgba(8, 47, 73, 0.72), rgba(15, 23, 42, 0.82));
+    color: #f8fafc;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.58rem;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: 0 16px 34px rgba(2, 6, 23, 0.22);
+}
+
+.shiftplan-date-picker:focus-within {
+    border-color: rgba(125, 211, 252, 0.74);
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.16), 0 16px 34px rgba(2, 6, 23, 0.22);
+}
+
+.shiftplan-date-picker i {
+    color: #7dd3fc;
+    font-size: 1.08rem;
+}
+
+.shiftplan-date-label {
+    color: #f8fafc;
+    font-size: 1.22rem;
+    font-weight: 900;
+    line-height: 1.1;
+    white-space: nowrap;
+}
+
+.shiftplan-date-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
 .shiftplan-board-status {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 0.65rem;
+    justify-self: end;
     white-space: nowrap;
 }
 
@@ -222,6 +316,36 @@
     min-height: 1.8rem;
     padding: 0 0.72rem;
     font-size: 0.72rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-date-control {
+    gap: 0.34rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-date-step {
+    width: 2rem;
+    min-height: 2rem;
+    flex-basis: 2rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-date-picker {
+    min-width: 17.4rem;
+    min-height: 2.36rem;
+    padding: 0 0.82rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-date-label {
+    font-size: 1.02rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-date-picker i {
+    font-size: 0.94rem;
+}
+
+.shiftplan-shell.is-fullscreen .shiftplan-today-btn {
+    min-height: 2rem;
+    padding: 0 0.62rem;
+    font-size: 0.68rem;
 }
 
 .shiftplan-table-panel {
@@ -773,13 +897,18 @@
     }
 
     .shiftplan-board-meta {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         align-items: flex-start;
+    }
+
+    .shiftplan-date-control {
+        justify-self: center;
     }
 
     .shiftplan-board-status {
         flex-direction: column;
         align-items: flex-start;
+        justify-self: start;
         white-space: normal;
     }
 }
