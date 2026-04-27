@@ -41,6 +41,7 @@ Der Wareneingang umfasst:
 - Erfassen von Chargen und Mengen
 - Drucken von Chargenetiketten
 - Anzeigen und Bearbeiten offener Wareneingänge
+- Senden einer QS-Mail nach dem Speichern
 
 ## Seitenaufbau
 
@@ -98,6 +99,12 @@ Die Ware hat deutliche Mängel oder muss durch QS geprüft werden.
 Bei `Schlecht` ist eine Bemerkung Pflicht.
 
 Zusätzlich muss QS informiert werden.
+
+Nach dem Speichern sendet das System eine E-Mail an:
+
+`qsintern@qin-form.de`
+
+Bei Zustand `Schlecht` wird die E-Mail als wichtiger Prüffall gekennzeichnet.
 
 ## Palettentausch
 
@@ -179,6 +186,10 @@ In diesen Fällen:
 2. QS informieren.
 3. Ware nach interner Vorgabe kennzeichnen oder separieren.
 
+Wenn der Wareneingang gespeichert wird, sendet das System eine QS-Mail an `qsintern@qin-form.de`.
+
+Bei Zustand `Schlecht` enthält die E-Mail einen deutlichen Hinweis, dass der Vorgang zeitnah geprüft werden soll.
+
 ## Verantwortlichkeiten
 
 Wareneingang und Fertigung:
@@ -218,4 +229,5 @@ Nach dem Speichern:
 - Chargen sind gespeichert.
 - Die Historie wird aktualisiert.
 - Bei Bedarf kann ein Etikett gedruckt werden.
-- QS kann bei relevanten Fällen informiert werden.
+- QS erhält eine systemgenerierte E-Mail an `qsintern@qin-form.de`.
+- Bei Zustand `Schlecht` wird die QS-Mail als wichtiger Prüffall markiert.

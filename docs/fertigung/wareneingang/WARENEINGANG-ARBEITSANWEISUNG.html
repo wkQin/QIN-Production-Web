@@ -1,0 +1,252 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wareneingang Arbeitsanweisung</title>
+<style>
+@page { size: A4; margin: 16mm; }
+body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 11pt; line-height: 1.45; max-width: 840px; margin: 0 auto; background: #ffffff; }
+.document { padding: 22px 26px 40px; }
+h1 { font-size: 24pt; margin: 0 0 12px; color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
+h2 { font-size: 16pt; margin: 28px 0 10px; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; page-break-after: avoid; }
+h3 { font-size: 13pt; margin: 18px 0 8px; color: #0f172a; page-break-after: avoid; }
+p { margin: 7px 0 10px; }
+ul, ol { margin: 6px 0 12px 24px; padding: 0; }
+li { margin: 3px 0; }
+code { font-family: Consolas, monospace; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; font-size: 10pt; }
+pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 10pt; }
+.meta { color: #475569; font-size: 10pt; margin: 0 0 22px; }
+.doc-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 22px; min-height: 58px; }
+.doc-brand { color: #0f172a; font-weight: 700; font-size: 15pt; line-height: 1.1; margin: 0; }
+.doc-title-small { color: #1e3a8a; font-size: 10pt; font-weight: 700; line-height: 1.15; margin-top: 4px; }
+.doc-logo { width: 170px; height: auto; object-fit: contain; display: block; }
+.doc-footer { display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; margin-top: 34px; padding-top: 8px; color: #64748b; font-size: 9pt; }
+@media print {
+  body { max-width: none; }
+  .document { padding: 0; }
+  .doc-header { display: flex; }
+  .doc-footer { display: flex; }
+  h1, h2, h3 { break-after: avoid-page; page-break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  li, pre, .doc-header, .doc-footer { break-inside: avoid; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="document">
+<div class='doc-header'><div><div class='doc-brand'>QIN Production Web</div><div class='doc-title-small'>Wareneingang Arbeitsanweisung</div></div><img class='doc-logo' src='../../assets/QIN-Form_Logo_blau_unten_small_transparent.png' alt='QIN-FORM Logo'></div>
+<h1>Wareneingang Arbeitsanweisung</h1>
+<div class='meta'>Quelle: WARENEINGANG-ARBEITSANWEISUNG.md</div>
+<p>Arbeitsanweisung f&#252;r Mitarbeiterinnen und Mitarbeiter im Wareneingang.</p>
+<p>Stand: Update 3.2.2</p>
+<h2>Ziel</h2>
+<p>Diese Arbeitsanweisung beschreibt, wie angeliefertes Produktionsmaterial im System erfasst wird.</p>
+<p>Am Ende m&#252;ssen folgende Informationen im System stehen:</p>
+<ul>
+<li>Lieferant</li>
+<li>Lieferschein</li>
+<li>Position</li>
+<li>EBE-Nummer, falls vorhanden</li>
+<li>Zustand der Ware</li>
+<li>Palettentausch</li>
+<li>Dickenmessung, wenn erforderlich</li>
+<li>Chargen</li>
+<li>Mengen</li>
+<li>Bemerkung, wenn erforderlich</li>
+</ul>
+<h2>Vor dem Start</h2>
+<p>Bereitlegen:</p>
+<ul>
+<li>Lieferschein</li>
+<li>Material oder Gebinde</li>
+<li>Chargenetiketten</li>
+<li>Messmittel f&#252;r Dickenmessung, falls erforderlich</li>
+<li>Scanner</li>
+</ul>
+<h2>System &#246;ffnen</h2>
+<ol>
+<li>QIN Production Web &#246;ffnen.</li>
+<li>Zum Bereich <code>Fertigung</code> wechseln.</li>
+<li><code>Wareneingang</code> &#246;ffnen.</li>
+</ol>
+<h2>Neuen Wareneingang erfassen</h2>
+<h3>1. Lieferant ausw&#228;hlen</h3>
+<p>Im Feld <code>Lieferant</code> den passenden Lieferanten ausw&#228;hlen.</p>
+<p>Wichtig:</p>
+<ul>
+<li>Immer den Lieferanten vom Lieferschein verwenden.</li>
+<li>Bei Unsicherheit R&#252;cksprache mit Schichtleitung oder QS halten.</li>
+</ul>
+<h3>2. Lieferschein eintragen</h3>
+<p>Im Feld <code>Lieferschein</code> die Lieferscheinnummer eintragen.</p>
+<p>Wichtig:</p>
+<ul>
+<li>Die Nummer vollst&#228;ndig &#252;bernehmen.</li>
+<li>Keine zus&#228;tzlichen Leerzeichen eintragen.</li>
+</ul>
+<h3>3. Position eintragen</h3>
+<p>Im Feld <code>Position</code> die Position vom Lieferschein eintragen.</p>
+<p>Wenn keine Position vorhanden ist:</p>
+<ul>
+<li>Feld leer lassen oder nach interner Vorgabe ausf&#252;llen.</li>
+</ul>
+<h3>4. EBE-Nummer eintragen</h3>
+<p>Im Feld <code>EBE-Nr.</code> die EBE-Nummer eintragen, falls vorhanden.</p>
+<p>Wenn keine EBE-Nummer vorhanden ist:</p>
+<ul>
+<li>Feld leer lassen.</li>
+</ul>
+<h2>Ware pr&#252;fen</h2>
+<h3>5. Zustand ausw&#228;hlen</h3>
+<p>Im Feld <code>Zustand der Ware</code> einen Wert ausw&#228;hlen:</p>
+<ul>
+<li><code>Gut</code>: Ware ist in Ordnung.</li>
+<li><code>Mittel</code>: Ware hat leichte Auff&#228;lligkeiten.</li>
+<li><code>Schlecht</code>: Ware hat deutliche M&#228;ngel oder muss durch QS gepr&#252;ft werden.</li>
+</ul>
+<p>Bei Zustand <code>Schlecht</code>:</p>
+<ol>
+<li>Bemerkung schreiben.</li>
+<li>QS informieren.</li>
+<li>Ware nach interner Vorgabe kennzeichnen oder separieren.</li>
+</ol>
+<p>Nach dem Speichern sendet das System zus&#228;tzlich eine E-Mail an <code>qsintern@qin-form.de</code>.</p>
+<h3>6. Palettentausch ausw&#228;hlen</h3>
+<p>Bei <code>Palettentausch</code> immer <code>Ja</code> oder <code>Nein</code> ausw&#228;hlen.</p>
+<p>Wenn <code>Ja</code> ausgew&#228;hlt wird:</p>
+<ul>
+<li>In der Bemerkung kurz beschreiben, was getauscht wurde.</li>
+</ul>
+<h3>7. Dickenmessung eintragen</h3>
+<p>Wenn das Feld <code>Dickenmessung</code> angezeigt wird, ist es ein Pflichtfeld.</p>
+<p>Erlaubter Bereich:</p>
+<ul>
+<li>Minimum: <code>0,23 mm</code></li>
+<li>Maximum: <code>1,2 mm</code></li>
+</ul>
+<p>Beispiele f&#252;r g&#252;ltige Eingaben:</p>
+<ul>
+<li><code>0,23</code></li>
+<li><code>0,50</code></li>
+<li><code>1,2</code></li>
+</ul>
+<p>Wenn der Wert au&#223;erhalb des Bereichs liegt:</p>
+<ol>
+<li>Wert erneut pr&#252;fen.</li>
+<li>Messung wiederholen.</li>
+<li>Bei Auff&#228;lligkeit QS informieren.</li>
+</ol>
+<h2>Chargen erfassen</h2>
+<h3>8. Charge scannen</h3>
+<p>Den Barcode der Charge in das Feld <code>Charge scannen</code> scannen.</p>
+<p>Danach die Menge eintragen.</p>
+<p>Einheit:</p>
+<ul>
+<li>Laufmeter oder St&#252;ck, je nach Material.</li>
+</ul>
+<h3>9. Charge hinzuf&#252;gen</h3>
+<p>Eine Charge wird hinzugef&#252;gt durch:</p>
+<ul>
+<li>Scanner mit Enter</li>
+<li>oder Klick auf <code>Hinzuf&#252;gen</code></li>
+</ul>
+<p>Nach dem Hinzuf&#252;gen erscheint die Charge in der Chargenliste.</p>
+<h3>10. Chargenliste pr&#252;fen</h3>
+<p>Vor dem Speichern pr&#252;fen:</p>
+<ul>
+<li>Ist jede Charge vorhanden?</li>
+<li>Stimmt jede Menge?</li>
+<li>Ist die Gesamtmenge plausibel?</li>
+<li>Gibt es doppelte oder falsche Chargen?</li>
+</ul>
+<p>Falsche Chargen k&#246;nnen &#252;ber das <code>X</code> entfernt werden.</p>
+<h2>Etikett drucken</h2>
+<h3>11. Charge ausw&#228;hlen</h3>
+<p>In der Chargenliste die gew&#252;nschte Charge anklicken.</p>
+<h3>12. Etikett drucken</h3>
+<p>Auf <code>Auswahl Drucken</code> klicken.</p>
+<p>Danach:</p>
+<ol>
+<li>Druckdialog pr&#252;fen.</li>
+<li>Etikett drucken.</li>
+<li>Etikett auf das richtige Gebinde oder den richtigen Karton kleben.</li>
+</ol>
+<p>Wichtig:</p>
+<ul>
+<li>Etikett und Charge m&#252;ssen zusammenpassen.</li>
+<li>Bei falschem Etikett nicht weiterbuchen, sondern neu drucken.</li>
+</ul>
+<h2>Speichern</h2>
+<h3>13. Wareneingang buchen</h3>
+<p>Wenn alle Angaben gepr&#252;ft sind, auf <code>Wareneingang Buchen</code> klicken.</p>
+<p>Nach erfolgreichem Speichern:</p>
+<ul>
+<li>Die Maske wird geleert.</li>
+<li>Der Eintrag erscheint in der Historie.</li>
+<li>Die n&#228;chste Ware kann erfasst werden.</li>
+<li>QS erh&#228;lt automatisch eine E-Mail an <code>qsintern@qin-form.de</code>.</li>
+<li>Bei Zustand <code>Schlecht</code> ist diese E-Mail als wichtiger Pr&#252;ffall markiert.</li>
+</ul>
+<h2>Bestehenden Eintrag bearbeiten</h2>
+<p>Wenn ein Eintrag korrigiert werden muss:</p>
+<ol>
+<li>In der Historie auf den Eintrag klicken.</li>
+<li>Die Daten werden in die Maske geladen.</li>
+<li>Korrektur vornehmen.</li>
+<li>Auf <code>&#196;nderungen Speichern</code> klicken.</li>
+</ol>
+<p>Wichtig:</p>
+<ul>
+<li>Nur korrigieren, wenn klar ist, welcher Eintrag gemeint ist.</li>
+<li>Bei Unsicherheit R&#252;cksprache halten.</li>
+</ul>
+<h2>Pflichtfelder</h2>
+<p>Diese Angaben m&#252;ssen vorhanden sein:</p>
+<ul>
+<li>Lieferant</li>
+<li>Lieferschein</li>
+<li>Zustand</li>
+<li>Dickenmessung, wenn das Feld angezeigt wird</li>
+<li>Bemerkung bei Palettentausch</li>
+<li>Bemerkung bei Zustand <code>Schlecht</code></li>
+</ul>
+<h2>H&#228;ufige Fehler</h2>
+<h3>Lieferant fehlt</h3>
+<p>Lieferant ausw&#228;hlen und erneut speichern.</p>
+<h3>Lieferschein fehlt</h3>
+<p>Lieferscheinnummer eintragen und erneut speichern.</p>
+<h3>Bemerkung fehlt</h3>
+<p>Bemerkung eintragen, wenn Palettentausch ausgew&#228;hlt wurde oder Zustand <code>Schlecht</code> ist.</p>
+<h3>Dickenmessung ung&#252;ltig</h3>
+<p>Wert pr&#252;fen und im erlaubten Bereich eintragen.</p>
+<h3>Falsche Charge</h3>
+<p>Falsche Charge aus der Liste entfernen und richtige Charge scannen.</p>
+<h2>Abschlusskontrolle</h2>
+<p>Vor dem Speichern immer pr&#252;fen:</p>
+<ol>
+<li>Lieferant stimmt.</li>
+<li>Lieferschein stimmt.</li>
+<li>Zustand ist richtig ausgew&#228;hlt.</li>
+<li>Dickenmessung ist eingetragen, falls erforderlich.</li>
+<li>Alle Chargen sind vorhanden.</li>
+<li>Alle Mengen stimmen.</li>
+<li>Bemerkung ist vorhanden, falls erforderlich.</li>
+<li>Etiketten wurden korrekt gedruckt und angebracht.</li>
+</ol>
+<h2>Verhalten bei Problemen</h2>
+<p>Bei technischen Problemen:</p>
+<ul>
+<li>Seite einmal neu laden.</li>
+<li>Wenn der Fehler bleibt, Vorgesetzten oder IT informieren.</li>
+</ul>
+<p>Bei Qualit&#228;tsproblemen:</p>
+<ul>
+<li>Ware nicht einfach weiterbuchen.</li>
+<li>QS informieren.</li>
+<li>Bemerkung im System eintragen.</li>
+<li>Wareneingang speichern, damit die QS-Mail ausgel&#246;st wird.</li>
+</ul>
+<div class='doc-footer'><span>Version 3.2.2</span><span>27.04.2026</span></div>
+</div></body></html>
+
+

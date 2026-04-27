@@ -89,6 +89,8 @@ Bei Zustand `Schlecht`:
 2. QS informieren.
 3. Ware nach interner Vorgabe kennzeichnen oder separieren.
 
+Nach dem Speichern sendet das System zusätzlich eine E-Mail an `qsintern@qin-form.de`.
+
 ### 6. Palettentausch auswählen
 
 Bei `Palettentausch` immer `Ja` oder `Nein` auswählen.
@@ -182,6 +184,8 @@ Nach erfolgreichem Speichern:
 - Die Maske wird geleert.
 - Der Eintrag erscheint in der Historie.
 - Die nächste Ware kann erfasst werden.
+- QS erhält automatisch eine E-Mail an `qsintern@qin-form.de`.
+- Bei Zustand `Schlecht` ist diese E-Mail als wichtiger Prüffall markiert.
 
 ## Bestehenden Eintrag bearbeiten
 
@@ -255,3 +259,4 @@ Bei Qualitätsproblemen:
 - Ware nicht einfach weiterbuchen.
 - QS informieren.
 - Bemerkung im System eintragen.
+- Wareneingang speichern, damit die QS-Mail ausgelöst wird.

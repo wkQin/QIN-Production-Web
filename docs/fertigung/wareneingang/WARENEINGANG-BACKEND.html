@@ -1,0 +1,269 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wareneingang Backend</title>
+<style>
+@page { size: A4; margin: 16mm; }
+body { font-family: Arial, Helvetica, sans-serif; color: #111827; font-size: 11pt; line-height: 1.45; max-width: 840px; margin: 0 auto; background: #ffffff; }
+.document { padding: 22px 26px 40px; }
+h1 { font-size: 24pt; margin: 0 0 12px; color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
+h2 { font-size: 16pt; margin: 28px 0 10px; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; page-break-after: avoid; }
+h3 { font-size: 13pt; margin: 18px 0 8px; color: #0f172a; page-break-after: avoid; }
+p { margin: 7px 0 10px; }
+ul, ol { margin: 6px 0 12px 24px; padding: 0; }
+li { margin: 3px 0; }
+code { font-family: Consolas, monospace; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 4px; font-size: 10pt; }
+pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space: pre-wrap; font-family: Consolas, monospace; font-size: 10pt; }
+.meta { color: #475569; font-size: 10pt; margin: 0 0 22px; }
+.doc-header { display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 22px; min-height: 58px; }
+.doc-brand { color: #0f172a; font-weight: 700; font-size: 15pt; line-height: 1.1; margin: 0; }
+.doc-title-small { color: #1e3a8a; font-size: 10pt; font-weight: 700; line-height: 1.15; margin-top: 4px; }
+.doc-logo { width: 170px; height: auto; object-fit: contain; display: block; }
+.doc-footer { display: flex; justify-content: space-between; border-top: 1px solid #cbd5e1; margin-top: 34px; padding-top: 8px; color: #64748b; font-size: 9pt; }
+@media print {
+  body { max-width: none; }
+  .document { padding: 0; }
+  .doc-header { display: flex; }
+  .doc-footer { display: flex; }
+  h1, h2, h3 { break-after: avoid-page; page-break-after: avoid; }
+  p, li { orphans: 3; widows: 3; }
+  li, pre, .doc-header, .doc-footer { break-inside: avoid; page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<div class="document">
+<div class='doc-header'><div><div class='doc-brand'>QIN Production Web</div><div class='doc-title-small'>Wareneingang Backend</div></div><img class='doc-logo' src='../../assets/QIN-Form_Logo_blau_unten_small_transparent.png' alt='QIN-FORM Logo'></div>
+<h1>Wareneingang Backend</h1>
+<div class='meta'>Quelle: WARENEINGANG-BACKEND.md</div>
+<p>Technische Dokumentation f&#252;r die Wareneingang-Funktion in QIN Production Web.</p>
+<p>Stand: Update 3.2.2</p>
+<h2>Zweck</h2>
+<p>Der Wareneingang erfasst angeliefertes Produktionsmaterial, Chargen, Mengen, Zustand der Ware, Dickenmessung und Zusatzinformationen wie Palettentausch. Die Funktion speichert die Daten in der Fertigungsdatenbank und stellt Chargen f&#252;r weitere Fertigungsprozesse bereit.</p>
+<h2>Benutzeroberfl&#228;che</h2>
+<p>Route:</p>
+<p><code>/fertigung/wareneingang</code></p>
+<p>Hauptdatei:</p>
+<p><code>Components/Pages/Fertigung/Wareneingang.razor</code></p>
+<p>Die Seite besteht aus drei Bereichen:</p>
+<ol>
+<li>Stammdaten</li>
+<li>Chargenerfassung</li>
+<li>Historie der letzten Wareneing&#228;nge</li>
+</ol>
+<h2>Wichtige Code-Dateien</h2>
+<ul>
+<li><code>Components/Pages/Fertigung/Wareneingang.razor</code></li>
+<li><code>Data/WareneingangService.cs</code></li>
+<li><code>Data/ActivityLogService.cs</code></li>
+<li><code>Helpers/EmailHelper.cs</code></li>
+<li><code>Helpers/ZebraPrinterHelper.cs</code></li>
+<li><code>Data/SqlManager.cs</code></li>
+</ul>
+<h2>Datenbanken</h2>
+<p>Hauptdatenbank:</p>
+<p><code>qinFSK\table1</code></p>
+<p>Fertigungsdatenbank:</p>
+<p><code>Fertigung</code></p>
+<p>Wichtige Tabellen:</p>
+<ul>
+<li><code>Lieferanten</code></li>
+<li><code>Materialliste</code></li>
+<li><code>Artikelliste</code></li>
+<li><code>Fertigung.dbo.Wareneingang</code></li>
+<li><code>Fertigung.dbo.Chargen</code></li>
+<li>Aktivit&#228;tslog &#252;ber <code>ActivityLogService</code></li>
+</ul>
+<h2>Datenmodelle</h2>
+<h3>WareneingangEntry</h3>
+<p>Quelle:</p>
+<p><code>Data/WareneingangService.cs</code></p>
+<p>Wichtige Felder:</p>
+<ul>
+<li><code>ID</code></li>
+<li><code>Lieferant</code></li>
+<li><code>LS_Nr</code></li>
+<li><code>Pos</code></li>
+<li><code>EBE_NR</code></li>
+<li><code>Menge</code></li>
+<li><code>Artikel</code></li>
+<li><code>Zustand</code></li>
+<li><code>Bemerkung</code></li>
+<li><code>Dickenmessung</code></li>
+<li><code>Chargen</code></li>
+<li><code>Benutzer</code></li>
+<li><code>Eingangsdatum</code></li>
+<li><code>Palettentausch</code></li>
+<li><code>Gebucht</code></li>
+</ul>
+<h3>ChargenEntry</h3>
+<p>Wichtige Felder:</p>
+<ul>
+<li><code>Charge</code></li>
+<li><code>Menge</code></li>
+<li><code>Scanner</code></li>
+<li><code>IsNew01</code></li>
+</ul>
+<p><code>Scanner</code> zeigt, ob eine Charge &#252;ber Scanner oder Tastatur erfasst wurde.</p>
+<p><code>IsNew01</code> zeigt, ob die Charge neu gespeichert werden muss.</p>
+<h2>Ablauf beim Laden</h2>
+<p>Beim &#214;ffnen der Seite passiert Folgendes:</p>
+<ol>
+<li>Lieferanten werden geladen.</li>
+<li>Die offene Wareneingangs-Historie wird geladen.</li>
+<li>Die Historie wird lokal sortiert.</li>
+<li>Die Tabellenhilfe f&#252;r Spaltenbreiten wird per JavaScript aktiviert.</li>
+</ol>
+<h2>Stammdaten</h2>
+<p>Erfasst werden:</p>
+<ul>
+<li>Lieferant</li>
+<li>Lieferschein</li>
+<li>Position</li>
+<li>EBE-Nummer</li>
+<li>Zustand der Ware</li>
+<li>Palettentausch</li>
+<li>Dickenmessung</li>
+<li>Bemerkung</li>
+</ul>
+<p>Die Dickenmessung wird nur angezeigt, wenn der Lieferant als Automotive-relevant erkannt wird.</p>
+<h2>Validierung</h2>
+<p>Vor dem Speichern pr&#252;ft die Oberfl&#228;che:</p>
+<ul>
+<li>Lieferant muss ausgew&#228;hlt sein.</li>
+<li>Lieferschein darf nicht leer sein.</li>
+<li>Zustand muss ausgew&#228;hlt sein.</li>
+<li>Bei Palettentausch ist eine Bemerkung Pflicht.</li>
+<li>Bei Zustand <code>Schlecht</code> ist eine Bemerkung Pflicht.</li>
+<li>Dickenmessung muss numerisch sein.</li>
+<li>Dickenmessung muss zwischen <code>0,23 mm</code> und <code>1,2 mm</code> liegen.</li>
+</ul>
+<p>Die Dickenmessung wird vor dem Speichern normalisiert:</p>
+<ul>
+<li><code>mm</code> wird entfernt.</li>
+<li>Leerzeichen werden entfernt.</li>
+<li>Punkt und Komma werden akzeptiert.</li>
+<li>Gespeichert wird im deutschen Zahlenformat.</li>
+</ul>
+<h2>Chargenerfassung</h2>
+<p>Chargen k&#246;nnen auf zwei Arten erfasst werden:</p>
+<ol>
+<li>Scan oder Eingabe mit Enter</li>
+<li>Klick auf <code>Hinzuf&#252;gen</code></li>
+</ol>
+<p>Beim Hinzuf&#252;gen einer Charge:</p>
+<ul>
+<li>Leere Chargennummern werden ignoriert.</li>
+<li>Leere Menge wird als <code>0</code> behandelt.</li>
+<li>Die Menge wird in der Gesamtsumme ber&#252;cksichtigt.</li>
+<li>Neue Chargen erhalten <code>IsNew01 = 1</code>.</li>
+<li>Der Fokus springt zur&#252;ck in das Chargenfeld.</li>
+</ul>
+<h2>Speichern</h2>
+<p>Methode im UI:</p>
+<p><code>SaveEintrag()</code></p>
+<p>Service-Methode:</p>
+<p><code>WareneingangService.InsertWareneingangAsync(...)</code></p>
+<p>Je nach Bearbeitungsstatus wird ausgef&#252;hrt:</p>
+<ul>
+<li>neuer Eintrag: <code>INSERT INTO Wareneingang</code></li>
+<li>bestehender Eintrag: <code>UPDATE Wareneingang</code></li>
+</ul>
+<p>Gespeichert werden unter anderem:</p>
+<ul>
+<li>Lieferant</li>
+<li>Lieferschein</li>
+<li>Position</li>
+<li>Zustand</li>
+<li>Palettentausch</li>
+<li>Artikel</li>
+<li>Eingangsdatum</li>
+<li>Benutzer</li>
+<li>Bemerkung</li>
+<li>EBE-Nummer</li>
+<li>Dickenmessung</li>
+</ul>
+<p>Danach werden neue Chargen gespeichert.</p>
+<h2>Chargen speichern</h2>
+<p>Methode:</p>
+<p><code>InsertChargenAsync(...)</code></p>
+<p>Es werden nur Chargen gespeichert, bei denen <code>IsNew01 = 1</code> ist.</p>
+<p>Gesetzte Werte:</p>
+<ul>
+<li><code>Wareneingang_ID</code></li>
+<li><code>Charge</code></li>
+<li><code>Aktuelle_Menge</code></li>
+<li><code>Kontrolle</code></li>
+<li><code>Einheit = LM</code></li>
+<li><code>Echte_Menge</code></li>
+<li><code>Liefermenge</code></li>
+<li><code>Status_ID = 2</code></li>
+</ul>
+<h2>Bearbeiten bestehender Eintr&#228;ge</h2>
+<p>Beim Klick auf eine Historienzeile:</p>
+<ol>
+<li>Der Eintrag wird ausgew&#228;hlt.</li>
+<li>Die Maske wechselt in den Bearbeitungsmodus.</li>
+<li>Stammdaten werden in die Felder geladen.</li>
+<li>Chargen werden aus der Datenbank geladen.</li>
+<li>Die Gesamtmenge wird neu berechnet.</li>
+</ol>
+<h2>Historie</h2>
+<p>Die Historie zeigt offene Wareneing&#228;nge.</p>
+<p>SQL-Basis:</p>
+<ul>
+<li>Tabelle <code>Wareneingang</code></li>
+<li>Filter <code>Gebucht = 0</code></li>
+<li>Chargenanzahl &#252;ber Unterabfrage aus <code>Chargen</code></li>
+</ul>
+<p>Die Sortierung der Historie erfolgt in der Oberfl&#228;che.</p>
+<h2>Etikettendruck</h2>
+<p>Methode im UI:</p>
+<p><code>PrintSelectedCharge()</code></p>
+<p>Helper:</p>
+<p><code>ZebraPrinterHelper.PrintSingleChargeQr(...)</code></p>
+<p>Das Label enth&#228;lt:</p>
+<ul>
+<li>Charge</li>
+<li>Menge</li>
+<li>Material</li>
+<li>Eingangsdatum</li>
+</ul>
+<p>Format:</p>
+<p>55 x 28 mm</p>
+<h2>QS-Mail</h2>
+<p>Nach erfolgreichem Speichern wird eine Mail an QS vorbereitet.</p>
+<p>Empf&#228;nger:</p>
+<p><code>qsintern@qin-form.de</code></p>
+<p>Die Mail wird nach dem Speichern im Hintergrund ausgel&#246;st.</p>
+<h2>Aktivit&#228;tslog</h2>
+<p>Nach dem Speichern wird ein Aktivit&#228;tslog geschrieben.</p>
+<p>Beispiele:</p>
+<ul>
+<li>Neuer Wareneingang erstellt</li>
+<li>Wareneingang aktualisiert</li>
+</ul>
+<h2>Bekannte technische Hinweise</h2>
+<ul>
+<li>Die Materialliste wird geladen, ist in der aktuellen Oberfl&#228;che aber nicht als sichtbares Auswahlfeld eingebunden.</li>
+<li>Beim Bearbeiten werden vorhandene Chargen angezeigt. Gespeichert werden nur neu hinzugef&#252;gte Chargen.</li>
+<li>Die Gesamtmenge wird in der Oberfl&#228;che berechnet.</li>
+<li>Wenn kein Datenbankmechanismus f&#252;r <code>Wareneingang.Menge</code> existiert, muss gepr&#252;ft werden, ob diese Spalte immer aktuell ist.</li>
+</ul>
+<h2>Pr&#252;fpunkte nach &#196;nderungen</h2>
+<p>Nach technischen &#196;nderungen am Wareneingang pr&#252;fen:</p>
+<ol>
+<li>Seite <code>/fertigung/wareneingang</code> &#246;ffnet ohne Fehler.</li>
+<li>Lieferanten werden geladen.</li>
+<li>Chargen k&#246;nnen gescannt und manuell hinzugef&#252;gt werden.</li>
+<li>Dickenmessung wird korrekt validiert.</li>
+<li>Speichern erzeugt Wareneingang und Chargen.</li>
+<li>Historie aktualisiert sich.</li>
+<li>Etikettendruck &#246;ffnet die Druckansicht.</li>
+<li>Aktivit&#228;tslog wird geschrieben.</li>
+</ol>
+<div class='doc-footer'><span>Version 3.2.2</span><span>27.04.2026</span></div>
+</div></body></html>
+
+

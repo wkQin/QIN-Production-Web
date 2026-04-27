@@ -40,6 +40,55 @@ Regeln:
 - Technische Details nur aufnehmen, wenn sie später für Wartung oder Fehlersuche wichtig sind.
 - Das reine Erstellen oder Senden einer Benachrichtigung ist keine Projektänderung und kommt nicht als eigener Update-Log-Eintrag hinein.
 
+## Dokumentationen
+
+Dokumentationen sollen sauber strukturiert, gut nach Word kopierbar, als PDF speicherbar und ausdruckbar sein.
+
+Wenn der Nutzer eine Dokumentation für einen Bereich möchte, immer prüfen, welche Dokumente sinnvoll sind.
+
+Standard-Aufteilung:
+
+- `<BEREICH>-DOKUMENTATION.md` für die normale fachliche Dokumentation.
+- `<BEREICH>-BACKEND.md` für technische Abläufe, Datenbank, Services und Code-Hinweise.
+- `<BEREICH>-ARBEITSANWEISUNG.md` für klare Schritt-für-Schritt-Anweisungen für Mitarbeitende.
+- Wenn druckbare Dateien gewünscht sind, zusätzlich passende `.html`-Dateien erstellen.
+
+Ordner und Benennung:
+
+- Dokumente thematisch in eigene Ordner legen, zum Beispiel `docs/fertigung/wareneingang/`.
+- Dateinamen klar und einheitlich schreiben, zum Beispiel `WARENEINGANG-DOKUMENTATION.md`.
+- Technische Dokumente `BACKEND` nennen, nicht `Technical`.
+- Arbeitsanweisungen wirklich als Arbeitsanweisung schreiben, nicht als technische Doku.
+- Alte Vorlagen, doppelte Inhalte und falsche Dateinamen bereinigen, wenn sie durch die neue Struktur ersetzt werden.
+
+Inhalt:
+
+- Allgemeine Dokumentationen erklären Zweck, Zielgruppe, Funktionen, Ablauf, Verantwortlichkeiten und Ergebnis.
+- Backend-Dokumentationen erklären relevante Dateien, Tabellen, Services, Validierung, Speichern, Mails, Logs und Prüfpunkte.
+- Arbeitsanweisungen sind einfach, direkt und für den Alltag geschrieben.
+- Wichtige Sonderfälle aufnehmen, zum Beispiel automatische QS-Mails oder Pflichtfelder.
+- Keine unnötig technischen Formulierungen in Arbeitsanweisungen.
+
+Layout:
+
+- Überschriften, Absätze und Listen sauber trennen.
+- Keine harten Zeilen- oder Seitenumbrüche mitten im normalen Fließtext setzen.
+- `Shift + Enter` nur bewusst für kurze zusammengehörige Zeilen nutzen, zum Beispiel in Benachrichtigungen oder kompakten Hinweisen.
+- Bei Druck- oder HTML-Dokumenten darauf achten, dass Überschriften nicht allein am Seitenende stehen.
+- Listenpunkte und kurze Absätze möglichst nicht mitten über zwei Seiten trennen.
+- Absätze lieber sauber neu beginnen, statt mitten im Satz umzubrechen.
+- Lange Listen in sinnvolle Abschnitte teilen, damit sie in Word und PDF gut aussehen.
+
+HTML und PDF:
+
+- Das QIN-FORM-Logo in der normalen Dokument-Kopfzeile oben rechts platzieren.
+- Links in der Kopfzeile den Dokumentnamen oder `QIN Production Web` anzeigen.
+- Version und Datum schlank in die Fußzeile setzen.
+- Keine instabilen `position: fixed` Druck-Kopfzeilen verwenden, wenn der Browserdruck dadurch Logo oder Text verschiebt.
+- Für Chrome oder Edge beim Speichern als PDF die Browser-Option `Kopf- und Fußzeilen` ausschalten, damit kein Dateipfad und keine Browser-Seitenzahl eingefügt werden.
+- Druck-CSS so setzen, dass Überschriften, Listenpunkte und kurze Absätze möglichst nicht unschön getrennt werden.
+- Vor dem Fertigmelden kurz prüfen, ob Kopfzeile, Fußzeile, Logo und Seitenumbrüche ordentlich aussehen.
+
 ## Benachrichtigungen
 
 Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.

@@ -16,6 +16,12 @@ Dokumente:
 - `WARENEINGANG-BACKEND.md`
 - `WARENEINGANG-ARBEITSANWEISUNG.md`
 
+Word-/PDF-Versionen:
+
+- `WARENEINGANG-DOKUMENTATION.html`
+- `WARENEINGANG-BACKEND.html`
+- `WARENEINGANG-ARBEITSANWEISUNG.html`
+
 ### Endkontrolle Sauberraum
 
 Ordner:
@@ -54,12 +60,15 @@ Kurze, druckbare Schritt-für-Schritt-Anleitung für den Arbeitsplatz.
 
 ## Word und PDF
 
-Die Dokumente sind so geschrieben, dass sie einfach nach Word kopiert und anschließend als PDF gespeichert oder gedruckt werden können.
+Die Markdown-Dateien sind die bearbeitbaren Quelldokumente.
+
+Für Word und PDF sollen die HTML-Dateien verwendet werden, weil Word daraus Überschriften, Abstände und Listen deutlich besser übernimmt.
 
 Empfehlung:
 
-1. Markdown-Datei öffnen.
-2. Inhalt nach Word kopieren.
-3. Überschriften prüfen.
-4. Bei Bedarf Firmenkopf, Datum und Freigabe ergänzen.
-5. Als PDF exportieren.
+1. Passende `.html`-Datei im Browser öffnen.
+2. Im Browser alles markieren und kopieren.
+3. Inhalt in Word einfügen.
+4. Überschriften und Seitenumbrüche kurz prüfen.
+5. Bei Bedarf Firmenkopf, Datum und Freigabe ergänzen.
+6. Als PDF exportieren.
