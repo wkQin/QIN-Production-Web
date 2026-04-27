@@ -40,7 +40,7 @@ Regeln:
 - Technische Details nur aufnehmen, wenn sie später für Wartung oder Fehlersuche wichtig sind.
 - Das reine Erstellen oder Senden einer Benachrichtigung ist keine Projektänderung und kommt nicht als eigener Update-Log-Eintrag hinein.
 
-## Dokumentationen
+## Dokumentationen & Docu
 
 Dokumentationen sollen sauber strukturiert, gut nach Word kopierbar, als PDF speicherbar und ausdruckbar sein.
 
