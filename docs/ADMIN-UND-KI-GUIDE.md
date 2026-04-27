@@ -1,11 +1,17 @@
 # QIN Production Web: Admin- und KI-Guide
 
-Diese Datei ist die zentrale Kurz-Doku fuer wiederkehrende Admin-Aufgaben und KI-Anweisungen.
-Sie kann nach und nach pro Tab erweitert werden.
+Kurze Arbeitsregeln für Admin-Aufgaben, Dokumentation und KI-Unterstützung im Projekt.
 
-## DB-Informationen
+## Grundregeln
 
-Quelle: `Data/SqlManager.cs`
+- Immer echte deutsche Buchstaben verwenden: `ä`, `ö`, `ü` und `ß`, nicht `ae`, `oe`, `ue` oder `ss`.
+- Änderungen kurz, verständlich und nutzerbezogen beschreiben.
+- Keine unnötig technischen Formulierungen in Nutzertexten.
+- Keine fertige aktuelle Release-Meldung direkt in diesem Guide hinterlegen.
+
+## Datenbank
+
+Quelle für Verbindungsdaten: `Data/SqlManager.cs`
 
 - Server: `QINSQL064`
 - Hauptdatenbank: `qinFSK\table1`
@@ -13,44 +19,52 @@ Quelle: `Data/SqlManager.cs`
 - Benutzer: `db.user`
 - Passwort: `232323`
 
-Wichtige Klarstellung:
+Wichtig:
 
-- Es gibt zwei Datenbanken: `qinFSK\table1` und `Fertigung`.
-- `dbo` ist jeweils nur das Schema innerhalb der Datenbank.
+- `qinFSK\table1` und `Fertigung` sind zwei getrennte Datenbanken.
+- `dbo` ist jeweils nur das Schema innerhalb einer Datenbank.
 - `dbo.Table1` ist keine eigene Datenbank.
 - Benutzerdaten liegen aktuell in `qinFSK\table1`, zum Beispiel in `dbo.LoginDaten`.
-- Fertigungsbezogene Tabellen wie der Schichtplan sollen in `Fertigung` unter dem Schema `dbo` angelegt werden.
+- Fertigungsbezogene Tabellen wie der Schichtplan gehören in `Fertigung` unter `dbo`.
 
-## Benachrichtigungen schreiben
+## Update-Log
 
-Benachrichtigungen immer per `INSERT` in die Tabelle `Alerts` schreiben.
+Bei jeder Projektänderung muss `docs/UPDATE-LOG.md` aktualisiert werden.
 
-Vor jeder Update-Benachrichtigung:
+Regeln:
 
-- Zuerst `docs/UPDATE-LOG.md` lesen.
-- Pruefen, welche Aenderungen zuletzt gemacht wurden und zu welcher Update-Version sie gehoeren.
-- Die Benachrichtigung aus dem Update-Log kurz und nutzerverstaendlich formulieren.
-- Das Update-Log nicht ungefragt als fertige Meldung kopieren.
+- Die Änderung der passenden Update-Version zuordnen.
+- Wenn keine passende Version vorhanden ist, eine neue Update-Überschrift anlegen.
+- Kurz schreiben, was geändert wurde.
+- Nutzerrelevante Änderungen verständlich formulieren.
+- Technische Details nur aufnehmen, wenn sie später für Wartung oder Fehlersuche wichtig sind.
+- Das reine Erstellen oder Senden einer Benachrichtigung ist keine Projektänderung und kommt nicht als eigener Update-Log-Eintrag hinein.
 
-Bedeutung fuer KI:
+## Benachrichtigungen
 
-- Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.
-- In diesem Fall nicht nur einen Textvorschlag liefern.
-- In diesem Fall nicht nur den Guide oder ein Markdown-Beispiel anpassen.
-- Die KI soll den Text formulieren, den `INSERT` ausfuehren und den neuen Datensatz kurz pruefen.
+Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.
 
-Pflichtregeln:
+Immer:
 
-- Titel immer im Format `Update (Version) Bereich` schreiben.
-- Beispiel fuer den Titel: `Update (3.2.0) Schichtplan`.
-- Aenderungen kurz, klar und fuer Nutzer verstaendlich formulieren.
-- Pro Aenderung nur einen kurzen Satz schreiben.
-- Deutsche Umlaute und `ß` normal schreiben, also `ä`, `ö`, `ü` und `ß` benutzen.
-- Immer echte deutsche Buchstaben verwenden, also `ä`, `ö`, `ü` und `ß` statt `ae`, `oe`, `ue` oder `ss`.
-- Wenn eine Schrift diese Zeichen nicht sauber darstellt, eine andere Schrift waehlen.
-- In der Nachricht echte Zeilenumbrueche verwenden.
-- Wenn die Meldung im UI geschrieben wird: `Shift + Enter` fuer neue Zeilen nutzen.
-- Im Guide keine fertige neue Benachrichtigung hinterlegen.
+- Vorher `docs/UPDATE-LOG.md` lesen.
+- Falls die aktuelle Projektänderung dort noch fehlt, zuerst den Update-Log ergänzen.
+- Aus dem Update-Log eine kurze, nutzerverständliche Meldung formulieren.
+- Das Senden der Benachrichtigung selbst nicht in den Update-Log schreiben.
+- Den `INSERT` wirklich ausführen.
+- Danach den neuesten Datensatz kurz prüfen.
+
+Titel:
+
+- Format: `Update (Version) Bereich`
+- Beispiel: `Update (3.2.0) Schichtplan`
+
+Nachricht:
+
+- Pro Zeile ein kurzer Satz.
+- Echte Zeilenumbrüche verwenden.
+- Änderungen zuerst, Umbenennungen zuletzt.
+- Keine langen Einleitungen.
+- Im UI für neue Zeilen `Shift + Enter` nutzen.
 
 Verwendete Spalten:
 
@@ -60,7 +74,7 @@ Verwendete Spalten:
 - `CreatedBy`
 - `TargetGroup`
 
-Vorlage fuer ein Insert:
+Vorlage:
 
 ```sql
 INSERT INTO Alerts (Title, Message, CreatedAt, CreatedBy, TargetGroup)
@@ -75,27 +89,7 @@ VALUES (
 );
 ```
 
-Wichtig fuer KI und manuelle Eingaben:
-
-- Immer ein `INSERT INTO Alerts (...) VALUES (...)` verwenden.
-- In der Nachricht immer echte Zeilenumbrueche verwenden.
-- Im UI fuer neue Zeilen immer `Shift + Enter` verwenden.
-- Texte kurz, klar und leicht verstaendlich formulieren.
-- Titel immer im Format `Update (Version) Bereich` schreiben.
-- Deutsche Buchstaben wie `ä`, `ö`, `ü` und `ß` bewusst verwenden.
-- Keine Umschreibungen wie `ae`, `oe`, `ue` oder `ss` verwenden, wenn eigentlich `ä`, `ö`, `ü` oder `ß` gemeint ist.
-- Wenn die aktuelle Schrift diese Zeichen nicht sauber anzeigt, eine andere Schrift verwenden.
-- Keine aktuelle Release-Meldung direkt im Guide ausformulieren.
-- Nach dem Insert den neuen Datensatz kurz pruefen.
-
-Empfohlene Schreibweise:
-
-- Pro Zeile ein kurzer Satz.
-- Keine langen Einleitungen.
-- Aenderungen zuerst, Umbenennungen zuletzt.
-- Keine internen Fachsaetze oder unnoetig technische Formulierungen.
-
-Beispiel:
+Beispieltext:
 
 ```text
 Zeiterfassung springt bei Buchungen jetzt direkt zum Buchungsdatum.
@@ -103,45 +97,29 @@ Wareneingang hat jetzt eine Dickenmessung.
 Kunde IAC wurde durch Artifex ersetzt.
 ```
 
-## KI-Kurzanweisung
+## KI-Checkliste
 
-Wenn eine KI eine neue Benachrichtigung anlegen soll, dann standardmaessig:
+Bei einer Benachrichtigung:
 
-1. `Data/SqlManager.cs` fuer die DB-Daten pruefen.
-2. `docs/UPDATE-LOG.md` lesen und die passende Update-Version/Aenderungen daraus ableiten.
-3. Titel immer als `Update (Version) Bereich` formulieren.
-4. Nachricht kurz, verstaendlich, mit echten Zeilenumbruechen und mit echten deutschen Buchstaben schreiben.
-5. Wenn die Schrift `ä`, `ö`, `ü` oder `ß` nicht sauber darstellt, eine andere Schrift waehlen.
-6. Erst den Text neu formulieren und nicht aus dem Guide als fertige Meldung kopieren.
-7. Den `INSERT` wirklich ausfuehren.
-8. Den neuesten Datensatz direkt danach kurz pruefen.
-9. Dem Nutzer kurz bestaetigen, was eingefuegt wurde.
+1. `Data/SqlManager.cs` für DB-Daten prüfen.
+2. `docs/UPDATE-LOG.md` lesen.
+3. Fehlende Projektänderungen zuerst im Update-Log ergänzen.
+4. Benachrichtigung formulieren, aber das Senden selbst nicht in den Update-Log schreiben.
+5. Titel im Format `Update (Version) Bereich` setzen.
+6. Nachricht kurz, klar und mit echten deutschen Buchstaben schreiben.
+7. `INSERT INTO Alerts (...) VALUES (...)` ausführen.
+8. Neuesten Datensatz prüfen.
+9. Dem Nutzer kurz bestätigen, was eingefügt wurde.
 
-Kurzprompt fuer spaeter:
+Kurzprompt:
 
 ```text
-Lege eine neue Benachrichtigung per INSERT in Alerts an. Wenn ich Benachrichtigung schreiben sage, ist immer ein echter DB-Insert in Alerts gemeint. Lies vorher docs/UPDATE-LOG.md, nutze für den Titel das Format Update (Version) Bereich, schreibe pro Zeile einen kurzen Satz, benutze immer echte deutsche Buchstaben wie ä, ö, ü und ß statt ae, oe, ue oder ss, führe den Insert aus und prüfe danach kurz den neuesten Datensatz.
+Lege eine neue Benachrichtigung per INSERT in Alerts an. Lies vorher docs/UPDATE-LOG.md. Ergänze fehlende Projektänderungen zuerst im Update-Log, aber schreibe das Senden der Benachrichtigung selbst nicht hinein. Nutze den Titel Update (Version) Bereich, schreibe kurze Sätze mit echten Zeilenumbrüchen und verwende echte deutsche Buchstaben wie ä, ö, ü und ß. Führe den Insert aus und prüfe danach den neuesten Datensatz.
 ```
 
 ## Tab-Dokumentation
 
-Diese Struktur kann fuer weitere Bereiche wiederverwendet werden.
-
-### Einstellungen
-
-Funktionen:
-
-- Persoenliche Anzeigeeinstellungen speichern
-- System-Ankuendigungen an alle Nutzer senden
-
-Kurztutorial:
-
-1. Titel eintragen.
-2. Nachricht mit kurzen Saetzen schreiben.
-3. Fuer neue Zeilen `Shift + Enter` nutzen.
-4. Absenden.
-
-### Vorlage fuer weitere Tabs
+Diese Struktur kann für weitere Bereiche wiederverwendet werden:
 
 ```text
 ## <Tab-Name>

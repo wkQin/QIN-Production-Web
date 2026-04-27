@@ -27,6 +27,8 @@ namespace QIN_Production_Web.Data.Zeiterfassung
         private readonly ZeiterfassungMath _math;
         private readonly ZeiterfassungCalendarRepository _calendarRepo = new();
 
+        private sealed record ExportBooking(Booking Booking, string? ChipId, string? DeviceName);
+
         public ZeiterfassungExcelExportService(ZeiterfassungMath math)
         {
             _math = math;
@@ -42,7 +44,7 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             using var wb = new XLWorkbook();
 
             foreach (var user in users)
-                CreateUserWorksheet(wb, user.Name, year, month);
+                CreateUserWorksheet(wb, user.Name, user.Rechte, year, month);
 
             wb.Worksheets.First().SetTabActive();
 
@@ -51,13 +53,15 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             return ms.ToArray();
         }
 
-        private void CreateUserWorksheet(XLWorkbook wb, string benutzer, int year, int month)
+        private void CreateUserWorksheet(XLWorkbook wb, string benutzer, string rechte, int year, int month)
         {
             var formattedUser = FormatUserLastFirst(benutzer);
             var ws = wb.Worksheets.Add(SanitizeWorksheetName(formattedUser));
 
-            var bookings = LoadBookingsFromDatabase(year, month, benutzer);
+            var exportBookings = LoadBookingsFromDatabase(year, month, benutzer);
+            var bookings = exportBookings.Select(b => b.Booking).ToList();
             var results = _math.CalculateMonth(year, month, bookings);
+            bool userHasManagementRights = HasManagementRights(rechte);
 
             string monthName = GetGermanMonthName(month);
 
@@ -67,9 +71,9 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             ws.Cell("A2").Value = $"Benutzer: {formattedUser}";
             ws.Cell("A3").Value = $"Monat: {monthName} {year}";
 
-            ws.Range("A1:F1").Merge();
-            ws.Range("A2:F2").Merge();
-            ws.Range("A3:F3").Merge();
+            ws.Range("A1:G1").Merge();
+            ws.Range("A2:G2").Merge();
+            ws.Range("A3:G3").Merge();
 
             ws.Cell("A5").Value = "Datum";
             ws.Cell("B5").Value = "Kommen";
@@ -77,8 +81,9 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             ws.Cell("D5").Value = "Abwesenheit";
             ws.Cell("E5").Value = "Homeoffice";
             ws.Cell("F5").Value = "Bemerkung";
+            ws.Cell("G5").Value = "Manueller Nachtrag";
 
-            var header = ws.Range("A5:F5");
+            var header = ws.Range("A5:G5");
             header.Style.Font.Bold = true;
             header.Style.Fill.BackgroundColor = XLColor.LightGray;
 
@@ -135,15 +140,19 @@ namespace QIN_Production_Web.Data.Zeiterfassung
                     absenceText = holiday;
                 ws.Cell(row, 4).Value = absenceText;
 
-                var dayBookings = bookings
-                    .Where(b => DateOnly.FromDateTime(b.Timestamp) == dateOnly)
-                    .OrderBy(b => b.Timestamp)
+                var dayBookings = exportBookings
+                    .Where(b => DateOnly.FromDateTime(b.Booking.Timestamp) == dateOnly)
+                    .OrderBy(b => b.Booking.Timestamp)
                     .ToList();
 
-                ws.Cell(row, 5).Value = dayBookings.Any(b => b.IsHomeOffice) ? "Ja" : "";
+                ws.Cell(row, 5).Value = dayBookings.Any(b => b.Booking.IsHomeOffice) ? "Ja" : "";
+
+                var workerManualBookings = !userHasManagementRights
+                    ? dayBookings.Where(IsWorkerManualBooking).ToList()
+                    : new List<ExportBooking>();
 
                 var notes = dayBookings
-                    .Select(b => b.Note?.Trim())
+                    .Select(b => b.Booking.Note?.Trim())
                     .Where(n => !string.IsNullOrWhiteSpace(n))
                     .Distinct()
                     .ToList();
@@ -158,21 +167,38 @@ namespace QIN_Production_Web.Data.Zeiterfassung
                     ws.Cell(row, 6).Value = "";
                 }
 
+                if (workerManualBookings.Count > 0)
+                {
+                    var manualActions = workerManualBookings
+                        .Select(b => $"{GetActionText(b.Booking.Action)} {ToGermanTime(b.Booking.Timestamp)}")
+                        .Distinct()
+                        .ToList();
+
+                    ws.Cell(row, 7).Value = $"ACHTUNG: Manuell durch Mitarbeiter nachgetragen ({string.Join(", ", manualActions)})";
+                    ws.Cell(row, 7).Style.Alignment.WrapText = true;
+                    ws.Cell(row, 7).Style.Font.FontColor = XLColor.DarkRed;
+                    ws.Cell(row, 7).Style.Font.Bold = true;
+                }
+                else
+                {
+                    ws.Cell(row, 7).Value = "";
+                }
+
                 if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
                 {
-                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.LightGray;
+                    ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.LightGray;
                 }
 
                 if (hasQuestionMark)
                 {
-                    ws.Range(row, 1, row, 6).Style.Fill.BackgroundColor = XLColor.FromHtml("#33F44336");
+                    ws.Range(row, 1, row, 7).Style.Fill.BackgroundColor = XLColor.FromHtml("#33F44336");
                 }
 
                 row++;
             }
 
-            ws.Range(5, 1, row - 1, 6).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-            ws.Range(5, 1, row - 1, 6).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(5, 1, row - 1, 7).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            ws.Range(5, 1, row - 1, 7).Style.Border.InsideBorder = XLBorderStyleValues.Thin;
 
             ws.Column(1).Width = 22;
             ws.Column(2).Width = 15;
@@ -180,9 +206,10 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             ws.Column(4).Width = 18;
             ws.Column(5).Width = 14;
             ws.Column(6).Width = 30;
+            ws.Column(7).Width = 36;
 
             ws.SheetView.FreezeRows(5);
-            ws.Range(5, 1, row - 1, 6).SetAutoFilter();
+            ws.Range(5, 1, row - 1, 7).SetAutoFilter();
         }
 
         private static (string Start, string End, bool HasMissingMark) GetStartEndStrings(
@@ -298,14 +325,14 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             return list;
         }
 
-        private static List<Booking> LoadBookingsFromDatabase(int year, int month, string benutzer)
+        private static List<ExportBooking> LoadBookingsFromDatabase(int year, int month, string benutzer)
         {
-            var list = new List<Booking>();
+            var list = new List<ExportBooking>();
             var start = new DateTime(year, month, 1);
             var end = start.AddMonths(1);
 
             const string sql = @"
-                SELECT Id, Zeitstempel, Aktion, Manuel, Homeoffice, Bemerkung
+                SELECT Id, Zeitstempel, Aktion, Manuel, Homeoffice, Bemerkung, ChipId, Geraetename
                 FROM dbo.Zeiterfassung
                 WHERE Benutzername = @user
                 AND Zeitstempel >= @start AND Zeitstempel < @end
@@ -323,17 +350,37 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             {
                 var id = r.GetInt32(0);
                 string? note = r.IsDBNull(5) ? null : r.GetString(5);
+                string? chipId = r.IsDBNull(6) ? null : r.GetString(6);
+                string? deviceName = r.IsDBNull(7) ? null : r.GetString(7);
+                bool isManual = !r.IsDBNull(3) && Convert.ToInt32(r[3]) != 0;
 
-                list.Add(new Booking(id,
+                var booking = new Booking(
+                    id,
                     r.GetDateTime(1),
                     ParseAction(r.GetString(2)),
-                    !r.IsDBNull(3) && Convert.ToInt32(r[3]) != 0,
+                    isManual,
                     !r.IsDBNull(4) && Convert.ToInt32(r[4]) != 0,
-                    note
-                ));
+                    note);
+
+                list.Add(new ExportBooking(booking, chipId, deviceName));
             }
             return list;
         }
+
+        private static bool HasManagementRights(string rechte) =>
+            (rechte ?? string.Empty)
+                .Split(new[] { ',', ';', '|', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Any(role =>
+                    string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(role, "Verwaltung", StringComparison.OrdinalIgnoreCase));
+
+        private static bool IsWorkerManualBooking(ExportBooking exportBooking) =>
+            exportBooking.Booking.IsManual ||
+            string.Equals(exportBooking.ChipId, "Manuell", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(exportBooking.DeviceName, "QIN-Production-Tool", StringComparison.OrdinalIgnoreCase);
+
+        private static string GetActionText(BookingAction action) =>
+            action == BookingAction.Gehen ? "Gehen" : "Kommen";
 
         private static BookingAction ParseAction(string raw) =>
             raw.ToUpper() == "GEHEN" ? BookingAction.Gehen : BookingAction.Kommen;

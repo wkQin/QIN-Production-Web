@@ -1,4 +1,4 @@
-# Schichtplan Produktionsmonitor Technical
+﻿# Schichtplan Produktionsmonitor Backend
 
 ## Zweck
 
@@ -19,7 +19,7 @@ Relevante Dateien:
 - [ShiftPlanBoard.razor](/Components/Shared/ShiftPlanBoard.razor:1)
 - [ShiftPlanBoard.razor.css](/Components/Shared/ShiftPlanBoard.razor.css:1)
 - [App.razor](/Components/App.razor:1)
-- [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1)
+- [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/schichtplan-produktionsmonitor/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1)
 
 ## Arbeitsplatzstamm Sonstiges
 
@@ -27,7 +27,7 @@ Der Bereich `Sonstiges` ist im SQL-Stamm absichtlich auf genau einen Arbeitsplat
 
 - `Sonstiges`
 
-Die Konsolidierung in [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1) macht dabei Folgendes:
+Die Konsolidierung in [SCHICHTPLAN-PRODUKTIONSMONITOR.sql](/docs/fertigung/schichtplan-produktionsmonitor/SCHICHTPLAN-PRODUKTIONSMONITOR.sql:1) macht dabei Folgendes:
 
 1. Falls noch kein Arbeitsplatz `Sonstiges` existiert, wird ein vorhandener Sonstiges-Platz zum kanonischen Arbeitsplatz umbenannt.
 2. Vorhandene Schichtplan-Einträge werden auf diesen kanonischen Arbeitsplatz migriert.
@@ -293,3 +293,4 @@ Zusätzlich wäre eine eigene Konfiguration für Bereichsfarben und Sichtbarkeit
 - UI-Komponente: [ShiftPlanBoard.razor](/Components/Shared/ShiftPlanBoard.razor:1)
 - Styling: [ShiftPlanBoard.razor.css](/Components/Shared/ShiftPlanBoard.razor.css:1)
 - JS-Autoscaling: [App.razor](/Components/App.razor:1)
+

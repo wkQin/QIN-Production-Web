@@ -1,4 +1,4 @@
-# Endkontrolle Sauberraum Technical
+﻿# Endkontrolle Sauberraum Backend
 
 ## Zweck
 
@@ -226,3 +226,4 @@ Die Datenbank verwendet weiterhin einige historische Feldnamen:
 - Deshalb muss auch die Drag-Scroll-Logik an den Layout-Scrollcontainer gebunden werden.
 - Die Tabellenzeile bleibt lokal markiert ueber `SelectedEintragId`.
 - Das Formular arbeitet im Edit-Fall mit einer geklonten Instanz ueber `CloneEintrag(...)`.
+
