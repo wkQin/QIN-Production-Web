@@ -29,8 +29,8 @@ namespace QIN_Production_Web.Data
         
         public int Gutteile { get; set; }
 
-        public int SchlechtIntern => Fusseln + Nadelstiche + Pickel + Dekorfehler + Farbfehler + Flecken + Nebel + Vertiefung;
-        public int SchlechtExtern => Oelflecken + Tiefziehfehler + Fraesfehler + Knicke + Kratzer;
+        public int SchlechtExtern => Fusseln + Nadelstiche + Pickel + Dekorfehler + Farbfehler + Flecken + Nebel + Vertiefung;
+        public int SchlechtIntern => Oelflecken + Tiefziehfehler + Fraesfehler + Knicke + Kratzer;
         public int Schlechtteile => SchlechtIntern + SchlechtExtern;
         public int Gesamt => Gutteile + Schlechtteile;
     }

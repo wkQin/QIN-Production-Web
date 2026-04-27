@@ -25,6 +25,13 @@ Wichtige Klarstellung:
 
 Benachrichtigungen immer per `INSERT` in die Tabelle `Alerts` schreiben.
 
+Vor jeder Update-Benachrichtigung:
+
+- Zuerst `docs/UPDATE-LOG.md` lesen.
+- Pruefen, welche Aenderungen zuletzt gemacht wurden und zu welcher Update-Version sie gehoeren.
+- Die Benachrichtigung aus dem Update-Log kurz und nutzerverstaendlich formulieren.
+- Das Update-Log nicht ungefragt als fertige Meldung kopieren.
+
 Bedeutung fuer KI:
 
 - Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.
@@ -39,6 +46,7 @@ Pflichtregeln:
 - Aenderungen kurz, klar und fuer Nutzer verstaendlich formulieren.
 - Pro Aenderung nur einen kurzen Satz schreiben.
 - Deutsche Umlaute und `ß` normal schreiben, also `ä`, `ö`, `ü` und `ß` benutzen.
+- Immer echte deutsche Buchstaben verwenden, also `ä`, `ö`, `ü` und `ß` statt `ae`, `oe`, `ue` oder `ss`.
 - Wenn eine Schrift diese Zeichen nicht sauber darstellt, eine andere Schrift waehlen.
 - In der Nachricht echte Zeilenumbrueche verwenden.
 - Wenn die Meldung im UI geschrieben wird: `Shift + Enter` fuer neue Zeilen nutzen.
@@ -75,6 +83,7 @@ Wichtig fuer KI und manuelle Eingaben:
 - Texte kurz, klar und leicht verstaendlich formulieren.
 - Titel immer im Format `Update (Version) Bereich` schreiben.
 - Deutsche Buchstaben wie `ä`, `ö`, `ü` und `ß` bewusst verwenden.
+- Keine Umschreibungen wie `ae`, `oe`, `ue` oder `ss` verwenden, wenn eigentlich `ä`, `ö`, `ü` oder `ß` gemeint ist.
 - Wenn die aktuelle Schrift diese Zeichen nicht sauber anzeigt, eine andere Schrift verwenden.
 - Keine aktuelle Release-Meldung direkt im Guide ausformulieren.
 - Nach dem Insert den neuen Datensatz kurz pruefen.
@@ -99,18 +108,19 @@ Kunde IAC wurde durch Artifex ersetzt.
 Wenn eine KI eine neue Benachrichtigung anlegen soll, dann standardmaessig:
 
 1. `Data/SqlManager.cs` fuer die DB-Daten pruefen.
-2. Titel immer als `Update (Version) Bereich` formulieren.
-3. Nachricht kurz, verstaendlich, mit echten Zeilenumbruechen und mit echten deutschen Buchstaben schreiben.
-4. Wenn die Schrift `ä`, `ö`, `ü` oder `ß` nicht sauber darstellt, eine andere Schrift waehlen.
-5. Erst den Text neu formulieren und nicht aus dem Guide als fertige Meldung kopieren.
-6. Den `INSERT` wirklich ausfuehren.
-7. Den neuesten Datensatz direkt danach kurz pruefen.
-8. Dem Nutzer kurz bestaetigen, was eingefuegt wurde.
+2. `docs/UPDATE-LOG.md` lesen und die passende Update-Version/Aenderungen daraus ableiten.
+3. Titel immer als `Update (Version) Bereich` formulieren.
+4. Nachricht kurz, verstaendlich, mit echten Zeilenumbruechen und mit echten deutschen Buchstaben schreiben.
+5. Wenn die Schrift `ä`, `ö`, `ü` oder `ß` nicht sauber darstellt, eine andere Schrift waehlen.
+6. Erst den Text neu formulieren und nicht aus dem Guide als fertige Meldung kopieren.
+7. Den `INSERT` wirklich ausfuehren.
+8. Den neuesten Datensatz direkt danach kurz pruefen.
+9. Dem Nutzer kurz bestaetigen, was eingefuegt wurde.
 
 Kurzprompt fuer spaeter:
 
 ```text
-Lege eine neue Benachrichtigung per INSERT in Alerts an. Wenn ich Benachrichtigung schreiben sage, ist immer ein echter DB-Insert in Alerts gemeint. Nutze fuer den Titel das Format Update (Version) Bereich, schreibe pro Zeile einen kurzen Satz, benutze echte deutsche Buchstaben wie ä, ö, ü und ß, fuehre den Insert aus und pruefe danach kurz den neuesten Datensatz.
+Lege eine neue Benachrichtigung per INSERT in Alerts an. Wenn ich Benachrichtigung schreiben sage, ist immer ein echter DB-Insert in Alerts gemeint. Lies vorher docs/UPDATE-LOG.md, nutze für den Titel das Format Update (Version) Bereich, schreibe pro Zeile einen kurzen Satz, benutze immer echte deutsche Buchstaben wie ä, ö, ü und ß statt ae, oe, ue oder ss, führe den Insert aus und prüfe danach kurz den neuesten Datensatz.
 ```
 
 ## Tab-Dokumentation
