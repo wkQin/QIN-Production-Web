@@ -105,7 +105,9 @@ Immer:
 Titel:
 
 - Format: `Update (Version) Bereich`
-- Beispiel: `Update (3.2.0) Schichtplan`
+- Als Bereich immer den fachlich passenden Bereich nutzen, nicht allgemein `QIN Production Web`.
+- Bei mehreren Bereichen die wichtigsten Bereiche nennen.
+- Beispiele: `Update (3.2.2) Fehleranalyse`, `Update (3.2.2) Zeiterfassung`, `Update (3.2.2) Verwaltung und Dokumentation`
 
 Nachricht:
 
@@ -154,7 +156,7 @@ Bei einer Benachrichtigung:
 2. `docs/UPDATE-LOG.md` lesen.
 3. Fehlende Projektänderungen zuerst im Update-Log ergänzen.
 4. Benachrichtigung formulieren, aber das Senden selbst nicht in den Update-Log schreiben.
-5. Titel im Format `Update (Version) Bereich` setzen.
+5. Titel im Format `Update (Version) Bereich` setzen und einen echten Bereich wählen, nicht `QIN Production Web`.
 6. Nachricht kurz, klar und mit echten deutschen Buchstaben schreiben.
 7. `INSERT INTO Alerts (...) VALUES (...)` ausführen.
 8. Neuesten Datensatz prüfen.

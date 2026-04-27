@@ -45,6 +45,10 @@ bin/
 obj/
 **/bin/
 **/obj/
+*.dll
+
+# Local publish output
+publish_output/
 
 # Temporary local verification builds
 temp_build_verify*/
