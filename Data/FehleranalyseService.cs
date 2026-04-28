@@ -131,7 +131,7 @@ namespace QIN_Production_Web.Data
             var daten = new List<FehlerRow>();
 
             string query = @"SELECT t.FSKdate, t.Fusseln, t.Nadelstiche, t.Pickel, t.Dekorfehler, t.Color, t.Flecken, t.Nebel, t.Vertiefung,
-                             t.Oelflecken, t.Tiefziehfehler, t.Fraesfehler, t.Knicke, t.Kratzer, t.Gutteile, t.Artikel, t.Personalnummer, t.Dekor, t.Charge, t.Projekt, t.Kunde, l.Benutzer
+                             t.Oelflecken, t.Tiefziehfehler, t.Fraesfehler, t.Knicke, t.Kratzer, t.Gutteile, t.Artikel, t.Personalnummer, t.Dekor, t.Charge, t.Projekt, t.Kunde, t.Bemerkungen, l.Benutzer
                       FROM dbo.Table1 t
                       LEFT JOIN dbo.LoginDaten l ON ISNULL(CAST(t.Personalnummer AS NVARCHAR(100)), '') = ISNULL(CAST(l.Personalnummer AS NVARCHAR(100)), '')
                       WHERE (@chargeId = '' OR t.Charge = @chargeId)
@@ -186,7 +186,8 @@ namespace QIN_Production_Web.Data
                         Charge = reader["Charge"]?.ToString() ?? "",
                         Personalnummer = reader["Personalnummer"]?.ToString() ?? "",
                         PersonalName = reader["Benutzer"] != DBNull.Value ? (reader["Benutzer"].ToString() ?? "") : (reader["Personalnummer"]?.ToString() ?? ""),
-                        Dekor = reader["Dekor"]?.ToString() ?? ""
+                        Dekor = reader["Dekor"]?.ToString() ?? "",
+                        Bemerkungen = reader["Bemerkungen"]?.ToString() ?? ""
                     });
                 }
             }

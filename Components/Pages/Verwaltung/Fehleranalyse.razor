@@ -199,43 +199,44 @@
                     <!-- TAB: EINZELNE EINTRÄGE -->
                     <div class="tab-pane fade @(ActiveTab == "eintraege" ? "show active" : "d-none")">
                         <div class="modern-table-container" style="max-height: 500px; overflow: auto;">
-                            <table class="modern-table" style="white-space: nowrap; font-size: 0.85rem;">
+                            <table class="modern-table entries-grid" style="white-space: nowrap; font-size: 0.85rem;">
                                 <thead>
                                     <tr>
-                                        <th style="background: rgba(30, 41, 59, 1);">Datum</th>
-                                        <th style="background: rgba(30, 41, 59, 1);">Charge</th>
-                                        <th style="background: rgba(30, 41, 59, 1);">Kunde</th>
-                                        <th style="background: rgba(30, 41, 59, 1);">Projekt</th>
-                                        <th style="background: rgba(30, 41, 59, 1);">Artikel</th>
-                                        <th style="background: rgba(30, 41, 59, 1);">Dekor</th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Datum")'><span>Datum</span><i class="@SortIcon("Datum")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Charge")'><span>Charge</span><i class="@SortIcon("Charge")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Kunde")'><span>Kunde</span><i class="@SortIcon("Kunde")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Projekt")'><span>Projekt</span><i class="@SortIcon("Projekt")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Artikel")'><span>Artikel</span><i class="@SortIcon("Artikel")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Dekor")'><span>Dekor</span><i class="@SortIcon("Dekor")"></i></th>
                                         
                                         <!-- Error Individual Columns -->
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Fus.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Nad.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Pic.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Dek.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Far.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Fle.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Neb.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Ver.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Öl</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Tie.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Frä.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Kni.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-center">Kra.</th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Fusseln")'><span>Fus.</span><i class="@SortIcon("Fusseln")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Nadelstiche")'><span>Nad.</span><i class="@SortIcon("Nadelstiche")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Pickel")'><span>Pic.</span><i class="@SortIcon("Pickel")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Dekorfehler")'><span>Dek.</span><i class="@SortIcon("Dekorfehler")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Farbfehler")'><span>Far.</span><i class="@SortIcon("Farbfehler")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Flecken")'><span>Fle.</span><i class="@SortIcon("Flecken")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Nebel")'><span>Neb.</span><i class="@SortIcon("Nebel")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Vertiefung")'><span>Ver.</span><i class="@SortIcon("Vertiefung")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Oelflecken")'><span>Öl</span><i class="@SortIcon("Oelflecken")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Tiefziehfehler")'><span>Tie.</span><i class="@SortIcon("Tiefziehfehler")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Fraesfehler")'><span>Frä.</span><i class="@SortIcon("Fraesfehler")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Knicke")'><span>Kni.</span><i class="@SortIcon("Knicke")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Kratzer")'><span>Kra.</span><i class="@SortIcon("Kratzer")"></i></th>
 
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-success text-end">Gut</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-danger text-end">Schl.</th>
-                                        <th style="background: rgba(30, 41, 59, 1);" class="text-primary text-end">Ges.</th>
+                                        <th class="sortable-resizable-header text-success text-end" @onclick='() => SortBy("Gutteile")'><span>Gut</span><i class="@SortIcon("Gutteile")"></i></th>
+                                        <th class="sortable-resizable-header text-danger text-end" @onclick='() => SortBy("Schlechtteile")'><span>Schl.</span><i class="@SortIcon("Schlechtteile")"></i></th>
+                                        <th class="sortable-resizable-header text-primary text-end" @onclick='() => SortBy("Gesamt")'><span>Ges.</span><i class="@SortIcon("Gesamt")"></i></th>
                                         
-                                        <th style="background: rgba(30, 41, 59, 1);">Mitarbeiter</th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Mitarbeiter")'><span>Mitarbeiter</span><i class="@SortIcon("Mitarbeiter")"></i></th>
+                                        <th class="sortable-resizable-header" @onclick='() => SortBy("Bemerkung")'><span>Bemerkung</span><i class="@SortIcon("Bemerkung")"></i></th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @if(!Eintraege.Any()) {
-                                        <tr><td colspan="23" class="text-center text-muted py-5">Keine Datensätze gefunden. Starten Sie eine Analyse.</td></tr>
+                                        <tr><td colspan="24" class="text-center text-muted py-5">Keine Datensätze gefunden. Starten Sie eine Analyse.</td></tr>
                                     }
-                                    @foreach(var row in Eintraege) {
+                                    @foreach(var row in SortedEintraege) {
                                         <tr>
                                             <td>@row.FSKdate.ToString("dd.MM.yyyy")</td>
                                             <td class="fw-bold">@row.Charge</td>
@@ -264,6 +265,9 @@
                                             <td class="text-primary text-end fw-bold">@row.Gesamt</td>
                                             
                                             <td class="text-info fw-bold">@row.PersonalName</td>
+                                            <td title="@row.Bemerkungen" style="min-width: 220px; max-width: 360px; white-space: normal;">
+                                                @(string.IsNullOrWhiteSpace(row.Bemerkungen) ? "-" : row.Bemerkungen)
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -333,6 +337,37 @@
     private List<ChargeItem> InterneFehler = new();
     private List<ChargeItem> ChartData = new();
     private bool IsLoading = false;
+    private string SortColumn = "Datum";
+    private bool SortDescending = true;
+
+    private IEnumerable<FehlerRow> SortedEintraege => SortColumn switch
+    {
+        "Datum" => SortDescending ? Eintraege.OrderByDescending(x => x.FSKdate) : Eintraege.OrderBy(x => x.FSKdate),
+        "Charge" => SortString(x => x.Charge),
+        "Kunde" => SortString(x => x.Kunde),
+        "Projekt" => SortString(x => x.Projekt),
+        "Artikel" => SortString(x => x.Artikel),
+        "Dekor" => SortString(x => x.Dekor),
+        "Fusseln" => SortNumber(x => x.Fusseln),
+        "Nadelstiche" => SortNumber(x => x.Nadelstiche),
+        "Pickel" => SortNumber(x => x.Pickel),
+        "Dekorfehler" => SortNumber(x => x.Dekorfehler),
+        "Farbfehler" => SortNumber(x => x.Farbfehler),
+        "Flecken" => SortNumber(x => x.Flecken),
+        "Nebel" => SortNumber(x => x.Nebel),
+        "Vertiefung" => SortNumber(x => x.Vertiefung),
+        "Oelflecken" => SortNumber(x => x.Oelflecken),
+        "Tiefziehfehler" => SortNumber(x => x.Tiefziehfehler),
+        "Fraesfehler" => SortNumber(x => x.Fraesfehler),
+        "Knicke" => SortNumber(x => x.Knicke),
+        "Kratzer" => SortNumber(x => x.Kratzer),
+        "Gutteile" => SortNumber(x => x.Gutteile),
+        "Schlechtteile" => SortNumber(x => x.Schlechtteile),
+        "Gesamt" => SortNumber(x => x.Gesamt),
+        "Mitarbeiter" => SortString(x => x.PersonalName),
+        "Bemerkung" => SortString(x => x.Bemerkungen),
+        _ => Eintraege
+    };
 
     // ApexCharts Options for dark theme with forced background to fix transparent PNG export and explicitly colored fonts
     private ApexChartOptions<ChargeItem> ChartOptions = new() {
@@ -347,6 +382,42 @@
         Chart = new Chart { Background = "var(--bg-main)", ForeColor = "#cbd5e1", FontFamily = "Inter, sans-serif" },
         Stroke = new Stroke { Show = false }
     };
+
+    private IEnumerable<FehlerRow> SortString(Func<FehlerRow, string> selector)
+    {
+        return SortDescending
+            ? Eintraege.OrderByDescending(selector, StringComparer.CurrentCultureIgnoreCase)
+            : Eintraege.OrderBy(selector, StringComparer.CurrentCultureIgnoreCase);
+    }
+
+    private IEnumerable<FehlerRow> SortNumber(Func<FehlerRow, int> selector)
+    {
+        return SortDescending ? Eintraege.OrderByDescending(selector) : Eintraege.OrderBy(selector);
+    }
+
+    private void SortBy(string column)
+    {
+        if (SortColumn == column)
+        {
+            SortDescending = !SortDescending;
+            return;
+        }
+
+        SortColumn = column;
+        SortDescending = true;
+    }
+
+    private string SortIcon(string column)
+    {
+        if (SortColumn != column)
+        {
+            return "fa-solid fa-sort sort-icon text-secondary";
+        }
+
+        return SortDescending
+            ? "fa-solid fa-sort-down sort-icon text-primary"
+            : "fa-solid fa-sort-up sort-icon text-primary";
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -634,6 +705,32 @@
     
     .modern-table tbody tr:hover td {
         background: rgba(255, 255, 255, 0.04);
+    }
+
+    .entries-grid {
+        table-layout: auto;
+    }
+
+    .entries-grid th {
+        min-width: 78px;
+        resize: horizontal;
+        overflow: auto;
+        user-select: none;
+    }
+
+    .sortable-resizable-header {
+        background: rgba(30, 41, 59, 1) !important;
+        cursor: pointer;
+    }
+
+    .sortable-resizable-header span {
+        display: inline-block;
+        margin-right: 0.4rem;
+    }
+
+    .sort-icon {
+        font-size: 0.75rem;
+        opacity: 0.9;
     }
 
     ::-webkit-scrollbar {
