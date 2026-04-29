@@ -4,7 +4,7 @@
 {
     <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content border-secondary text-white" style="background: var(--bg-card); backdrop-filter: blur(10px);">
+            <div class="modal-content qin-modal-content border-secondary text-white">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-primary fw-bold">
                         <i class="fa-solid fa-box-open me-2"></i> Wareneingang Bearbeiten (#@Model.ID)
@@ -14,80 +14,80 @@
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Lieferant</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Lieferant" @bind:after="HandleLieferantChangedAsync" />
+                            <label class="modern-label">Lieferant</label>
+                            <input type="text" class="modern-input" @bind="Model.Lieferant" @bind:after="HandleLieferantChangedAsync" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Lieferschein Nr (LS_Nr)</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.LS_Nr" />
+                            <label class="modern-label">Lieferschein Nr (LS_Nr)</label>
+                            <input type="text" class="modern-input" @bind="Model.LS_Nr" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">EBE Nr</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.EBE_NR" />
+                            <label class="modern-label">EBE Nr</label>
+                            <input type="text" class="modern-input" @bind="Model.EBE_NR" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Position (Pos)</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Pos" />
+                            <label class="modern-label">Position (Pos)</label>
+                            <input type="text" class="modern-input" @bind="Model.Pos" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Menge</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Menge" />
+                            <label class="modern-label">Menge</label>
+                            <input type="text" class="modern-input" @bind="Model.Menge" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Artikel</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Artikel" />
+                            <label class="modern-label">Artikel</label>
+                            <input type="text" class="modern-input" @bind="Model.Artikel" />
                         </div>
                         @if (IsLieferantAutomotiv)
                         {
                             <div class="col-md-6 mb-2">
-                                <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
-                                <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Dickenmessung" />
+                                <label class="modern-label">Dickenmessung</label>
+                                <input type="text" class="modern-input" @bind="Model.Dickenmessung" />
                             </div>
                         }
                         else
                         {
                             <div class="col-md-6 mb-2">
-                                <label class="form-label text-secondary small mb-1 fw-bold">Dickenmessung</label>
-                                <div class="form-control border-secondary text-info fw-semibold" style="background: var(--bg-hover);">
+                                <label class="modern-label">Dickenmessung</label>
+                                <div class="modern-input text-info fw-semibold">
                                     Fuer Non-Automotiv nicht erforderlich
                                 </div>
                             </div>
                         }
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Zustand</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Zustand" />
+                            <label class="modern-label">Zustand</label>
+                            <input type="text" class="modern-input" @bind="Model.Zustand" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Eingangsdatum</label>
-                            <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Eingangsdatum" />
+                            <label class="modern-label">Eingangsdatum</label>
+                            <input type="text" class="modern-input" @bind="Model.Eingangsdatum" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Benutzer (ID)</label>
-                            <input type="number" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Benutzer" />
+                            <label class="modern-label">Benutzer (ID)</label>
+                            <input type="number" class="modern-input" @bind="Model.Benutzer" />
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Palettentausch</label>
+                            <label class="modern-label">Palettentausch</label>
                             <div class="form-check form-switch mt-1">
                                 <input type="checkbox" class="form-check-input" checked="@(Model.Palettentausch ?? false)" 
                                        @onchange="@(e => Model.Palettentausch = (bool?)e.Value)" />
                             </div>
                         </div>
                         <div class="col-md-6 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold text-warning">Gebucht (Booking)</label>
+                            <label class="modern-label text-warning">Gebucht (Booking)</label>
                             <div class="form-check form-switch mt-1">
                                 <input type="checkbox" class="form-check-input bg-warning border-warning" checked="@(Model.Gebucht ?? false)" 
                                        @onchange="@(e => Model.Gebucht = (bool?)e.Value)" />
                             </div>
                         </div>
                         <div class="col-12 mb-2">
-                            <label class="form-label text-secondary small mb-1 fw-bold">Bemerkung</label>
-                            <textarea class="form-control border-secondary text-white" style="background: var(--bg-hover);" rows="2" @bind="Model.Bemerkung"></textarea>
+                            <label class="modern-label">Bemerkung</label>
+                            <textarea class="modern-input" rows="2" @bind="Model.Bemerkung"></textarea>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary text-white fw-bold" @onclick="CloseAsync">Abbrechen</button>
-                    <button type="button" class="btn btn-primary fw-bold" @onclick="SaveAsync">
+                    <button type="button" class="btn btn-glass fw-bold" @onclick="CloseAsync">Abbrechen</button>
+                    <button type="button" class="btn btn-gradient-primary fw-bold" @onclick="SaveAsync">
                         <i class="fa-solid fa-save me-1"></i> Speichern
                     </button>
                 </div>

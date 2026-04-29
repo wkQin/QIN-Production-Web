@@ -8,15 +8,15 @@
 
 <PageTitle>Wareneingang Verwaltung</PageTitle>
 
-<div class="container-fluid py-4 min-vh-100 bg-dark">
+<div class="qin-page-shell wareneingang-verwaltung-page pb-4">
     <!-- Header -->
-    <div class="p-4 mb-4 rounded-4 shadow-lg border border-secondary" style="background: var(--bg-card); backdrop-filter: blur(10px);">
+    <div class="qin-page-hero">
         <div class="d-flex align-items-center">
-            <div class="bg-success bg-opacity-10 p-3 rounded-circle me-3">
+            <div class="verwaltung-hero-icon me-3">
                 <i class="fa-solid fa-truck-loading fa-2x text-success"></i>
             </div>
             <div>
-                <h2 class="text-white mb-1 fw-bold">Wareneingang Verwaltung</h2>
+                <h2 class="qin-hero-title">Wareneingang Verwaltung</h2>
                 <p class="text-secondary mb-0 small">Zentrale Verwaltung für gebuchte und offene Wareneingänge inklusive Chargen-Zuteilung</p>
             </div>
         </div>
@@ -25,30 +25,30 @@
         
         <div class="row g-3 align-items-center">
             <div class="col-md-5">
-                <ul class="nav nav-pills w-100 p-1 mx-0 rounded-3 border border-secondary d-flex" style="background: var(--bg-hover);">
+                <ul class="nav qin-segmented w-100 p-1 mx-0 d-flex verwaltung-filter-tabs">
                     <li class="nav-item flex-fill text-center">
-                        <button class="nav-link w-100 @(ActiveFilter == "Alle" ? "active bg-primary" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                        <button class="nav-link qin-segmented-btn w-100 @(ActiveFilter == "Alle" ? "is-active" : "")" 
                                 @onclick='() => ChangeFilter("Alle")'>Alle</button>
                     </li>
                     <li class="nav-item flex-fill text-center">
-                        <button class="nav-link w-100 @(ActiveFilter == "Gebucht" ? "active bg-success" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                        <button class="nav-link qin-segmented-btn w-100 @(ActiveFilter == "Gebucht" ? "is-active" : "")" 
                                 @onclick='() => ChangeFilter("Gebucht")'>Gebucht</button>
                     </li>
                     <li class="nav-item flex-fill text-center">
-                        <button class="nav-link w-100 @(ActiveFilter == "Nicht Gebucht" ? "active bg-warning text-dark" : "text-white") fw-bold rounded-2 px-3 py-2" 
+                        <button class="nav-link qin-segmented-btn w-100 @(ActiveFilter == "Nicht Gebucht" ? "is-active" : "")" 
                                 @onclick='() => ChangeFilter("Nicht Gebucht")'>Nicht Gebucht</button>
                     </li>
                 </ul>
             </div>
             <div class="col-md-5">
-                 <div class="input-group">
-                    <span class="input-group-text bg-secondary border-secondary text-white"><i class="fa-solid fa-search"></i></span>
-                    <input type="text" class="form-control border-secondary text-white bg-dark" placeholder="Suche in Liste..." 
+                 <div class="qin-input-shell">
+                    <span class="qin-input-icon"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" class="qin-input" placeholder="Suche in Liste..." 
                            @bind-value="SearchQuery" @bind-value:event="oninput" @onkeyup="FilterLocally" />
                 </div>
             </div>
             <div class="col-md-2 text-end">
-                <button class="btn btn-outline-light w-100 fw-bold" @onclick="() => LoadWEAsync()">
+                <button class="btn btn-glass w-100 fw-bold" @onclick="() => LoadWEAsync()">
                     <i class="fa-solid fa-rotate-right me-1"></i> Refresh
                 </button>
             </div>
@@ -56,20 +56,20 @@
 
         <div class="row g-3 align-items-end mt-1">
             <div class="col-md-4 col-lg-3">
-                <label class="form-label text-secondary small fw-bold mb-1">Datum von</label>
-                <input type="date" class="form-control border-secondary text-white bg-dark"
+                <label class="modern-label">Datum von</label>
+                <input type="date" class="dark-input"
                        @bind-value="FilterVon" @bind-value:format="yyyy-MM-dd" />
             </div>
             <div class="col-md-4 col-lg-3">
-                <label class="form-label text-secondary small fw-bold mb-1">Datum bis</label>
-                <input type="date" class="form-control border-secondary text-white bg-dark"
+                <label class="modern-label">Datum bis</label>
+                <input type="date" class="dark-input"
                        @bind-value="FilterBis" @bind-value:format="yyyy-MM-dd" />
             </div>
             <div class="col-md-4 col-lg-3 d-flex gap-2">
-                <button class="btn btn-outline-info fw-bold flex-fill" @onclick="ApplyDateFilterAsync">
+                <button class="btn btn-gradient-primary fw-bold flex-fill" @onclick="ApplyDateFilterAsync">
                     <i class="fa-solid fa-filter me-1"></i> Anwenden
                 </button>
-                <button class="btn btn-outline-secondary fw-bold flex-fill" @onclick="ResetDateFilterAsync">
+                <button class="btn btn-glass fw-bold flex-fill" @onclick="ResetDateFilterAsync">
                     Reset
                 </button>
             </div>
@@ -77,15 +77,15 @@
     </div>
 
     <!-- Main Wareneingang Table -->
-    <div class="card bg-dark border-secondary shadow-lg rounded-4 overflow-hidden mb-4">
-        <div class="card-header border-secondary bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+    <div class="glass-card qin-panel p-0 overflow-hidden mb-4">
+        <div class="p-4 border-bottom fw-bold d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
             <span><i class="fa-solid fa-list me-2"></i> Wareneingänge</span>
             <span class="badge bg-secondary rounded-pill">@(FilteredWERows.Count) Einträge</span>
         </div>
-        <div class="card-body p-0">
+        <div class="p-0">
             @if (IsLoadingWE)
             {
-                <div class="text-center p-5">
+                <div class="qin-empty-state">
                     <div class="spinner-border text-success" role="status">
                         <span class="visually-hidden">Lade Daten...</span>
                     </div>
@@ -93,15 +93,15 @@
             }
             else if (!FilteredWERows.Any())
             {
-                <div class="text-center p-5 text-secondary">
+                <div class="qin-empty-state">
                     Keine Wareneingänge gefunden.
                 </div>
             }
             else
             {
-                <div class="table-responsive" style="max-height: 450px; overflow-y: auto;">
-                    <table id="weVerwaltungTable" class="table table-dark table-hover table-striped mb-0 text-nowrap align-middle we-resizable-table">
-                        <thead class="table-dark sticky-top" style="background-color: var(--bg-hover);">
+                <div class="modern-table-container border-0 rounded-0" style="max-height: 450px; overflow-y: auto;">
+                    <table id="weVerwaltungTable" class="modern-table we-resizable-table">
+                        <thead style="position: sticky; top: 0; z-index: 1;">
                             <tr>
                                 <th class="text-center resizable-th" style="width: 120px;">Aktionen</th>
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("EBEPos")'>EBE / Pos @GetSortIcon("EBEPos")</th>
@@ -122,20 +122,20 @@
                                 <tr class="@GetWareneingangRowClass(row)" 
                                     style="cursor: pointer;" @onclick="() => SelectWEAsync(row)">
                                     <td class="text-center" @onclick:stopPropagation="true">
-                                        <div class="btn-group">
+                                        <div class="btn-group table-action-group">
                                             @if (row.Gebucht != true)
                                             {
-                                                <button class="btn btn-sm btn-outline-success text-white" @onclick="() => ToggleBuchungAsync(row)" title="Buchen">
+                                                <button class="btn btn-sm table-action-btn action-book" @onclick="() => ToggleBuchungAsync(row)" title="Buchen">
                                                     <i class="fa-solid fa-check"></i>
                                                 </button>
                                             }
                                             else
                                             {
-                                                <button class="btn btn-sm btn-outline-warning text-white" @onclick="() => ToggleBuchungAsync(row)" title="Buchung stornieren">
+                                                <button class="btn btn-sm table-action-btn action-unbook" @onclick="() => ToggleBuchungAsync(row)" title="Buchung stornieren">
                                                     <i class="fa-solid fa-rotate-left"></i>
                                                 </button>
                                             }
-                                            <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenWEModal(row)" title="Bearbeiten">
+                                            <button class="btn btn-sm table-action-btn action-edit" @onclick="() => OpenWEModal(row)" title="Bearbeiten">
                                                 <i class="fa-solid fa-pen"></i>
                                             </button>
                                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWEAsync(row.ID)" title="Löschen">
@@ -147,11 +147,11 @@
                                     <td>
                                         @if (row.Gebucht == true)
                                         {
-                                            <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i> JA</span>
+                                            <span class="qin-badge qin-badge-success"><i class="fa-solid fa-check me-1"></i> JA</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-warning text-dark"><i class="fa-solid fa-xmark me-1"></i> NEIN</span>
+                                            <span class="qin-badge qin-badge-warning"><i class="fa-solid fa-xmark me-1"></i> NEIN</span>
                                         }
                                     </td>
                                     <td>
@@ -164,7 +164,7 @@
                                     <td class="fw-bold text-info">@row.LS_Nr</td>
                                     <td>@row.Menge</td>
                                     <td>
-                                        <span class="badge bg-secondary rounded-pill px-2">@row.Chargen</span>
+                                        <span class="qin-badge qin-badge-neutral">@row.Chargen</span>
                                     </td>
                                     <td class="text-info fw-bold">@FormatDickenmessung(row.Dickenmessung)</td>
                                     <td>@row.Eingangsdatum</td>
@@ -180,38 +180,38 @@
     <!-- Chargen Table for selected Wareneingang -->
     @if (SelectedWE != null)
     {
-        <div class="card bg-dark border-info shadow-lg rounded-4 overflow-hidden mb-4 animate__animated animate__fadeIn">
-            <div class="card-header border-info bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+        <div class="glass-card qin-panel p-0 overflow-hidden mb-4 animate__animated animate__fadeIn">
+            <div class="p-4 border-bottom fw-bold d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
                 <span>
                     <i class="fa-solid fa-boxes-stacked me-2 text-info"></i> Chargen für Lieferschein: <span class="text-info">@SelectedWE.LS_Nr</span>
                 </span>
                 <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-secondary rounded-pill px-3 py-2">
+                    <span class="qin-badge qin-badge-neutral">
                         Gesamt Laufmeter/Stk: @ChargenRows.Sum(x => x.MengeAnzeige)
                     </span>
-                    <button class="btn btn-sm btn-info fw-bold text-dark" @onclick="OpenAddChargeModal">
+                    <button class="btn btn-sm btn-gradient-primary fw-bold" @onclick="OpenAddChargeModal">
                         <i class="fa-solid fa-plus me-1"></i> Neue Charge
                     </button>
                 </div>
             </div>
-            <div class="card-body p-0">
+            <div class="p-0">
                 @if (IsLoadingChargen)
                 {
-                    <div class="text-center p-4">
+                    <div class="qin-empty-state">
                         <div class="spinner-border spinner-border-sm text-info" role="status"></div> Lade Chargen...
                     </div>
                 }
                 else if (!ChargenRows.Any())
                 {
-                    <div class="text-center p-4 text-secondary">
+                    <div class="qin-empty-state">
                         Keine Chargen zu diesem Lieferschein hinterlegt.
                     </div>
                 }
                 else
                 {
-                    <div class="table-responsive">
-                        <table id="weChargenTable" class="table table-dark table-hover mb-0 text-nowrap align-middle we-resizable-table">
-                            <thead class="table-dark" style="background-color: var(--bg-hover);">
+                    <div class="modern-table-container border-0 rounded-0">
+                        <table id="weChargenTable" class="modern-table we-resizable-table">
+                            <thead>
                                 <tr>
                                     <th class="resizable-th" style="width: 90px;">Aktionen</th>
                                     <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortChargen("Charge")'>Charge Text @GetChargeSortIcon("Charge")</th>
@@ -223,8 +223,8 @@
                                 {
                                     <tr>
                                         <td>
-                                            <div class="btn-group">
-                                                <button class="btn btn-sm btn-outline-info text-white" @onclick="() => OpenChargeModal(charge)" title="Bearbeiten">
+                                            <div class="btn-group table-action-group">
+                                                <button class="btn btn-sm table-action-btn action-edit" @onclick="() => OpenChargeModal(charge)" title="Bearbeiten">
                                                     <i class="fa-solid fa-pen"></i>
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteChargeAsync(charge.ID)" title="Löschen">
@@ -1018,6 +1018,67 @@
 }
 
 <style>
+    .verwaltung-hero-icon {
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.18) 0%, rgba(6, 182, 212, 0.12) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.22);
+        box-shadow: 0 12px 24px rgba(16, 185, 129, 0.12);
+    }
+
+    .verwaltung-filter-tabs {
+        list-style: none;
+    }
+
+    .verwaltung-filter-tabs .nav-item {
+        margin-bottom: 0;
+    }
+
+    .table-action-group {
+        gap: 0.35rem;
+    }
+
+    .table-action-btn {
+        min-width: 2rem;
+        min-height: 2rem;
+        padding: 0.35rem 0.55rem;
+        border-radius: 10px;
+        border: 1px solid transparent;
+        color: var(--text-primary);
+    }
+
+    .table-action-btn.action-book {
+        background: rgba(16, 185, 129, 0.14);
+        border-color: rgba(16, 185, 129, 0.28);
+        color: #6ee7b7;
+    }
+
+    .table-action-btn.action-unbook {
+        background: rgba(245, 158, 11, 0.16);
+        border-color: rgba(245, 158, 11, 0.28);
+        color: #fcd34d;
+    }
+
+    .table-action-btn.action-edit {
+        background: rgba(6, 182, 212, 0.14);
+        border-color: rgba(6, 182, 212, 0.24);
+        color: #67e8f9;
+    }
+
+    .table-action-btn.action-delete {
+        background: rgba(239, 68, 68, 0.14);
+        border-color: rgba(239, 68, 68, 0.24);
+        color: #fda4af;
+    }
+
+    .table-action-btn:hover {
+        filter: brightness(1.06);
+    }
+
     .we-resizable-table th {
         position: relative;
     }

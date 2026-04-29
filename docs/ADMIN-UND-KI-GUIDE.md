@@ -9,6 +9,18 @@ Kurze Arbeitsregeln für Admin-Aufgaben, Dokumentation und KI-Unterstützung im 
 - Keine unnötig technischen Formulierungen in Nutzertexten.
 - Keine fertige aktuelle Release-Meldung direkt in diesem Guide hinterlegen.
 
+## Designs und Vorlagen
+
+Bei neuen Designs oder Design-Umbauten immer zuerst die gemeinsame Vorlage verwenden.
+
+Regeln:
+
+- Gemeinsame Layout-, Panel-, Tabellen-, Button-, Formular- und Modal-Stile zentral pflegen, statt dieselben Muster pro Seite neu zu bauen.
+- Farben, AbstÃ¤nde, Rahmen, Schatten und ZustÃ¤nde nach MÃ¶glichkeit Ã¼ber gemeinsame CSS-Variablen und Shared-Klassen steuern.
+- Seitenbezogenes CSS nur fÃ¼r echte SonderfÃ¤lle ergÃ¤nzen, nicht fÃ¼r Standard-Elemente, die schon in der Vorlage vorhanden sind.
+- Inline-Styles vermeiden, wenn dieselbe Gestaltung Ã¼ber die gemeinsame Vorlage lÃ¶sbar ist.
+- Bei Design-Arbeiten immer mitdenken, dass Light- und Darkmode spÃ¤ter zentral umschaltbar bleiben sollen.
+
 ## Datenbank
 
 Quelle für Verbindungsdaten: `Data/SqlManager.cs`

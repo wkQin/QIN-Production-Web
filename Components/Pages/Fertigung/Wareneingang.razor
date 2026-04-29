@@ -8,17 +8,17 @@
 @inject AuthenticationStateProvider AuthStateProvider
 <PageTitle>Wareneingang - Fertigung</PageTitle>
 
-<div class="wareneingang-dashboard pb-5">
+<div class="wareneingang-dashboard qin-page-shell pb-5">
 
     <!-- HEADER & ACTION BAR -->
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+    <div class="qin-page-hero d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
         <div>
-            <h1 class="fw-bold mb-1 text-white" style="font-size: 2rem; letter-spacing: -0.02em;">Wareneingang</h1>
+            <h1 class="qin-hero-title">Wareneingang</h1>
             <p class="text-secondary mb-0">Produktionsmaterial erfassen · Charger-Verwaltung · Etikettendruck</p>
         </div>
         
-        <div class="d-flex align-items-center gap-3 glass-card py-2 px-4" style="height: auto;">
-            <div class="me-3 border-end border-secondary pe-4">
+        <div class="qin-page-toolbar">
+            <div class="qin-toolbar-block pe-3">
                 <span class="modern-label d-block mb-1 text-secondary">System Status</span>
                 @if(IsEditMode)
                 {
@@ -29,6 +29,7 @@
                     <span class="status-badge status-gut"><i class="fa-solid fa-plus-circle me-1"></i>Neuerfassung</span>
                 }
             </div>
+            <div class="qin-toolbar-divider"></div>
             <button class="btn btn-glass px-3 py-2 fw-bold text-white" @onclick="RefreshForm" title="Formular zurücksetzen">
                 <i class="fa-solid fa-rotate-left"></i> Leeren
             </button>
@@ -43,7 +44,7 @@
         
         <!-- LEFT: STAMMDATEN -->
         <div class="col-xl-6 col-lg-6">
-            <div class="glass-card d-flex flex-column h-100">
+            <div class="glass-card qin-panel d-flex flex-column h-100">
                 <div class="card-title-modern">
                     <i class="fa-solid fa-clipboard-list text-primary me-2"></i> Stammdaten
                 </div>
@@ -128,7 +129,7 @@
 
         <!-- RIGHT: CHARGENERFASSUNG -->
         <div class="col-xl-6 col-lg-6">
-            <div class="glass-card d-flex flex-column h-100" style="border-top: 4px solid #3b82f6;">
+            <div class="glass-card qin-panel d-flex flex-column h-100 wareneingang-charge-panel">
                 <div class="card-title-modern d-flex justify-content-between align-items-center">
                     <div><i class="fa-solid fa-barcode text-primary me-2"></i> Chargen Erfassung</div>
                     <div class="badge bg-primary px-3 py-2 fs-6 rounded-pill">Gesamt: @GesamtLaufmeter LM/STK</div>
@@ -211,7 +212,7 @@
     </div>
 
     <!-- BOTTOM: LETZTE WARENEINGÄNGE -->
-    <div class="glass-card p-0 overflow-hidden mt-2 mb-4">
+    <div class="glass-card qin-panel p-0 overflow-hidden mt-2 mb-4">
         <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
             <div>
                 <h4 class="text-white fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Letzte Buchungen (Historie)</h4>
@@ -688,8 +689,6 @@
 }
 
 <style>
-    @@import url('https://fonts.googleapis.com/css2?family=Inter:wght@@300;400;500;600;700&display=swap');
-
     .custom-placeholder::placeholder {
         color: #fca5a5 !important;
         font-weight: 500;
@@ -697,81 +696,7 @@
     }
 
     .wareneingang-dashboard {
-        font-family: 'Inter', sans-serif;
-        color: #f8fafc;
-    }
-
-    .glass-card {
-        background: rgba(30, 41, 59, 0.5);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid var(--border-color);
-        border-radius: 16px;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-        padding: 1.5rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .glass-card:hover {
-        box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.3);
-    }
-
-    .card-title-modern {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 1.5rem;
-        color: #f8fafc;
-        display: flex;
-        align-items: center;
-        border-bottom: 1px solid var(--border-color);
-        padding-bottom: 0.75rem;
-    }
-
-    .modern-label {
-        font-size: 0.82rem;
-        font-weight: 600;
-        color: #94a3b8;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    .modern-input, .modern-select {
-        background: rgba(15, 23, 42, 0.7);
-        border: 1px solid var(--border-color);
-        color: #f8fafc !important;
-        border-radius: 10px;
-        padding: 0.8rem 1rem;
-        transition: all 0.3s ease;
-        width: 100%;
-        box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.1);
-    }
-
-    .modern-input::placeholder,
-    .modern-select::placeholder,
-    input.modern-input::placeholder,
-    textarea.modern-input::placeholder {
-        color: #94a3b8 !important;
-        opacity: 1;
-    }
-    
-    .modern-input:focus, .modern-select:focus {
-        background: rgba(15, 23, 42, 0.9);
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-        outline: none;
-        color: #fff;
-    }
-
-    .required-outline {
-        border-color: #3b82f6 !important;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
-    }
-
-    .modern-select option {
-        background: var(--bg-card);
-        color: #f8fafc;
-        padding: 10px;
+        color: var(--text-primary);
     }
 
     .scanner-focus {
@@ -781,7 +706,7 @@
         text-align: center;
         padding: 1.5rem;
         border-radius: 12px;
-        background: rgba(0, 0, 0, 0.4);
+        background: var(--bg-elevated);
         border: 2px dashed rgba(59, 130, 246, 0.5);
         color: #93c5fd;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -789,10 +714,10 @@
     }
 
     .scanner-focus:focus {
-        background: rgba(15, 23, 42, 0.8);
+        background: var(--bg-card);
         border: 2px solid #3b82f6;
         box-shadow: 0 0 25px rgba(59, 130, 246, 0.5);
-        color: #fff;
+        color: var(--text-primary);
         transform: scale(1.02);
     }
     
@@ -802,119 +727,9 @@
         letter-spacing: 0;
     }
 
-    .btn-gradient-primary {
-        background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
-        border: none;
-        color: white;
-        font-weight: 700;
-        border-radius: 10px;
-        padding: 0.8rem 1.5rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
+    .wareneingang-charge-panel {
+        border-top: 4px solid var(--accent-primary);
     }
-
-    .btn-gradient-primary:hover:not(:disabled) {
-        background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);
-        box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
-        transform: translateY(-2px);
-    }
-
-    .btn-gradient-primary:disabled {
-        opacity: 0.6;
-        background: #334155;
-        box-shadow: none;
-    }
-
-    .btn-gradient-success {
-        background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        border: none;
-        color: white;
-        font-weight: 700;
-        border-radius: 10px;
-        padding: 1rem 2rem;
-        font-size: 1.1rem;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
-    }
-
-    .btn-gradient-success:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
-    }
-
-    .btn-glass {
-        background: var(--border-color);
-        border: 1px solid var(--border-color);
-        color: #e2e8f0;
-        border-radius: 10px;
-        backdrop-filter: blur(5px);
-        transition: all 0.2s ease;
-    }
-
-    .btn-glass:hover:not(:disabled) {
-        background: var(--border-color);
-        border-color: rgba(255, 255, 255, 0.3);
-        color: #fff;
-    }
-
-    .btn-glass:disabled {
-        opacity: 0.5;
-        background: rgba(0,0,0,0.2);
-    }
-
-    .modern-table-container {
-        border-radius: 12px;
-        overflow: hidden;
-        border: 1px solid var(--border-color);
-        background: rgba(15, 23, 42, 0.5);
-    }
-    
-    .modern-table {
-        margin-bottom: 0;
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .modern-table th {
-        background: rgba(30, 41, 59, 0.9);
-        color: #cbd5e1;
-        font-weight: 700;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        letter-spacing: 0.05em;
-        padding: 1.2rem 1rem;
-        border-bottom: 1px solid var(--border-color);
-    }
-    
-    .modern-table td {
-        padding: 1rem;
-        color: #f8fafc;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-        vertical-align: middle;
-        transition: background-color 0.2s ease;
-    }
-    
-    .modern-table tbody tr:hover td {
-        background: rgba(255, 255, 255, 0.04);
-    }
-
-    .modern-table tr.table-active td {
-        background: rgba(59, 130, 246, 0.15) !important;
-        border-left: 3px solid #3b82f6;
-    }
-
-    .status-badge {
-        padding: 0.5em 1em;
-        border-radius: 30px;
-        font-weight: 700;
-        font-size: 0.8rem;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-    }
-
-    .status-gut { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); }
-    .status-mittel { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
-    .status-schlecht { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(248, 113, 113, 0.3); }
 
     .charge-confirmation-backdrop {
         background: rgba(2, 6, 23, 0.82);
@@ -933,7 +748,7 @@
         font-size: clamp(2rem, 4vw, 3rem);
         font-weight: 800;
         letter-spacing: 0.12em;
-        color: #f8fafc;
+        color: var(--text-primary);
         word-break: break-word;
     }
 
@@ -943,33 +758,8 @@
         color: #fbbf24;
     }
 
-    .switch-modern {
-        width: 3.5rem;
-        height: 1.75rem;
-        cursor: pointer;
-    }
-    .switch-modern:focus {
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
-    }
-    .switch-modern:checked {
-        background-color: #3b82f6;
-        border-color: #3b82f6;
-    }
-
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: rgba(15, 23, 42, 0.4);
-        border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: rgba(71, 85, 105, 0.6);
-        border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: rgba(100, 116, 139, 0.8);
+    [data-theme='light'] .charge-confirmation-modal {
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.96) 100%);
     }
 </style>
 

@@ -4,7 +4,7 @@
 {
     <div class="modal fade show d-block" style="background: rgba(0,0,0,0.7);" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-secondary text-white" style="background: var(--bg-card); backdrop-filter: blur(10px);">
+            <div class="modal-content qin-modal-content border-secondary text-white">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title text-info fw-bold">
                         <i class="fa-solid @(Model.ID == 0 ? "fa-plus" : "fa-pen") me-2"></i> 
@@ -14,17 +14,17 @@
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label text-secondary small mb-1 fw-bold">Charge (Text)</label>
-                        <input type="text" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Charge" />
+                        <label class="modern-label">Charge (Text)</label>
+                        <input type="text" class="modern-input" @bind="Model.Charge" />
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-secondary small mb-1 fw-bold">Echte Menge (Zahl)</label>
-                        <input type="number" class="form-control border-secondary text-white" style="background: var(--bg-hover);" @bind="Model.Echte_Menge" />
+                        <label class="modern-label">Echte Menge (Zahl)</label>
+                        <input type="number" class="modern-input" @bind="Model.Echte_Menge" />
                     </div>
                 </div>
                 <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-secondary text-white fw-bold" @onclick="CloseAsync">Abbrechen</button>
-                    <button type="button" class="btn btn-info fw-bold text-dark" @onclick="SaveAsync">
+                    <button type="button" class="btn btn-glass fw-bold" @onclick="CloseAsync">Abbrechen</button>
+                    <button type="button" class="btn btn-gradient-primary fw-bold" @onclick="SaveAsync">
                         <i class="fa-solid fa-save me-1"></i> Speichern
                     </button>
                 </div>

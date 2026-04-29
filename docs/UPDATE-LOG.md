@@ -5,6 +5,9 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.3
 
+- Wareneingang: Für Fertigung und Verwaltung wurde eine gemeinsame Design-Vorlage mit zentralen Layout-, Panel-, Tabellen-, Formular- und Modal-Klassen aufgebaut.
+- Wareneingang: Die gemeinsamen Design-Bausteine liegen jetzt in `wwwroot/app.css`, damit spätere Light- und Darkmode-Anpassungen zentral über Variablen und Shared-Klassen laufen können.
+- Dokumentation: Der Admin- und KI-Guide schreibt bei Design-Arbeiten jetzt vor, dass zuerst die gemeinsame Vorlage verwendet und nur bei echten Sonderfällen lokale Seiten-CSS ergänzt wird.
 - Fehleranalyse: Im Bereich `Einzelne Einträge` werden jetzt die Bemerkungen der Fehlersammelkarten angezeigt.
 - Fehleranalyse: Die Spalten im Bereich `Einzelne Einträge` können jetzt sortiert und in der Breite angepasst werden.
 
