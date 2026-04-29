@@ -47,11 +47,46 @@
             URL.revokeObjectURL(url);
         };
 
+        window.qinTheme = (() => {
+            const listeners = new Map();
+            const getCurrentTheme = () => document.documentElement.getAttribute('data-theme') || 'dark';
+
+            return {
+                getCurrent: getCurrentTheme,
+                notify(theme) {
+                    window.dispatchEvent(new CustomEvent('qin:theme-changed', { detail: theme || getCurrentTheme() }));
+                },
+                subscribe(dotNetRef) {
+                    const id = (window.crypto && typeof window.crypto.randomUUID === 'function')
+                        ? window.crypto.randomUUID()
+                        : `qin-theme-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+                    const handler = (event) => {
+                        dotNetRef.invokeMethodAsync('OnThemeChanged', event.detail || getCurrentTheme());
+                    };
+
+                    listeners.set(id, handler);
+                    window.addEventListener('qin:theme-changed', handler);
+                    return id;
+                },
+                unsubscribe(id) {
+                    const handler = listeners.get(id);
+                    if (!handler) {
+                        return;
+                    }
+
+                    window.removeEventListener('qin:theme-changed', handler);
+                    listeners.delete(id);
+                }
+            };
+        })();
+
         window.updateClientSettings = (theme, fontSize) => {
             localStorage.setItem('qin_theme', theme);
             localStorage.setItem('qin_fontsize', fontSize);
             document.documentElement.setAttribute('data-theme', theme);
             document.documentElement.style.setProperty('--user-font-scale', fontSize + '%');
+            window.qinTheme.notify(theme);
         };
 
         window.resetClientSettings = () => {
@@ -59,6 +94,7 @@
             localStorage.removeItem('qin_fontsize');
             document.documentElement.setAttribute('data-theme', 'dark');
             document.documentElement.style.setProperty('--user-font-scale', '100%');
+            window.qinTheme.notify('dark');
         };
 
         window.makeTableResizable = function(tableId) {

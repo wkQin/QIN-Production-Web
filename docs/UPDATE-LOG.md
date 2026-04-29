@@ -5,6 +5,17 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.3
 
+- Schichtplan: In der Dashboard-Schichtplanung ist das Badge `Arbeitsplatz` im Light-Modus jetzt kontrastreicher und wieder gut lesbar.
+- Schichtplan: Die Dashboard- und Monitoransicht der Produktions-Schichtplanung unterstützt jetzt ebenfalls einen abgestimmten Light-Modus mit helleren Karten, Tabellen und Bereichsfarben.
+- Schichtplan: Der Verwaltungs-Schichtplan unterstützt jetzt einen abgestimmten Light-Modus mit hellen Flächen, gut lesbaren Eingaben und kontrolliert aufgehellten Bereichsfarben.
+- Fehleranalyse: Der große Seiten-Header wurde entfernt und der Export kompakt in die Filterkarte verschoben, damit die Ansicht besser auf eine einzelne Bildschirmseite passt.
+- Fehleranalyse: Datum-, Kunden-, Projekt-, Artikel-, Dekor- und Charge-Filter starten die Analyse jetzt automatisch, sodass der manuelle Start-Button entfällt.
+- Fehleranalyse: Die Verwaltungsseite nutzt jetzt die gemeinsame Design-Vorlage mit Shared-Hero, Panels, Tabs, Tabellen und Statistik-Karten statt eigenem Insel-CSS.
+- Fehleranalyse: Der Light-Modus ist jetzt vollständig in die Fehleranalyse integriert, inklusive kontrastreicherer Tabellen-/Filter-Flächen und themefähiger Apex-Charts.
+- Allgemein: Theme-Wechsel benachrichtigen jetzt auch Seiten mit ApexCharts, damit Diagramme beim Umschalten zwischen Light- und Darkmode direkt neu auf das aktive Theme reagieren.
+- Wareneingang: Der Button `Auswahl Drucken` ist im Light-Modus jetzt kontrastreicher und auch im deaktivierten Zustand besser lesbar.
+- Wareneingang: Der Light-Modus nutzt jetzt dunklere Textfarben, besser lesbare Status-Badges und kontrastreichere Suffixe wie `mm` und `LM/STK`.
+- Allgemein: Der Light-Modus hat jetzt hellere Seitenhintergründe, dunklere Navigationsschrift und verbesserte Shared-Farben für Layout, Karten und Tabellen.
 - Wareneingang: Für Fertigung und Verwaltung wurde eine gemeinsame Design-Vorlage mit zentralen Layout-, Panel-, Tabellen-, Formular- und Modal-Klassen aufgebaut.
 - Wareneingang: Die gemeinsamen Design-Bausteine liegen jetzt in `wwwroot/app.css`, damit spätere Light- und Darkmode-Anpassungen zentral über Variablen und Shared-Klassen laufen können.
 - Dokumentation: Der Admin- und KI-Guide schreibt bei Design-Arbeiten jetzt vor, dass zuerst die gemeinsame Vorlage verwendet und nur bei echten Sonderfällen lokale Seiten-CSS ergänzt wird.

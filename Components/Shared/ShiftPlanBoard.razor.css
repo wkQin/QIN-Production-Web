@@ -912,3 +912,303 @@
         white-space: normal;
     }
 }
+
+.shiftplan-shell.theme-light {
+    --sp-shell-bg:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.98) 100%);
+    --sp-shell-bg-fullscreen:
+        radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 28%),
+        linear-gradient(180deg, rgba(248, 250, 252, 1) 0%, rgba(239, 246, 255, 1) 100%);
+    --sp-panel-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.96) 100%);
+    --sp-panel-border: rgba(148, 163, 184, 0.22);
+    --sp-panel-border-soft: rgba(148, 163, 184, 0.16);
+    --sp-panel-border-faint: rgba(148, 163, 184, 0.12);
+    --sp-shell-text: #0f172a;
+    --sp-text-primary: #0f172a;
+    --sp-text-secondary: #334155;
+    --sp-text-muted: #475569;
+    --sp-text-soft: #64748b;
+    --sp-kicker-bg: rgba(37, 99, 235, 0.12);
+    --sp-kicker-text: #1d4ed8;
+    --sp-pill-bg: rgba(255, 255, 255, 0.92);
+    --sp-pill-border: rgba(148, 163, 184, 0.24);
+    --sp-date-control-bg: rgba(255, 255, 255, 0.96);
+    --sp-date-control-hover-bg: rgba(14, 165, 233, 0.12);
+    --sp-date-control-border: rgba(37, 99, 235, 0.24);
+    --sp-date-control-text: #0f172a;
+    --sp-date-picker-bg: linear-gradient(135deg, rgba(219, 234, 254, 0.98), rgba(255, 255, 255, 0.98));
+    --sp-date-picker-icon: #0284c7;
+    --sp-status-bg: rgba(255, 255, 255, 0.92);
+    --sp-status-text: #334155;
+    --sp-table-bg: rgba(255, 255, 255, 0.94);
+    --sp-header-bg: rgba(241, 245, 249, 0.98);
+    --sp-header-machine-bg: rgba(226, 232, 240, 0.96);
+    --sp-data-row-bg: rgba(255, 255, 255, 0.82);
+    --sp-data-row-alt-bg: rgba(248, 250, 252, 0.98);
+    --sp-machine-bg: rgba(248, 250, 252, 0.98);
+    --sp-shift-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+    --sp-empty-bg: rgba(255, 255, 255, 0.76);
+    --sp-empty-border: rgba(148, 163, 184, 0.22);
+    --sp-empty-text: #64748b;
+    --sp-task-chip-bg: rgba(255, 255, 255, 0.78);
+    --sp-task-chip-border: rgba(148, 163, 184, 0.2);
+    --sp-task-chip-text: #0f172a;
+    --sp-task-meta: #1d4ed8;
+    --sp-note-border: rgba(239, 68, 68, 0.22);
+    --sp-note-text: #991b1b;
+    --sp-shadow-soft: 0 14px 28px rgba(15, 23, 42, 0.08);
+    --sp-shadow-panel: 0 18px 40px rgba(15, 23, 42, 0.08);
+    color: var(--sp-shell-text);
+    background: var(--sp-shell-bg);
+}
+
+.shiftplan-shell.theme-light.is-fullscreen {
+    background: var(--sp-shell-bg-fullscreen);
+}
+
+.shiftplan-shell.theme-light .shiftplan-kicker,
+.shiftplan-shell.theme-light .shiftplan-board-kicker {
+    background: var(--sp-kicker-bg);
+    color: var(--sp-kicker-text);
+}
+
+.shiftplan-shell.theme-light .shiftplan-title-row h3,
+.shiftplan-shell.theme-light .shiftplan-board-copy strong,
+.shiftplan-shell.theme-light .shiftplan-date-label,
+.shiftplan-shell.theme-light .shiftplan-header-cell span,
+.shiftplan-shell.theme-light .shiftplan-group-content strong,
+.shiftplan-shell.theme-light .shiftplan-machine-name {
+    color: var(--sp-text-primary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-head-copy p,
+.shiftplan-shell.theme-light .shiftplan-header-cell small,
+.shiftplan-shell.theme-light .shiftplan-empty-board,
+.shiftplan-shell.theme-light .shiftplan-group-content span {
+    color: var(--sp-text-secondary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-pill {
+    background: var(--sp-pill-bg);
+    border-color: var(--sp-pill-border);
+    color: var(--sp-text-primary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-fullscreen-exit {
+    border-color: var(--sp-pill-border);
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--sp-text-primary);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.shiftplan-shell.theme-light .shiftplan-board-meta {
+    border-color: var(--sp-panel-border-soft);
+    background: var(--sp-panel-bg);
+    box-shadow: var(--sp-shadow-panel);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-step,
+.shiftplan-shell.theme-light .shiftplan-today-btn {
+    border-color: var(--sp-date-control-border);
+    background: var(--sp-date-control-bg);
+    color: var(--sp-date-control-text);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-step:hover,
+.shiftplan-shell.theme-light .shiftplan-today-btn:hover:not(:disabled) {
+    border-color: rgba(14, 165, 233, 0.34);
+    background: var(--sp-date-control-hover-bg);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-picker {
+    border-color: var(--sp-date-control-border);
+    background: var(--sp-date-picker-bg);
+    color: var(--sp-text-primary);
+    box-shadow: 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-picker:focus-within {
+    border-color: rgba(14, 165, 233, 0.46);
+    box-shadow: 0 0 0 0.2rem rgba(14, 165, 233, 0.12), 0 14px 30px rgba(15, 23, 42, 0.08);
+}
+
+.shiftplan-shell.theme-light .shiftplan-date-picker i {
+    color: var(--sp-date-picker-icon);
+}
+
+.shiftplan-shell.theme-light .shiftplan-board-status span {
+    background: var(--sp-status-bg);
+    border-color: var(--sp-panel-border-soft);
+    color: var(--sp-status-text);
+}
+
+.shiftplan-shell.theme-light .shiftplan-table-panel {
+    border-color: var(--sp-panel-border-soft);
+    background: var(--sp-table-bg);
+    box-shadow: var(--sp-shadow-panel);
+}
+
+.shiftplan-shell.theme-light .shiftplan-header-cell {
+    border-right-color: var(--sp-panel-border-faint);
+    border-bottom-color: var(--sp-panel-border-faint);
+    background: var(--sp-header-bg);
+}
+
+.shiftplan-shell.theme-light .shiftplan-header-machine {
+    background: var(--sp-header-machine-bg);
+}
+
+.shiftplan-shell.theme-light .shift-night {
+    box-shadow: inset 0 4px 0 rgba(100, 116, 139, 0.48);
+}
+
+.shiftplan-shell.theme-light .shift-early {
+    box-shadow: inset 0 4px 0 rgba(37, 99, 235, 0.78);
+}
+
+.shiftplan-shell.theme-light .shift-late {
+    box-shadow: inset 0 4px 0 rgba(217, 119, 6, 0.72);
+}
+
+.shiftplan-shell.theme-light .shiftplan-group-row {
+    border-top-color: var(--sp-panel-border-faint);
+    border-bottom-color: var(--sp-panel-border-faint);
+}
+
+.shiftplan-shell.theme-light .shiftplan-data-row {
+    background: var(--sp-data-row-bg);
+    border-top-color: var(--sp-panel-border-faint);
+}
+
+.shiftplan-shell.theme-light .shiftplan-data-row.is-alt {
+    background: var(--sp-data-row-alt-bg);
+}
+
+.shiftplan-shell.theme-light .shiftplan-machine-cell,
+.shiftplan-shell.theme-light .shiftplan-shift-cell {
+    border-right-color: var(--sp-panel-border-faint);
+}
+
+.shiftplan-shell.theme-light .shiftplan-machine-cell {
+    background: var(--sp-machine-bg);
+}
+
+.shiftplan-shell.theme-light .shiftplan-machine-staffing {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid var(--sp-panel-border-faint);
+    color: var(--sp-text-secondary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-shift-cell {
+    background: var(--sp-shift-bg);
+}
+
+.shiftplan-shell.theme-light .shiftplan-empty-cell {
+    border-color: var(--sp-empty-border);
+    background: var(--sp-empty-bg);
+    color: var(--sp-empty-text);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task {
+    box-shadow: var(--sp-shadow-soft);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task::before {
+    background: linear-gradient(90deg, var(--area-color, rgba(148, 163, 184, 0.98)), rgba(255, 255, 255, 0.76));
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-material {
+    background: var(--sp-task-chip-bg);
+    border-color: var(--sp-task-chip-border);
+    color: var(--sp-task-chip-text);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-count {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: var(--sp-task-chip-border);
+    color: var(--sp-text-secondary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-meta {
+    color: var(--sp-task-meta);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-meta strong {
+    color: var(--sp-text-primary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-person {
+    background: rgba(255, 255, 255, 0.78);
+    border-color: var(--sp-task-chip-border);
+    color: var(--sp-text-primary);
+}
+
+.shiftplan-shell.theme-light .shiftplan-task-note {
+    border-top-color: var(--sp-note-border);
+    color: var(--sp-note-text);
+}
+
+.shiftplan-shell.theme-light .theme-thermo {
+    --area-label: #0c4a6e;
+    --area-badge: rgba(14, 165, 233, 0.12);
+    --group-start: rgba(224, 242, 254, 0.98);
+    --group-end: rgba(186, 230, 253, 0.92);
+    --task-bg: linear-gradient(180deg, rgba(240, 249, 255, 0.98) 0%, rgba(224, 242, 254, 0.98) 100%);
+    --task-border: rgba(14, 165, 233, 0.2);
+}
+
+.shiftplan-shell.theme-light .theme-mill {
+    --area-label: #166534;
+    --area-badge: rgba(34, 197, 94, 0.12);
+    --group-start: rgba(220, 252, 231, 0.98);
+    --group-end: rgba(187, 247, 208, 0.92);
+    --task-bg: linear-gradient(180deg, rgba(240, 253, 244, 0.98) 0%, rgba(220, 252, 231, 0.98) 100%);
+    --task-border: rgba(34, 197, 94, 0.2);
+}
+
+.shiftplan-shell.theme-light .theme-stanzen {
+    --area-label: #991b1b;
+    --area-badge: rgba(239, 68, 68, 0.1);
+    --group-start: rgba(254, 226, 226, 0.98);
+    --group-end: rgba(252, 165, 165, 0.9);
+    --task-bg: linear-gradient(180deg, rgba(254, 242, 242, 0.98) 0%, rgba(254, 226, 226, 0.98) 100%);
+    --task-border: rgba(239, 68, 68, 0.2);
+}
+
+.shiftplan-shell.theme-light .theme-uv {
+    --area-label: #6b21a8;
+    --area-badge: rgba(168, 85, 247, 0.1);
+    --group-start: rgba(243, 232, 255, 0.98);
+    --group-end: rgba(221, 214, 254, 0.92);
+    --task-bg: linear-gradient(180deg, rgba(250, 245, 255, 0.98) 0%, rgba(243, 232, 255, 0.98) 100%);
+    --task-border: rgba(168, 85, 247, 0.18);
+}
+
+.shiftplan-shell.theme-light .theme-bending,
+.shiftplan-shell.theme-light .theme-flex {
+    --area-label: #334155;
+    --area-badge: rgba(148, 163, 184, 0.14);
+    --group-start: rgba(241, 245, 249, 0.98);
+    --group-end: rgba(226, 232, 240, 0.94);
+    --task-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(241, 245, 249, 0.98) 100%);
+    --task-border: rgba(148, 163, 184, 0.18);
+}
+
+.shiftplan-shell.theme-light .theme-cleanroom {
+    --area-label: #854d0e;
+    --area-badge: rgba(250, 204, 21, 0.14);
+    --group-start: rgba(254, 249, 195, 0.98);
+    --group-end: rgba(253, 224, 71, 0.9);
+    --task-bg: linear-gradient(180deg, rgba(254, 252, 232, 0.98) 0%, rgba(254, 249, 195, 0.98) 100%);
+    --task-border: rgba(234, 179, 8, 0.2);
+}
+
+.shiftplan-shell.theme-light .theme-misc {
+    --area-label: #9a3412;
+    --area-badge: rgba(180, 83, 9, 0.12);
+    --group-start: rgba(255, 237, 213, 0.98);
+    --group-end: rgba(253, 186, 116, 0.9);
+    --task-bg: linear-gradient(180deg, rgba(255, 247, 237, 0.98) 0%, rgba(255, 237, 213, 0.98) 100%);
+    --task-border: rgba(180, 83, 9, 0.2);
+}

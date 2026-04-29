@@ -4,7 +4,7 @@
 @inject IJSRuntime JS
 @inject SchichtplanService SchichtplanService
 
-<section id="@shellId" class="@($"shiftplan-shell {(isFullscreen ? "is-fullscreen" : string.Empty)}")">
+<section id="@shellId" class="@($"shiftplan-shell {(isFullscreen ? "is-fullscreen" : string.Empty)} {(CurrentTheme == "light" ? "theme-light" : "theme-dark")}")">
     @if (isLoading)
     {
         <div class="d-flex align-items-center justify-content-center py-5 text-secondary">
@@ -225,6 +225,9 @@
     private bool activateMonitorView;
     private bool isBackgroundRefreshing;
     private CancellationTokenSource? monitorRefreshCts;
+    private string CurrentTheme { get; set; } = "dark";
+    private DotNetObjectReference<ShiftPlanBoard>? ThemeReference { get; set; }
+    private string? ThemeSubscriptionId { get; set; }
 
     private string boardDateLabel =>
         board.PlanDatum.ToString("dddd, dd.MM.yyyy", CultureInfo.GetCultureInfo("de-DE"));
@@ -398,6 +401,18 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            ThemeReference = DotNetObjectReference.Create(this);
+            ThemeSubscriptionId = await JS.InvokeAsync<string>("qinTheme.subscribe", ThemeReference);
+
+            var theme = await JS.InvokeAsync<string>("qinTheme.getCurrent");
+            if (ApplyTheme(theme))
+            {
+                StateHasChanged();
+            }
+        }
+
         if (!activateMonitorView)
         {
             return;
@@ -405,6 +420,17 @@
 
         activateMonitorView = false;
         await JS.InvokeVoidAsync("shiftPlanBoard.activate", shellId, controlsId, stageShellId, stageId);
+    }
+
+    [JSInvokable]
+    public Task OnThemeChanged(string theme)
+    {
+        if (ApplyTheme(theme))
+        {
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
     }
 
     public async ValueTask DisposeAsync()
@@ -417,6 +443,19 @@
         catch (JSDisconnectedException)
         {
         }
+
+        if (!string.IsNullOrWhiteSpace(ThemeSubscriptionId))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("qinTheme.unsubscribe", ThemeSubscriptionId);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        ThemeReference?.Dispose();
     }
 
     private void StartMonitorAutoRefresh()
@@ -484,6 +523,18 @@
 
     private static bool HasAssignedUsers(SchichtplanWorkplaceModel workplace) =>
         workplace.Shifts.Any(cell => cell.AssignedUsers.Count > 0);
+
+    private bool ApplyTheme(string? theme)
+    {
+        var normalizedTheme = string.Equals(theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
+        if (CurrentTheme == normalizedTheme)
+        {
+            return false;
+        }
+
+        CurrentTheme = normalizedTheme;
+        return true;
+    }
 
     private sealed record ShiftHeader(string Label);
 }

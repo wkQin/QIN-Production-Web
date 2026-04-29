@@ -11,7 +11,7 @@
 
 <PageTitle>Schichtplan - Verwaltung</PageTitle>
 
-<div class="container-fluid py-4 min-vh-100 bg-dark schichtplan-admin-page">
+<div class="container-fluid py-4 min-vh-100 bg-dark schichtplan-admin-page @(CurrentTheme == "light" ? "theme-light" : "theme-dark")">
     <div class="schichtplan-admin-header">
         <div class="schichtplan-admin-copy">
             <div class="schichtplan-admin-kicker">Verwaltung</div>
@@ -375,6 +375,7 @@
 
     private DateTime SelectedDate { get; set; } = DateTime.Today;
     private bool IsLoading { get; set; } = true;
+    private string CurrentTheme { get; set; } = "dark";
     private bool hasAreaFilterInitialized;
     private string? LoadError { get; set; }
     private string? StatusMessage { get; set; }
@@ -389,6 +390,8 @@
     private bool IsClearingPlan { get; set; }
     private string SelectedAreaFilter { get; set; } = AllAreasFilter;
     private DragItem? CurrentDrag { get; set; }
+    private DotNetObjectReference<Schichtplan>? ThemeReference { get; set; }
+    private string? ThemeSubscriptionId { get; set; }
 
     private string LastUpdatedDisplay =>
         ViewModel.Board.LastUpdatedAt.HasValue
@@ -448,6 +451,34 @@
         await LoadAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        ThemeReference = DotNetObjectReference.Create(this);
+        ThemeSubscriptionId = await JS.InvokeAsync<string>("qinTheme.subscribe", ThemeReference);
+
+        var theme = await JS.InvokeAsync<string>("qinTheme.getCurrent");
+        if (ApplyTheme(theme))
+        {
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public Task OnThemeChanged(string theme)
+    {
+        if (ApplyTheme(theme))
+        {
+            StateHasChanged();
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async ValueTask DisposeAsync()
     {
         try
@@ -457,6 +488,19 @@
         catch (JSDisconnectedException)
         {
         }
+
+        if (!string.IsNullOrWhiteSpace(ThemeSubscriptionId))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("qinTheme.unsubscribe", ThemeSubscriptionId);
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        ThemeReference?.Dispose();
     }
 
     private async Task ReloadAsync()
@@ -818,6 +862,18 @@
 
     private static string GetWorkplaceNumber(string? workplaceNr) =>
         string.IsNullOrWhiteSpace(workplaceNr) ? "Sonderplatz" : workplaceNr;
+
+    private bool ApplyTheme(string? theme)
+    {
+        var normalizedTheme = string.Equals(theme, "light", StringComparison.OrdinalIgnoreCase) ? "light" : "dark";
+        if (CurrentTheme == normalizedTheme)
+        {
+            return false;
+        }
+
+        CurrentTheme = normalizedTheme;
+        return true;
+    }
 
     private sealed record DragItem(
         string Type,
