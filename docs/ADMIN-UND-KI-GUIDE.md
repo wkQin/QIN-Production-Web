@@ -103,7 +103,7 @@ HTML und PDF:
 
 ## Benachrichtigungen
 
-Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen` oder `Update schreiben`, ist ein echter DB-Eintrag in `Alerts` gemeint.
+Wenn der Nutzer sagt `Benachrichtigung schreiben`, `Benachrichtigung anlegen`, `Update schreiben` oder `Update machen`, ist ein echter DB-Eintrag in `Alerts` gemeint.
 
 Immer:
 
@@ -114,12 +114,14 @@ Immer:
 - Den `INSERT` wirklich ausführen.
 - Danach den neuesten Datensatz kurz prüfen.
 
+- Wenn der Nutzer ein Update machen oder eine Version anheben lÃ¤sst, gehÃ¶rt das Schreiben einer Benachrichtigung automatisch dazu.
+
 Titel:
 
 - Format: `Update (Version) Bereich`
 - Als Bereich immer den fachlich passenden Bereich nutzen, nicht allgemein `QIN Production Web`.
 - Bei mehreren Bereichen die wichtigsten Bereiche nennen.
-- Beispiele: `Update (3.2.2) Fehleranalyse`, `Update (3.2.2) Zeiterfassung`, `Update (3.2.2) Verwaltung und Dokumentation`
+- Beispiele: `Update (3.2.3) Fehleranalyse`, `Update (3.2.3) Zeiterfassung`, `Update (3.2.3) Verwaltung und Dokumentation`
 
 Nachricht:
 
@@ -173,6 +175,12 @@ Bei einer Benachrichtigung:
 7. `INSERT INTO Alerts (...) VALUES (...)` ausführen.
 8. Neuesten Datensatz prüfen.
 9. Dem Nutzer kurz bestätigen, was eingefügt wurde.
+
+Bei einem Versions- oder Update-Wunsch:
+
+1. Version an den betroffenen Stellen anheben.
+2. `docs/UPDATE-LOG.md` passend ergÃ¤nzen.
+3. Danach immer auch eine Benachrichtigung in `Alerts` anlegen und prÃ¼fen.
 
 Kurzprompt:
 

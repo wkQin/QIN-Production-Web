@@ -5,6 +5,8 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.3
 
+- Dokumentation: Der Admin- und KI-Guide stellt jetzt klar, dass `Update machen` oder eine Versionsanhebung auch das Schreiben einer Benachrichtigung in `Alerts` umfasst.
+- Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.2 Web` auf `v3.2.3 Web` aktualisiert.
 - Schichtplan: In der Dashboard-Schichtplanung ist das Badge `Arbeitsplatz` im Light-Modus jetzt kontrastreicher und wieder gut lesbar.
 - Schichtplan: Die Dashboard- und Monitoransicht der Produktions-Schichtplanung unterstützt jetzt ebenfalls einen abgestimmten Light-Modus mit helleren Karten, Tabellen und Bereichsfarben.
 - Schichtplan: Der Verwaltungs-Schichtplan unterstützt jetzt einen abgestimmten Light-Modus mit hellen Flächen, gut lesbaren Eingaben und kontrolliert aufgehellten Bereichsfarben.
@@ -53,4 +55,3 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 - Dokumentation: Der Admin- und KI-Guide beschreibt jetzt ausführlich die gewünschte Dokumentationsstruktur mit Dokumentation, Backend, Arbeitsanweisung, Logo, PDF-Regeln und Umbruch-Regeln.
 - Dokumentation: Der Admin- und KI-Guide stellt klar, dass Benachrichtigungstitel fachliche Bereiche wie Fehleranalyse, Zeiterfassung oder Dokumentation nutzen sollen.
 - Projektpflege: `.dll`-Dateien und der Ordner `publish_output/` werden jetzt von Git ignoriert.
-
