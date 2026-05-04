@@ -2,6 +2,9 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace QIN_Production_Web.Data
@@ -31,6 +34,17 @@ namespace QIN_Production_Web.Data
         public string Menge { get; set; } = string.Empty;
         public int Scanner { get; set; }
         public int IsNew01 { get; set; }
+    }
+
+    public class MaterialDickenmessungInfo
+    {
+        public decimal Dickenmessung { get; set; }
+        public string? Suchbegriff { get; set; }
+        public string? Nr { get; set; }
+        public string? Beschreibung { get; set; }
+        public string? Beschreibung2 { get; set; }
+        public string? Lieferant { get; set; }
+        public string? MatchFeld { get; set; }
     }
 
     public class WareneingangService
@@ -157,6 +171,137 @@ namespace QIN_Production_Web.Data
             }
             catch (Exception ex) { Console.WriteLine(ex.Message); }
             return materials;
+        }
+
+        public static async Task<MaterialDickenmessungInfo?> FindMaterialDickenmessungAsync(string? materialText, string? lieferant)
+        {
+            if (string.IsNullOrWhiteSpace(materialText))
+            {
+                return null;
+            }
+
+            const string query = @"
+                SELECT Suchbegriff, Nr, Beschreibung, Beschreibung2, Lieferant, Dickenmessung
+                FROM dbo.Materialliste
+                WHERE Dickenmessung IS NOT NULL;";
+
+            var matches = new List<(MaterialDickenmessungInfo Info, int Score)>();
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(SqlManager.connectionString))
+                {
+                    await connection.OpenAsync();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                    {
+                        while (await reader.ReadAsync())
+                        {
+                            var info = new MaterialDickenmessungInfo
+                            {
+                                Suchbegriff = reader["Suchbegriff"]?.ToString(),
+                                Nr = reader["Nr"]?.ToString(),
+                                Beschreibung = reader["Beschreibung"]?.ToString(),
+                                Beschreibung2 = reader["Beschreibung2"]?.ToString(),
+                                Lieferant = reader["Lieferant"]?.ToString(),
+                                Dickenmessung = Convert.ToDecimal(reader["Dickenmessung"], CultureInfo.InvariantCulture)
+                            };
+
+                            var bestField = string.Empty;
+                            var bestScore = 0;
+
+                            foreach (var candidate in new[]
+                            {
+                                ("Suchbegriff", info.Suchbegriff),
+                                ("Beschreibung", info.Beschreibung),
+                                ("Beschreibung2", info.Beschreibung2)
+                            })
+                            {
+                                var score = ScoreMaterialMatch(materialText, candidate.Item2);
+                                if (score > bestScore)
+                                {
+                                    bestScore = score;
+                                    bestField = candidate.Item1;
+                                }
+                            }
+
+                            if (!string.IsNullOrWhiteSpace(lieferant)
+                                && string.Equals(info.Lieferant?.Trim(), lieferant.Trim(), StringComparison.OrdinalIgnoreCase))
+                            {
+                                bestScore += 25;
+                            }
+
+                            if (bestScore >= 100)
+                            {
+                                info.MatchFeld = bestField;
+                                matches.Add((info, bestScore));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return null;
+            }
+
+            return matches
+                .OrderByDescending(x => x.Score)
+                .Select(x => x.Info)
+                .FirstOrDefault();
+        }
+
+        private static int ScoreMaterialMatch(string input, string? candidate)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                return 0;
+            }
+
+            var normalizedInput = NormalizeMaterialText(input);
+            var normalizedCandidate = NormalizeMaterialText(candidate);
+
+            if (string.IsNullOrWhiteSpace(normalizedInput) || string.IsNullOrWhiteSpace(normalizedCandidate))
+            {
+                return 0;
+            }
+
+            if (normalizedInput == normalizedCandidate)
+            {
+                return 1000 + normalizedCandidate.Length;
+            }
+
+            if (normalizedInput.Contains(normalizedCandidate, StringComparison.OrdinalIgnoreCase))
+            {
+                return 800 + normalizedCandidate.Length;
+            }
+
+            if (normalizedCandidate.Contains(normalizedInput, StringComparison.OrdinalIgnoreCase))
+            {
+                return 750 + normalizedInput.Length;
+            }
+
+            var inputTokens = GetMaterialTokens(input);
+            var candidateTokens = GetMaterialTokens(candidate);
+            var commonTokenCount = inputTokens.Intersect(candidateTokens, StringComparer.OrdinalIgnoreCase).Count();
+
+            return commonTokenCount >= 2 ? 50 * commonTokenCount : 0;
+        }
+
+        private static string NormalizeMaterialText(string value)
+        {
+            return string.Concat(Regex.Matches(value.ToLowerInvariant().Replace('µ', 'u'), @"[\p{L}\p{N}]+")
+                .Select(match => match.Value)
+                .Where(token => token.Length > 1));
+        }
+
+        private static HashSet<string> GetMaterialTokens(string value)
+        {
+            return Regex.Matches(value.ToLowerInvariant().Replace('µ', 'u'), @"[\p{L}\p{N}]+")
+                .Select(match => match.Value)
+                .Where(token => token.Length > 1)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
         }
 
         public static async Task<List<ChargenEntry>> FindChargenAsync(int wareneingangsId)

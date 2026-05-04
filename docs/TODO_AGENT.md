@@ -11,16 +11,16 @@ Dateien:
 - [Components/Pages/Fertigung/Wareneingang.razor](../Components/Pages/Fertigung/Wareneingang.razor)
 - [Data/WareneingangService.cs](../Data/WareneingangService.cs)
 
-- [ ] Wenn `Palettentausch` auf `Ja` steht, darf das Bemerkungsfeld kein Pflichtfeld sein.
-- [ ] Wenn `Palettentausch` auf `Nein` steht, darf das Bemerkungsfeld ebenfalls kein Pflichtfeld sein.
-- [ ] Oben im Wareneingang eine Checkbox für `Mustermaterial` ergänzen.
-- [ ] Wenn `Mustermaterial` aktiviert ist, eine sichtbare Textbox für den Materialnamen anzeigen.
-- [ ] Wenn `Mustermaterial` aktiviert ist, das Feld `Dickenmessung` ausblenden.
-- [ ] Wenn `Mustermaterial` aktiviert ist, keine Pflichtfelder erzwingen.
-- [ ] Die Soll-Dickenmessung für Material aus der Datentabelle `dbo.Materialliste` laden.
-- [ ] Den Sollwert der Dickenmessung im UI anzeigen, zum Beispiel `0,5`.
-- [ ] Für die Dickenmessung eine Toleranz von 10 Prozent erlauben.
-- [ ] Beispiel für die Toleranz prüfen: Bei Sollwert `0,5` müssen Werte von `0,45` bis `0,55` akzeptiert werden.
+- [x] Wenn `Palettentausch` auf `Ja` steht, darf das Bemerkungsfeld kein Pflichtfeld sein.
+- [x] Wenn `Palettentausch` auf `Nein` steht, darf das Bemerkungsfeld ebenfalls kein Pflichtfeld sein.
+- [x] Oben im Wareneingang eine Checkbox für `Mustermaterial` ergänzen.
+- [x] Wenn `Mustermaterial` aktiviert ist, eine sichtbare Textbox für den Materialnamen anzeigen.
+- [x] Wenn `Mustermaterial` aktiviert ist, das Feld `Dickenmessung` ausblenden.
+- [x] Wenn `Mustermaterial` aktiviert ist, keine Pflichtfelder erzwingen.
+- [x] Die Soll-Dickenmessung für Material aus der Datentabelle `dbo.Materialliste` laden.
+- [x] Den Sollwert der Dickenmessung im UI anzeigen, zum Beispiel `0,5`.
+- [x] Für die Dickenmessung eine Toleranz von 10 Prozent erlauben.
+- [x] Beispiel für die Toleranz prüfen: Bei Sollwert `0,5` müssen Werte von `0,45` bis `0,55` akzeptiert werden.
 - [ ] Wenn die Dickenmessung beim Speichern nicht passt, zuerst eine große Fehlermeldung anzeigen.
 - [ ] Die Fehlermeldung soll klar sagen, dass die Dickenmessung außerhalb der erlaubten Werte liegt.
 - [ ] Die Fehlermeldung soll klar warnen, dass die Charge beim nächsten falschen Versuch gesperrt wird.
@@ -31,8 +31,8 @@ Dateien:
 - [ ] Bei einer Sperre direkt eine E-Mail an `QSIntern` senden.
 - [ ] Für den E-Mail-Versand das bestehende System in [Data/WareneingangService.cs](../Data/WareneingangService.cs) verwenden.
 - [ ] Im UI den Text `Letzte Buchungen` in `Offene Wareneingänge` ändern.
-- [ ] Im UI die Dickenmessung anzeigen.
-- [ ] Im UI die Toleranz zur Dickenmessung anzeigen.
+- [x] Im UI die Dickenmessung anzeigen.
+- [x] Im UI die Toleranz zur Dickenmessung anzeigen.
 
 ## Wareneingang Verwaltung
 
@@ -40,18 +40,18 @@ Datei:
 
 - [Components/Pages/Verwaltung/WareneingangVerwaltung.razor](../Components/Pages/Verwaltung/WareneingangVerwaltung.razor)
 
-- [ ] Die Verwaltung soll immer buchen können.
-- [ ] Die Verwaltung darf beim Buchen nicht blockiert werden, nur weil nicht alle Felder gefüllt sind.
-- [ ] Pflichtfeldprüfung in der Verwaltung entsprechend entfernen oder umgehen.
+- [x] Die Verwaltung soll immer buchen können.
+- [x] Die Verwaltung darf beim Buchen nicht blockiert werden, nur weil nicht alle Felder gefüllt sind.
+- [x] Pflichtfeldprüfung in der Verwaltung entsprechend entfernen oder umgehen.
 
 ## Manuelle Aufgaben
 
 - [ ] Über das Auto-Export-Tool auch Non-Automotive-EBs übertragen.
 - [ ] Wareneingangs-Anweisung anpassen.
 - [ ] In die Wareneingangs-Anweisung aufnehmen, was der Werker bei einem Druckproblem machen kann.
-- [ ] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
+- [x] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
 - [ ] Default-Dickenmessung pro Material in `dbo.Materialliste` eintragen.
-- [ ] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.
+- [x] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.
 
 ## Chargensperre System
 

@@ -3,8 +3,17 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
-## Update 3.2.3
+## Update 3.2.4
+- Wareneingang: Der Dickenmessung-Hinweis zeigt den Sollwert jetzt grün und formuliert die Grenze als `Erlaubte Toleranz`.
+- Wareneingang: Die Dickenmessung nutzt bei bekannten Materialien jetzt den Sollwert aus `dbo.Materialliste` und prüft mit 10 Prozent Toleranz.
+- Wareneingang: Ohne Materialtreffer bleibt für neue Erfassungen der Standardbereich `0,23 mm` bis `1,2 mm` gültig.
+- Wareneingang: Die Materialsuche für die Dickenmessung berücksichtigt `Suchbegriff`, `Beschreibung` und `Beschreibung2`.
+- Wareneingang Verwaltung: Buchungen werden nicht mehr durch Pflichtfeldprüfungen blockiert, damit die Verwaltung offene Einträge immer buchen kann.
+- Wareneingang: Palettentausch macht die Bemerkung nicht mehr zum Pflichtfeld; nur Zustand `Schlecht` erzwingt weiterhin eine Bemerkung.
+- Wareneingang: Mustermaterial kann jetzt über eine Checkbox erfasst werden, zeigt ein Materialname-Feld an, blendet die Dickenmessung aus und überspringt Pflichtfeldprüfungen.
 
+## Update 3.2.3
+- Datenbank: `dbo.Materialliste` hat jetzt die neue Spalte `Dickenmessung` als Dezimalwert für die Soll-Dickenmessung pro Material.
 - Dokumentation: Der Admin- und KI-Guide stellt jetzt klar, dass `Update machen` oder eine Versionsanhebung auch das Schreiben einer Benachrichtigung in `Alerts` umfasst.
 - Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.2 Web` auf `v3.2.3 Web` aktualisiert.
 - Schichtplan: In der Dashboard-Schichtplanung ist das Badge `Arbeitsplatz` im Light-Modus jetzt kontrastreicher und wieder gut lesbar.
@@ -25,7 +34,6 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 - Fehleranalyse: Die Spalten im Bereich `Einzelne Einträge` können jetzt sortiert und in der Breite angepasst werden.
 
 ## Update 3.2.2
-
 - Fehleranalyse: Die Summen für `Schlecht Extern` und `Schlecht Intern` werden jetzt in der richtigen Tabelle angezeigt.
 - Fehleranalyse: Das Kalender-Icon in den Datumsfeldern ist jetzt hell und auf dunklem Hintergrund besser sichtbar.
 - Zeiterfassung: Der Excel-Export zeigt manuelle Terminal-Nachträge von Nutzern ohne Verwaltungsrechte jetzt in einer eigenen Spalte `Manueller Nachtrag` an.

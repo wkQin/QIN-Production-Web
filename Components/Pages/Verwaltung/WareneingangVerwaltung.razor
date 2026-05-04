@@ -381,15 +381,6 @@
         try
         {
             var willBeBooked = row.Gebucht != true;
-            if (willBeBooked)
-            {
-                var validationErrors = await GetBookingValidationErrorsAsync(row);
-                if (validationErrors.Count > 0)
-                {
-                    await ShowBookingValidationErrorsAsync(row, validationErrors);
-                    return;
-                }
-            }
 
             IsLoadingWE = true;
             var updated = CloneWareneingang(row);
@@ -425,16 +416,6 @@
         try
         {
             var isLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(updated.Lieferant);
-
-            if (updated.Gebucht == true)
-            {
-                var validationErrors = await GetBookingValidationErrorsAsync(updated);
-                if (validationErrors.Count > 0)
-                {
-                    await ShowBookingValidationErrorsAsync(updated, validationErrors);
-                    return false;
-                }
-            }
 
             if (isLieferantAutomotiv && TryNormalizeDickenmessung(updated.Dickenmessung, out var normalizedDickenmessung))
             {
@@ -608,80 +589,6 @@
         return value.Contains("mm", StringComparison.OrdinalIgnoreCase) ? value : $"{value} mm";
     }
 
-    private async Task<List<string>> GetBookingValidationErrorsAsync(WareneingangEntry row)
-    {
-        var errors = new List<string>();
-        var isLieferantAutomotiv = await WareneingangService.IsLieferantAutomotivAsync(row.Lieferant);
-
-        if (string.IsNullOrWhiteSpace(row.LS_Nr))
-        {
-            errors.Add("Lieferschein eintragen.");
-        }
-
-        if (string.IsNullOrWhiteSpace(row.Lieferant))
-        {
-            errors.Add("Lieferant eintragen.");
-        }
-
-        if (string.IsNullOrWhiteSpace(row.Artikel))
-        {
-            errors.Add("Artikel eintragen.");
-        }
-
-        if (string.IsNullOrWhiteSpace(row.Zustand))
-        {
-            errors.Add("Zustand der Ware eintragen.");
-        }
-
-        if (isLieferantAutomotiv && !TryNormalizeDickenmessung(row.Dickenmessung, out _))
-        {
-            errors.Add("Dickenmessung als Wert zwischen 0,23 mm und 1,2 mm eintragen.");
-        }
-
-        if (IsBemerkungRequiredAndMissing(row))
-        {
-            errors.Add("Bei Palettentausch oder Zustand 'Schlecht' eine Bemerkung eintragen.");
-        }
-
-        var charges = await GetChargesForValidationAsync(row.ID);
-        if (!charges.Any())
-        {
-            errors.Add("Mindestens eine Charge hinterlegen.");
-            return errors;
-        }
-
-        if (charges.Any(x => string.IsNullOrWhiteSpace(x.Charge)))
-        {
-            errors.Add("Jede Charge braucht einen Charge-Text.");
-        }
-
-        if (charges.Any(x => x.MengeAnzeige <= 0))
-        {
-            errors.Add("Jede Charge braucht eine Menge groesser als 0.");
-        }
-
-        return errors;
-    }
-
-    private async Task<List<ChargeEntry>> GetChargesForValidationAsync(int wareneingangId)
-    {
-        if (SelectedWE?.ID == wareneingangId && ChargenRows.Any())
-        {
-            return ChargenRows.ToList();
-        }
-
-        return (await WEService.GetChargenForWareneingangAsync(wareneingangId)).ToList();
-    }
-
-    private async Task ShowBookingValidationErrorsAsync(WareneingangEntry row, List<string> validationErrors)
-    {
-        var reference = !string.IsNullOrWhiteSpace(row.LS_Nr) ? row.LS_Nr : $"ID {row.ID}";
-        var message = $"Eintrag {reference} kann noch nicht gebucht werden.\n\nEs fehlt noch:\n- "
-            + string.Join("\n- ", validationErrors);
-
-        await JS.InvokeVoidAsync("alert", message);
-    }
-
     private static List<string> GetChargeValidationErrors(ChargeEntry charge)
     {
         var errors = new List<string>();
@@ -697,12 +604,6 @@
         }
 
         return errors;
-    }
-
-    private static bool IsBemerkungRequiredAndMissing(WareneingangEntry row)
-    {
-        return (row.Palettentausch == true || IsSchlechterZustand(row.Zustand))
-            && string.IsNullOrWhiteSpace(row.Bemerkung);
     }
 
     private string GetWareneingangRowClass(WareneingangEntry row)

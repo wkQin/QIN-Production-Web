@@ -48,6 +48,32 @@
                 <div class="card-title-modern">
                     <i class="fa-solid fa-clipboard-list text-primary me-2"></i> Stammdaten
                 </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-12">
+                        <div class="form-check form-switch d-flex align-items-center gap-2">
+                            <input class="form-check-input fw-bold"
+                                   style="width: 2.6rem; height: 1.35rem;"
+                                   type="checkbox"
+                                   id="mustermaterialSwitch"
+                                   checked="@IsMustermaterial"
+                                   @onchange="OnMustermaterialChanged" />
+                            <label class="form-check-label text-white fw-bold" style="cursor:pointer;" for="mustermaterialSwitch">
+                                Mustermaterial
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                @if (IsMustermaterial)
+                {
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="modern-label">Materialname</label>
+                            <input type="text" class="form-control modern-input fw-bold text-white" @bind="Material" placeholder="Materialname eintragen..." />
+                        </div>
+                    </div>
+                }
                 
                 <div class="row g-3 mb-3">
                     <div class="col-12">
@@ -115,14 +141,26 @@
                                        inputmode="decimal" />
                                 <span class="input-group-text border-0 text-secondary fw-bold px-3" style="background: rgba(15, 23, 42, 0.8);">mm</span>
                             </div>
-                            <small class="text-secondary">Pflichtfeld. Erlaubt sind nur Werte zwischen 0,23 und 1,2 mm.</small>
+                            @if (MaterialDickenmessung == null)
+                            {
+                                <small class="text-secondary">
+                                    Pflichtfeld. Standardbereich: @FormatDickenmessungValue(DefaultDickenmessungMin) bis @FormatDickenmessungValue(DefaultDickenmessungMax) mm.
+                                </small>
+                            }
+                            else
+                            {
+                                <small>
+                                    <span class="text-success fw-bold">Sollwert: @FormatDickenmessungValue(MaterialDickenmessung.Dickenmessung) mm</span>
+                                    <span class="text-secondary ms-2">Erlaubte Toleranz: @FormatDickenmessungValue(DickenmessungMin) bis @FormatDickenmessungValue(DickenmessungMax) mm</span>
+                                </small>
+                            }
                         </div>
                     </div>
                 }
 
                 <div class="mt-auto">
                     <label class="modern-label">Zusätzliche Bemerkung</label>
-                    <textarea class="form-control modern-input text-white custom-placeholder @BemerkungFieldClass" rows="4" @bind="Bemerkung" placeholder="Optionale Notizen... (Pflichtfeld bei Palettentausch oder Zustand 'Schlecht')"></textarea>
+                    <textarea class="form-control modern-input text-white custom-placeholder @BemerkungFieldClass" rows="4" @bind="Bemerkung" placeholder="Optionale Notizen... (Pflichtfeld nur bei Zustand 'Schlecht')"></textarea>
                 </div>
             </div>
         </div>
@@ -302,6 +340,7 @@
     private string Dickenmessung = "";
     private string Bemerkung = "";
     private bool Palettentausch = false;
+    private bool IsMustermaterial = false;
     
     private string NewCharge = "";
     private string NewMenge = "";
@@ -310,6 +349,7 @@
     private bool IsEditMode = false;
     private bool ShowChargeConfirmation = false;
     private bool IsSelectedLieferantAutomotiv = true;
+    private MaterialDickenmessungInfo? MaterialDickenmessung;
     
     private List<string> Lieferanten = new();
     private List<string> Materialien = new();
@@ -328,7 +368,12 @@
     private string ZustandFieldClass => GetRequiredFieldClass(IsZustandMissing());
     private string DickenmessungFieldClass => GetRequiredFieldClass(IsDickenmessungMissing());
     private string BemerkungFieldClass => GetRequiredFieldClass(IsBemerkungRequiredAndMissing());
-    private bool IsDickenmessungRelevant => string.IsNullOrWhiteSpace(SelectedLieferant) || IsSelectedLieferantAutomotiv;
+    private bool IsDickenmessungRelevant => !IsMustermaterial && (string.IsNullOrWhiteSpace(SelectedLieferant) || IsSelectedLieferantAutomotiv);
+    private const decimal DefaultDickenmessungMin = 0.23m;
+    private const decimal DefaultDickenmessungMax = 1.2m;
+    private const decimal DickenmessungToleranz = 0.10m;
+    private decimal DickenmessungMin => MaterialDickenmessung == null ? DefaultDickenmessungMin : MaterialDickenmessung.Dickenmessung * (1 - DickenmessungToleranz);
+    private decimal DickenmessungMax => MaterialDickenmessung == null ? DefaultDickenmessungMax : MaterialDickenmessung.Dickenmessung * (1 + DickenmessungToleranz);
     private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -351,8 +396,19 @@
         SelectedLieferant = e.Value?.ToString() ?? "";
         await UpdateLieferantAutomotivStatusAsync(clearDickenmessungWhenNotRelevant: true);
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
+        await UpdateMaterialDickenmessungAsync();
         WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
         SortWarenList();
+    }
+
+    private void OnMustermaterialChanged(ChangeEventArgs e)
+    {
+        IsMustermaterial = e.Value is bool value && value;
+        if (IsMustermaterial)
+        {
+            Dickenmessung = string.Empty;
+            MaterialDickenmessung = null;
+        }
     }
 
     private async Task UpdateLieferantAutomotivStatusAsync(bool clearDickenmessungWhenNotRelevant = false)
@@ -362,6 +418,18 @@
         {
             Dickenmessung = string.Empty;
         }
+    }
+
+    private async Task UpdateMaterialDickenmessungAsync()
+    {
+        MaterialDickenmessung = null;
+
+        if (!IsDickenmessungRelevant)
+        {
+            return;
+        }
+
+        MaterialDickenmessung = await WareneingangService.FindMaterialDickenmessungAsync(Material, SelectedLieferant);
     }
 
     private async Task HandleKeyUp(KeyboardEventArgs e)
@@ -436,17 +504,23 @@
 
     private bool IsZustandMissing() => string.IsNullOrWhiteSpace(Zustand);
 
-    private bool IsDickenmessungMissing() => IsDickenmessungRelevant && !TryNormalizeDickenmessung(Dickenmessung, out _);
+    private bool IsDickenmessungMissing() => IsDickenmessungRelevant && !TryNormalizeDickenmessung(Dickenmessung, DickenmessungMin, DickenmessungMax, out _);
 
     private bool IsBemerkungRequiredAndMissing()
     {
-        return (Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase))
+        return !IsMustermaterial
+            && Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase)
             && string.IsNullOrWhiteSpace(Bemerkung);
     }
 
     private List<string> GetValidationErrors()
     {
         var errors = new List<string>();
+
+        if (IsMustermaterial)
+        {
+            return errors;
+        }
 
         if (IsLieferscheinMissing())
         {
@@ -465,12 +539,12 @@
 
         if (IsDickenmessungMissing())
         {
-            errors.Add("Dickenmessung als Wert zwischen 0,23 mm und 1,2 mm eingeben.");
+            errors.Add($"Dickenmessung als Wert zwischen {FormatDickenmessungValue(DickenmessungMin)} mm und {FormatDickenmessungValue(DickenmessungMax)} mm eingeben.");
         }
 
         if (IsBemerkungRequiredAndMissing())
         {
-            errors.Add("Zusätzliche Bemerkung eintragen, wenn Palettentausch aktiv ist oder der Zustand auf 'Schlecht' steht.");
+            errors.Add("Zusätzliche Bemerkung eintragen, wenn der Zustand auf 'Schlecht' steht.");
         }
 
         return errors;
@@ -504,7 +578,7 @@
         string? normalizedDickenmessung = null;
         if (IsDickenmessungRelevant)
         {
-            TryNormalizeDickenmessung(Dickenmessung, out var normalizedValue);
+            TryNormalizeDickenmessung(Dickenmessung, DickenmessungMin, DickenmessungMax, out var normalizedValue);
             normalizedDickenmessung = normalizedValue;
             Dickenmessung = normalizedValue;
         }
@@ -513,13 +587,13 @@
             normalizedDickenmessung = Dickenmessung;
         }
 
-        if (false && (Palettentausch || Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase)) && string.IsNullOrWhiteSpace(Bemerkung))
+        if (false && Zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase) && string.IsNullOrWhiteSpace(Bemerkung))
         {
-            await JS.InvokeVoidAsync("alert", "Bitte geben Sie eine zusätzliche Bemerkung an (zwingend erforderlich bei Palettentausch oder mangelhaftem Zustand).");
+            await JS.InvokeVoidAsync("alert", "Bitte geben Sie eine zusätzliche Bemerkung an (zwingend erforderlich bei mangelhaftem Zustand).");
             return;
         }
 
-        if (false && !TryNormalizeDickenmessung(Dickenmessung, out _))
+        if (false && !TryNormalizeDickenmessung(Dickenmessung, DickenmessungMin, DickenmessungMax, out _))
         {
             await JS.InvokeVoidAsync("alert", "Bitte eine gÃ¼ltige Dickenmessung zwischen 0,23 mm und 1,2 mm eingeben.");
             return;
@@ -601,6 +675,7 @@
         
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
         Material = SelectedEntry.Artikel ?? "";
+        await UpdateMaterialDickenmessungAsync();
         
         ChargenList = await WareneingangService.FindChargenAsync(SelectedEntry.ID);
         UpdateGesamtLaufmeter();
@@ -613,10 +688,12 @@
         SelectedCharge = null;
         Lieferschein = ""; Pos = ""; EBE = ""; SelectedLieferant = ""; Zustand = "Gut"; Material = ""; Dickenmessung = ""; Bemerkung = "";
         Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
+        IsMustermaterial = false;
+        MaterialDickenmessung = null;
         IsSelectedLieferantAutomotiv = true;
     }
 
-    private static bool TryNormalizeDickenmessung(string? input, out string normalized)
+    private static bool TryNormalizeDickenmessung(string? input, decimal minValue, decimal maxValue, out string normalized)
     {
         normalized = string.Empty;
 
@@ -635,13 +712,18 @@
             return false;
         }
 
-        if (value < 0.23m || value > 1.2m)
+        if (value < minValue || value > maxValue)
         {
             return false;
         }
 
         normalized = value.ToString("0.##", new CultureInfo("de-DE"));
         return true;
+    }
+
+    private static string FormatDickenmessungValue(decimal value)
+    {
+        return value.ToString("0.##", new CultureInfo("de-DE"));
     }
 
     private async Task RefreshHistorie()
