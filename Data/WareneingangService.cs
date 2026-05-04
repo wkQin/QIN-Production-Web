@@ -454,6 +454,8 @@ namespace QIN_Production_Web.Data
 
                     if (affectedRows > 0)
                     {
+                        await InsertSperrlagerLogsForWareneingangAsync(connection, wareneingangId, session, sperrgrund);
+
                         await ActivityLogService.InsertLogAsync(
                             session.Name ?? "Unbekannt",
                             $"[Wareneingang] {affectedRows} Charge(n) für Wareneingang ID {wareneingangId} gesperrt. Grund: {sperrgrund}");
@@ -469,6 +471,58 @@ namespace QIN_Production_Web.Data
             }
         }
 
+
+        private static async Task InsertSperrlagerLogsForWareneingangAsync(SqlConnection connection, int wareneingangId, UserSession session, string sperrgrund)
+        {
+            const string selectQuery = @"SELECT ID, Charge FROM dbo.Chargen WHERE Wareneingang_ID = @WareneingangID AND Gesperrt = 1;";
+
+            var gesperrteChargen = new List<(int ID, string Charge)>();
+            using (SqlCommand selectCommand = new SqlCommand(selectQuery, connection))
+            {
+                selectCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                using SqlDataReader reader = await selectCommand.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    gesperrteChargen.Add((
+                        reader["ID"] != DBNull.Value ? Convert.ToInt32(reader["ID"]) : 0,
+                        reader["Charge"]?.ToString() ?? ""));
+                }
+            }
+
+            foreach (var charge in gesperrteChargen.Where(c => c.ID > 0 && !string.IsNullOrWhiteSpace(c.Charge)))
+            {
+                await InsertSperrlagerLogAsync(
+                    connection,
+                    charge.ID,
+                    charge.Charge,
+                    "Gesperrt",
+                    "Wareneingang",
+                    sperrgrund,
+                    session.Name ?? "System",
+                    session.Personalnummer ?? "System",
+                    null);
+            }
+        }
+
+        private static async Task InsertSperrlagerLogAsync(SqlConnection connection, int chargenId, string charge, string aktion, string bereich, string grund, string benutzer, string personalnummer, string? lagerortQRCode)
+        {
+            const string query = @"
+                INSERT INTO dbo.Sperrlager
+                    (Chargen_ID, Charge, Aktion, Bereich, Grund, GesperrtVon, GesperrtVonPersonalnummer, GesperrtAm, LagerortQRCode, Bemerkung)
+                VALUES
+                    (@ChargenID, @Charge, @Aktion, @Bereich, @Grund, @Benutzer, @Personalnummer, SYSDATETIME(), @LagerortQRCode, @Grund);";
+
+            using SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@ChargenID", chargenId);
+            command.Parameters.AddWithValue("@Charge", charge);
+            command.Parameters.AddWithValue("@Aktion", aktion);
+            command.Parameters.AddWithValue("@Bereich", bereich);
+            command.Parameters.AddWithValue("@Grund", grund);
+            command.Parameters.AddWithValue("@Benutzer", string.IsNullOrWhiteSpace(benutzer) ? "System" : benutzer);
+            command.Parameters.AddWithValue("@Personalnummer", string.IsNullOrWhiteSpace(personalnummer) ? "System" : personalnummer);
+            command.Parameters.AddWithValue("@LagerortQRCode", string.IsNullOrWhiteSpace(lagerortQRCode) ? DBNull.Value : lagerortQRCode);
+            await command.ExecuteNonQueryAsync();
+        }
 
         public static async Task<string> GetEingangsDatumForChargeAsync(string charge)
         {

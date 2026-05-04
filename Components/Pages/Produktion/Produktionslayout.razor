@@ -239,8 +239,13 @@
         }
     }
 
-    private void OnSperrlagerClick()
+    private async Task OnSperrlagerClick()
     {
+        if (regalModal != null)
+        {
+            await regalModal.ShowAsync("Sperrlager");
+        }
+
         // Die eigentliche Sperrlager-Ansicht kommt im nächsten Schritt.
     }
     private void ToggleSperrlagerEditor()

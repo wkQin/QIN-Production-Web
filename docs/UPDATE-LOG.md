@@ -4,6 +4,25 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Produktionslayout: Im Sperrlager-Detailpopup wurde `Chargendatum` entfernt.
+- Sperrlager: Beim Vermüllen bleibt eine Charge gesperrt, wird als vermüllt markiert und verschwindet nur aus der offenen gesperrten Chargenliste.
+- Produktionslayout: Sperrlager-Aktionen melden jetzt konkret, welche eingegebenen Chargen nicht in `dbo.Chargen` gefunden wurden.
+- Produktionslayout: Im Sperrlager-Detailpopup wurde das Feld `Status` entfernt, weil Sperrgrund und Sperrlager-Aktion die relevanten Informationen liefern.
+- Produktionslayout: Im Sperrlager wird die Charge-Eingabe jetzt sofort beim Tippen übernommen, damit der Sperren-Button direkt aktiv wird.
+- Produktionslayout: Der Sperren-Button zeigt jetzt auch ohne ausgewählten Platz eine klare Meldung, statt verborgen deaktiviert zu bleiben.
+- Produktionslayout: Im Sperrlager löscht ein Klick auf einen leeren Platz nicht mehr die manuell eingegebene Charge; belegte Plätze übernehmen weiterhin alle Chargen für Bulk-Aktionen.
+- Produktionslayout: Sperrlagerplätze werden wieder als `Platz 1`, `Platz 2` und so weiter angezeigt.
+- Produktionslayout: Das Sperrlager-Detailpopup zeigt keine doppelte Wareneingangs-Bemerkung mehr, wenn bereits ein Sperrgrund vorhanden ist.
+- Sperrlager: Die neue Tabelle `Fertigung.dbo.Sperrlager` protokolliert Sperren, Entsperren und Vermüllen mit Charge, Benutzer, Bereich, Grund, Zeit und Lagerort.
+- Datenbank: `Fertigung.dbo.Sperrlager` ist jetzt per Fremdschlüssel über `Chargen_ID` mit `dbo.Chargen` verbunden.
+- Produktionslayout: Sperrlager-Chargen können jetzt einzeln in das Eingabefeld kopiert werden; ein Platzklick übernimmt alle Chargen des Platzes für Bulk-Aktionen.
+- Produktionslayout: Die offene gesperrte Chargenliste öffnet beim Klick jetzt ebenfalls die Chargendetails.
+- Produktionslayout: Die Sperrlager-Aktionsbuttons führen jetzt Datenbankaktionen für Sperren, Entsperren und Vermüllen aus.
+- Produktionslayout: Das Sperrlager nutzt jetzt mehr Modalhöhe, hat keinen unteren Schließen-Button mehr und zeigt größere Regalplätze für mehrere sichtbare Chargen.
+- Produktionslayout: Die Sperrlager-Ansicht wurde überarbeitet; Plätze zeigen nur noch klickbare Chargen mit Einlagerdatum, Chargendetails öffnen als Popup und offene gesperrte Chargen liegen jetzt in einem Sideview.
+- Produktionslayout: Die Sperrlager-Plätze zeigen jetzt kurze Bezeichnungen wie `1S`, `2S` und `12S`.
+- Produktionslayout: Die Sperrlager-Ansicht zeigt jetzt gesperrte Chargen, die noch nicht in einem Lagerort eingelagert sind, als Warteliste an.
+- Produktionslayout: Der Sperrlager-Button öffnet jetzt eine eigene Sperrlager-Regalansicht mit 2 Regalen, 12 Plätzen und einem Aktionsbereich.
 - Datenbank: Für das Sperrlager wurden in `dbo.Lagerorte` die 12 Plätze `H2R17P1S` bis `H2R17P12S` angelegt.
 - Produktionslayout: Der Sperrlager-Button wurde auf die finale Position gesetzt und der Einstell-Overlay wurde wieder ausgeblendet.
 - Produktionslayout: Für das kommende Sperrlager wurde ein roter Sperrlager-Button auf der Produktionskarte ergänzt.

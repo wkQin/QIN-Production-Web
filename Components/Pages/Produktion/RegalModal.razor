@@ -1,20 +1,24 @@
 @using QIN_Production_Web.Data
+@using Microsoft.AspNetCore.Components.Authorization
 @inject ProduktionslayoutService LayoutService
 @inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
 
 @if (IsVisible)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.85); z-index: 1050; display: flex !important; align-items: center;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 98vw; width: 1800px;">
-            <div class="modal-content border-0" style="background: var(--bg-card); box-shadow: 0 0 40px rgba(255,144,0,0.25);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 98vw; width: @(IsSperrlager ? "1900px" : "1800px");">
+            <div class="modal-content border-0 @(IsSperrlager ? "sperrlager-modal" : "")" style="background: var(--bg-card); box-shadow: 0 0 40px @(IsSperrlager ? "rgba(239,68,68,0.28)" : "rgba(255,144,0,0.25)");">
                 <!-- Header -->
                 <div class="modal-header border-bottom border-light" style="border-bottom-color: var(--border-color) !important;">
-                    <h5 class="modal-title fw-bold text-white fs-3"><i class="fa-solid fa-server ms-1 me-3" style="color:#FF9000;"></i>Regaldetails @RangeTag</h5>
+                    <h5 class="modal-title fw-bold text-white fs-3">
+                        <i class="fa-solid @(IsSperrlager ? "fa-lock" : "fa-server") ms-1 me-3" style="color:@(IsSperrlager ? "#ef4444" : "#FF9000");"></i>@ModalTitle
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
                 </div>
 
                 <!-- Body -->
-                <div class="modal-body p-4 overflow-x-auto" style="height: 80vh;">
+                <div class="modal-body @(IsSperrlager ? "p-3" : "p-4") overflow-x-auto" style="height: @(IsSperrlager ? "86vh" : "80vh");">
                     @if (isLoading)
                     {
                         <div class="d-flex justify-content-center align-items-center h-100 flex-column text-white" style="min-height: 300px;">
@@ -61,6 +65,135 @@
                             }
                         </div>
                     }
+                    else if (IsSperrlager)
+                    {
+                        <div class="sperrlager-view">
+                            <div class="sperrlager-toolbar">
+                                <div>
+                                    <span class="text-secondary small text-uppercase fw-bold">Halle 2 · Regal 17</span>
+                                    <div class="text-white fw-bold">12 definierte Sperrlagerplätze</div>
+                                </div>
+                                <button type="button" class="btn btn-outline-light fw-bold" @onclick="ToggleWaitingSideview">
+                                    <i class="fa-solid fa-list-check me-1"></i>Offene gesperrte Chargen
+                                    <span class="badge bg-danger ms-2">@offeneGesperrteChargen.Count</span>
+                                </button>
+                            </div>
+
+                            <div class="sperrlager-regale">
+                                <div class="sperrlager-regal">
+                                    <div class="sperrlager-regal-body">
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P5S", true)
+                                            @RenderPlatz("H2R17P6S", true)
+                                        </div>
+                                        <div class="sperrlager-divider"></div>
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P3S", true)
+                                            @RenderPlatz("H2R17P4S", true)
+                                        </div>
+                                        <div class="sperrlager-divider"></div>
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P1S", true)
+                                            @RenderPlatz("H2R17P2S", true)
+                                        </div>
+                                    </div>
+                                    <div class="sperrlager-regal-label">Sperrregal A</div>
+                                </div>
+
+                                <div class="sperrlager-regal">
+                                    <div class="sperrlager-regal-body">
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P11S", true)
+                                            @RenderPlatz("H2R17P12S", true)
+                                        </div>
+                                        <div class="sperrlager-divider"></div>
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P9S", true)
+                                            @RenderPlatz("H2R17P10S", true)
+                                        </div>
+                                        <div class="sperrlager-divider"></div>
+                                        <div class="d-flex gap-2 flex-grow-1 align-items-stretch" style="flex-basis: 0; min-height: 0;">
+                                            @RenderPlatz("H2R17P7S", true)
+                                            @RenderPlatz("H2R17P8S", true)
+                                        </div>
+                                    </div>
+                                    <div class="sperrlager-regal-label">Sperrregal B</div>
+                                </div>
+                            </div>
+
+                            <div class="sperrlager-actions">
+                                <div class="sperrlager-action-info">
+                                    <span class="text-secondary small text-uppercase fw-bold">Ausgewählter Platz</span>
+                                    <strong class="text-white fs-5">@(selectedPlatz == null ? "-" : FormatPlatzLabel(selectedPlatz.QRCode, true))</strong>
+                                    <span class="text-secondary small">@(selectedPlatz == null ? "Kein Platz ausgewählt" : $"{selectedPlatz.PlatzChargen.Count} Charge(n) auf diesem Platz")</span>
+                                </div>
+
+                                <div class="sperrlager-action-input">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Charge</label>
+                                    <input class="form-control form-control-lg" placeholder="01232188" @bind="actionCharge" @bind:event="oninput" />
+                                </div>
+
+                                <div class="sperrlager-action-buttons">
+                                    <button class="btn btn-danger fw-bold" disabled="@(!CanSperren)" @onclick='() => ExecuteSperrlagerActionAsync("Sperren")'>
+                                        <i class="fa-solid fa-lock me-1"></i>Sperren
+                                    </button>
+                                    <button class="btn btn-outline-success fw-bold" disabled="@(!CanTextAction)" @onclick='() => ExecuteSperrlagerActionAsync("Entsperren")'>
+                                        <i class="fa-solid fa-lock-open me-1"></i>Entsperren
+                                    </button>
+                                    <button class="btn btn-outline-warning fw-bold" disabled="@(!CanTextAction)" @onclick='() => ExecuteSperrlagerActionAsync("Vermüllen")'>
+                                        <i class="fa-solid fa-trash-can me-1"></i>Vermüllen
+                                    </button>
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(actionMessage))
+                                {
+                                    <div class="sperrlager-action-message">@actionMessage</div>
+                                }
+                            </div>
+
+                            @if (showWaitingSideview)
+                            {
+                                <div class="sperrlager-sideview-backdrop" @onclick="ToggleWaitingSideview"></div>
+                                <aside class="sperrlager-sideview">
+                                    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+                                        <div>
+                                            <strong class="text-white">Offene gesperrte Chargen</strong>
+                                            <div class="text-secondary small">@(offeneGesperrteChargen.Count == 0 ? "Keine offene Charge" : $"{offeneGesperrteChargen.Count} Charge(n)")</div>
+                                        </div>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-light" title="Aktualisieren" @onclick="ReloadSperrlagerDataClickedAsync">
+                                                <i class="fa-solid fa-rotate-right"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-light" title="Schließen" @onclick="ToggleWaitingSideview">
+                                                <i class="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    @if (offeneGesperrteChargen.Count == 0)
+                                    {
+                                        <div class="sperrlager-waiting-empty">Keine gesperrte Charge ohne Lagerplatz gefunden.</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="sperrlager-waiting-items custom-scrollbar">
+                                            @foreach (var charge in offeneGesperrteChargen)
+                                            {
+                                                <button type="button" class="sperrlager-waiting-item" @onclick="() => SelectWaitingChargeAndShowDetailsAsync(charge)">
+                                                    <span class="fw-bold text-white">@charge.Charge</span>
+                                                    <span class="text-secondary small" title="@charge.Artikel">@(string.IsNullOrWhiteSpace(charge.Artikel) ? "Artikel unbekannt" : charge.Artikel)</span>
+                                                    <span class="sperrlager-waiting-meta">
+                                                        <span>@charge.AktuelleMenge / @charge.EchteMenge @charge.Einheit</span>
+                                                        <span>@((charge.Datum ?? charge.Eingangsdatum)?.ToString("dd.MM.yyyy") ?? "-")</span>
+                                                    </span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </aside>
+                            }
+                        </div>
+                    }
                     else
                     {
                         <div class="alert alert-warning">Details für Regal-Tag '@RangeTag' sind noch nicht vollumfänglich visualisiert.</div>
@@ -68,10 +201,105 @@
                 </div>
 
                 <!-- Footer -->
-                <div class="modal-footer border-top border-light" style="border-top-color: var(--border-color) !important;">
+                <div class="modal-footer border-top border-light @(IsSperrlager ? "d-none" : "")" style="border-top-color: var(--border-color) !important;">
                     <button type="button" class="btn btn-secondary fw-bold px-4" @onclick="Close">Schließen</button>
                 </div>
             </div>
+        </div>
+    </div>
+}
+
+@if (isLoadingChargeDetails || selectedChargeDetail != null)
+{
+    <div class="charge-detail-overlay">
+        <div class="charge-detail-dialog">
+            <div class="charge-detail-header">
+                <div>
+                    <span class="text-secondary small text-uppercase fw-bold">Chargendetails</span>
+                    <h5 class="text-white mb-0">@(selectedChargeDetail?.Charge ?? "Lade...")</h5>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-light" title="Schließen" @onclick="CloseChargeDetails">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            @if (isLoadingChargeDetails)
+            {
+                <div class="charge-detail-loading">
+                    <div class="spinner-border text-danger" role="status"></div>
+                    <span>Lade Chargendaten...</span>
+                </div>
+            }
+            else if (selectedChargeDetail == null)
+            {
+                <div class="alert alert-warning mb-0">Keine Details gefunden.</div>
+            }
+            else
+            {
+                <div class="charge-detail-grid">
+                    <div>
+                        <span>Artikel</span>
+                        <strong>@DisplayValue(selectedChargeDetail.Artikel)</strong>
+                    </div>
+                    <div>
+                        <span>Lieferant</span>
+                        <strong>@DisplayValue(selectedChargeDetail.Lieferant)</strong>
+                    </div>
+                    <div>
+                        <span>Lagerort</span>
+                        <strong>@DisplayValue(selectedChargeDetail.Lagerort)</strong>
+                    </div>
+                    <div>
+                        <span>Eingelagert</span>
+                        <strong>@FormatDateTime(selectedChargeDetail.EingelagertAm)</strong>
+                    </div>
+                    <div>
+                        <span>Menge</span>
+                        <strong>@selectedChargeDetail.AktuelleMenge / @selectedChargeDetail.EchteMenge @selectedChargeDetail.Einheit</strong>
+                    </div>
+                    <div>
+                        <span>LS-Nr.</span>
+                        <strong>@DisplayValue(selectedChargeDetail.LSNr)</strong>
+                    </div>
+                    <div>
+                        <span>EBE-Nr.</span>
+                        <strong>@DisplayValue(selectedChargeDetail.EBENr)</strong>
+                    </div>
+                    <div>
+                        <span>Zustand</span>
+                        <strong>@DisplayValue(selectedChargeDetail.Zustand)</strong>
+                    </div>
+                    <div>
+                        <span>Dickenmessung</span>
+                        <strong>@DisplayValue(selectedChargeDetail.Dickenmessung)</strong>
+                    </div>
+                    <div>
+                        <span>Wareneingang</span>
+                        <strong>@FormatDateTime(selectedChargeDetail.Eingangsdatum)</strong>
+                    </div>
+                    <div>
+                        <span>Sperrlager-Aktion</span>
+                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerAktion)</strong>
+                    </div>
+                    <div>
+                        <span>Bereich</span>
+                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerBereich)</strong>
+                    </div>
+                    <div>
+                        <span>Gesperrt/Vorgang von</span>
+                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerBenutzer)</strong>
+                    </div>
+                    <div>
+                        <span>Vorgang am</span>
+                        <strong>@FormatDateTime(selectedChargeDetail.SperrlagerDatum)</strong>
+                    </div>
+                </div>
+
+                <div class="charge-detail-note">
+                    <span>Sperrgrund</span>
+                    <p>@DisplayValue(selectedChargeDetail.SperrlagerGrund)</p>
+                </div>
+            }
         </div>
     </div>
 }
@@ -81,10 +309,27 @@
     private string RangeTag { get; set; } = "";
     private bool isLoading = false;
     private Dictionary<string, PlatzInfo> platzInfos = new();
+    private PlatzInfo? selectedPlatz;
+    private List<SperrlagerChargeInfo> offeneGesperrteChargen = new();
+    private ChargeDetailInfo? selectedChargeDetail;
+    private bool isLoadingChargeDetails;
+    private bool showWaitingSideview;
+    private string actionCharge = "";
+    private string actionMessage = "";
+
+    private bool IsSperrlager => RangeTag == "Sperrlager";
+    private bool CanSperren => !string.IsNullOrWhiteSpace(actionCharge);
+    private bool CanTextAction => !string.IsNullOrWhiteSpace(actionCharge);
+    private string ModalTitle => IsSperrlager ? "Sperrlager Regal 17" : $"Regaldetails {RangeTag}";
 
     public async Task ShowAsync(string rangeTag)
     {
         RangeTag = rangeTag;
+        selectedPlatz = null;
+        selectedChargeDetail = null;
+        showWaitingSideview = false;
+        actionCharge = "";
+        actionMessage = "";
         IsVisible = true;
         isLoading = true;
         StateHasChanged();
@@ -97,10 +342,21 @@
                 for (int p = 1; p <= 45; p++) qrCodesToFetch.Add($"H4R{r}P{p}");
             }
             platzInfos = await LayoutService.GetRegalInfosAsync(qrCodesToFetch);
+            offeneGesperrteChargen.Clear();
+        }
+        else if (rangeTag == "Sperrlager")
+        {
+            var qrCodesToFetch = Enumerable.Range(1, 12)
+                .Select(p => $"H2R17P{p}S")
+                .ToList();
+
+            platzInfos = await LayoutService.GetRegalInfosAsync(qrCodesToFetch);
+            offeneGesperrteChargen = await LayoutService.GetGesperrteNichtEingelagerteChargenAsync();
         }
         else
         {
             platzInfos.Clear();
+            offeneGesperrteChargen.Clear();
         }
 
         isLoading = false;
@@ -115,25 +371,195 @@
 
     private void OnSlotClick(PlatzInfo info)
     {
+        if (IsSperrlager)
+        {
+            selectedPlatz = info;
+            var chargesOnPlace = info.PlatzChargen
+                .Select(c => c.Charge)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (chargesOnPlace.Count > 0)
+            {
+                actionCharge = string.Join(", ", chargesOnPlace);
+            }
+
+            actionMessage = "";
+            return;
+        }
+
         if (info.Charges.Any())
         {
             NavManager.NavigateTo($"/verwaltung/chargenanalyse?charge={Uri.EscapeDataString(string.Join(",", info.Charges))}");
         }
     }
 
-    private RenderFragment RenderPlatz(string qrCode) => __builder =>
+    private void SetActionMessage(string action)
+    {
+        var chargeText = string.IsNullOrWhiteSpace(actionCharge) ? "ausgewählte Charge" : actionCharge.Trim();
+        actionMessage = $"{action}: {chargeText} auf {selectedPlatz?.QRCode ?? "-"} ist für die nächste Logik vorbereitet.";
+    }
+
+    private async Task ExecuteSperrlagerActionAsync(string action)
+    {
+        var user = await GetCurrentUserAsync();
+        SperrlagerActionResult result = action switch
+        {
+            "Sperren" => await LayoutService.SperreChargenImSperrlagerAsync(actionCharge, selectedPlatz?.QRCode ?? "", user.Name, user.Personalnummer),
+            "Entsperren" => await LayoutService.EntsperreChargenAsync(actionCharge, user.Name, user.Personalnummer),
+            "Vermüllen" => await LayoutService.VermuelleChargenAsync(actionCharge, user.Name, user.Personalnummer),
+            _ => new SperrlagerActionResult { Message = "Unbekannte Aktion." }
+        };
+
+        actionMessage = result.Message;
+        await ReloadSperrlagerDataAsync(false);
+    }
+
+    private void SelectWaitingCharge(SperrlagerChargeInfo charge)
+    {
+        actionCharge = charge.Charge;
+        actionMessage = "";
+        showWaitingSideview = false;
+    }
+
+    private void ToggleWaitingSideview()
+    {
+        showWaitingSideview = !showWaitingSideview;
+    }
+
+    private async Task SelectWaitingChargeAndShowDetailsAsync(SperrlagerChargeInfo charge)
+    {
+        SelectWaitingCharge(charge);
+        await ShowChargeDetailsAsync(charge.Charge);
+    }
+
+    private void CopyChargeToActionInput(string charge)
+    {
+        actionCharge = charge;
+        actionMessage = "";
+    }
+
+    private async Task ShowChargeDetailsAsync(string charge)
+    {
+        if (string.IsNullOrWhiteSpace(charge)) return;
+
+        isLoadingChargeDetails = true;
+        selectedChargeDetail = null;
+        StateHasChanged();
+
+        selectedChargeDetail = await LayoutService.GetChargeDetailsAsync(charge);
+
+        isLoadingChargeDetails = false;
+        StateHasChanged();
+    }
+
+    private void CloseChargeDetails()
+    {
+        selectedChargeDetail = null;
+        isLoadingChargeDetails = false;
+    }
+
+    private async Task ReloadSperrlagerDataAsync(bool showLoader = true)
+    {
+        if (!IsSperrlager) return;
+
+        if (showLoader)
+        {
+            isLoading = true;
+            StateHasChanged();
+        }
+
+        var qrCodesToFetch = Enumerable.Range(1, 12)
+            .Select(p => $"H2R17P{p}S")
+            .ToList();
+
+        platzInfos = await LayoutService.GetRegalInfosAsync(qrCodesToFetch);
+        offeneGesperrteChargen = await LayoutService.GetGesperrteNichtEingelagerteChargenAsync();
+
+        if (selectedPlatz != null && platzInfos.TryGetValue(selectedPlatz.QRCode, out var refreshedPlatz))
+        {
+            selectedPlatz = refreshedPlatz;
+        }
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private Task ReloadSperrlagerDataClickedAsync()
+    {
+        return ReloadSperrlagerDataAsync();
+    }
+
+    private async Task<(string Name, string Personalnummer)> GetCurrentUserAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var name = user.Identity?.Name ?? "System";
+        var personalnummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? "System";
+        return (name, personalnummer);
+    }
+
+    private static string FormatPlatzLabel(string qrCode, bool isSperrlagerPlatz)
+    {
+        var rawPlatz = qrCode.Split('P').Last();
+        if (!isSperrlagerPlatz)
+        {
+            return rawPlatz;
+        }
+
+        var platz = rawPlatz.TrimEnd('S', 's');
+        return $"Platz {platz}";
+    }
+
+    private static string DisplayValue(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    }
+
+    private static string FormatDateTime(DateTime? value)
+    {
+        return value.HasValue ? value.Value.ToString("dd.MM.yyyy HH:mm") : "-";
+    }
+
+    private RenderFragment RenderPlatz(string qrCode, bool selectOnly = false) => __builder =>
     {
         platzInfos.TryGetValue(qrCode, out var info);
         info ??= new PlatzInfo { QRCode = qrCode };
 
         bool isEmpty = info.Charges.Count == 0 || info.SumAktuelleMenge <= 0;
         string bgClass = isEmpty ? "platz-empty" : "platz-occupied";
+        bool isSelected = selectedPlatz?.QRCode == qrCode;
+        bool isClickable = selectOnly || !isEmpty;
+        string platzLabel = FormatPlatzLabel(qrCode, selectOnly);
         
-        <div class="flex-grow-1 platz-slot @bgClass rounded p-2 text-white shadow-sm overflow-hidden d-flex flex-column @(isEmpty ? "justify-content-center" : "") @(isEmpty ? "" : "clickable")" style="width: 32%; flex-basis: 0; min-width: 0;" @onclick="() => { if(!isEmpty) OnSlotClick(info); }">
+        <div class="flex-grow-1 platz-slot @(selectOnly ? "sperrlager-slot" : "") @bgClass @(isSelected ? "platz-selected" : "") rounded p-2 text-white shadow-sm overflow-hidden d-flex flex-column @(isEmpty ? "justify-content-center" : "") @(isClickable ? "clickable" : "")" style="width: 32%; flex-basis: 0; min-width: 0;" @onclick="() => { if(isClickable) OnSlotClick(info); }">
             @if(isEmpty) {
                 <div class="fw-bold d-flex flex-column align-items-center justify-content-center h-100 opacity-50 text-center" style="font-size: 0.85rem;">
                     <span>Leer</span>
-                    <span class="mt-1 badge bg-dark border border-secondary">@qrCode.Split('P').Last()</span>
+                    <span class="mt-1 badge bg-dark border border-secondary">@platzLabel</span>
+                </div>
+            } else if (selectOnly) {
+                <div class="sperrlager-slot-content">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="sperrlager-slot-title">@platzLabel</span>
+                        <span class="badge bg-dark border border-secondary">@info.PlatzChargen.Count</span>
+                    </div>
+
+                    <div class="sperrlager-slot-charges custom-scrollbar">
+                        @foreach (var platzCharge in info.PlatzChargen.OrderBy(c => c.Charge))
+                        {
+                            <div class="sperrlager-slot-charge-row">
+                                <button type="button" class="sperrlager-slot-charge" @onclick:stopPropagation="true" @onclick="() => ShowChargeDetailsAsync(platzCharge.Charge)">
+                                    <span>@platzCharge.Charge</span>
+                                    <small>@FormatDateTime(platzCharge.EingelagertAm)</small>
+                                </button>
+                                <button type="button" class="sperrlager-slot-copy" title="In Charge-Feld kopieren" @onclick:stopPropagation="true" @onclick="() => CopyChargeToActionInput(platzCharge.Charge)">
+                                    <i class="fa-solid fa-copy"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
                 </div>
             } else {
                 var topWE = info.Wareneingaenge.OrderByDescending(w => w.Eingangsdatum).FirstOrDefault();
@@ -141,7 +567,7 @@
                     <span class="text-light text-uppercase mb-1" style="font-size: 0.65rem; letter-spacing: 1px;">Artikel:</span>
                     <div class="d-flex justify-content-between align-items-start">
                         <span style="word-break: break-word; min-width: 0; flex: 1; line-height: 1.1; color: #fff;" title="@(topWE?.Artikel ?? "Unbekannt")">@(topWE?.Artikel ?? "Unbekannt")</span>
-                        <span class="ms-1 badge bg-dark border border-secondary" title="Platz QR-Code">@qrCode.Split('P').Last()</span>
+                        <span class="ms-1 badge bg-dark border border-secondary" title="Platz QR-Code">@platzLabel</span>
                     </div>
                 </div>
                 
@@ -170,6 +596,366 @@
 }
 
 <style>
+    .sperrlager-view {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        height: 100%;
+        min-width: 1100px;
+        position: relative;
+    }
+
+    .sperrlager-toolbar {
+        align-items: center;
+        background: rgba(15, 23, 42, 0.52);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        display: flex;
+        flex: 0 0 auto;
+        justify-content: space-between;
+        padding: 10px 12px;
+    }
+
+    .sperrlager-regale {
+        display: grid;
+        flex: 1 1 0;
+        gap: 28px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 0;
+    }
+
+    .sperrlager-regal {
+        background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(30, 41, 59, 0.92));
+        border: 3px solid rgba(148, 163, 184, 0.42);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .sperrlager-regal-body {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
+        padding: 12px;
+    }
+
+    .sperrlager-divider {
+        background: rgba(148, 163, 184, 0.32);
+        border-radius: 2px;
+        flex-shrink: 0;
+        height: 6px;
+        width: 100%;
+    }
+
+    .sperrlager-regal-label {
+        background: rgba(15, 23, 42, 0.96);
+        border-top: 1px solid rgba(239, 68, 68, 0.55);
+        color: #fff;
+        flex-shrink: 0;
+        font-size: 1.15rem;
+        font-weight: 800;
+        padding: 9px;
+        text-align: center;
+    }
+
+    .sperrlager-sideview-backdrop {
+        background: rgba(2, 6, 23, 0.35);
+        inset: 0;
+        position: absolute;
+        z-index: 20;
+    }
+
+    .sperrlager-sideview {
+        background: rgba(15, 23, 42, 0.98);
+        border-left: 1px solid rgba(239, 68, 68, 0.45);
+        border-radius: 8px 0 0 8px;
+        bottom: 0;
+        box-shadow: -24px 0 60px rgba(0, 0, 0, 0.35);
+        padding: 16px;
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: min(430px, 92vw);
+        z-index: 21;
+    }
+
+    .sperrlager-waiting-list {
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 8px;
+        flex: 0 0 auto;
+        padding: 12px;
+    }
+
+    .sperrlager-waiting-empty {
+        align-items: center;
+        border: 1px dashed rgba(148, 163, 184, 0.35);
+        border-radius: 6px;
+        color: #94a3b8;
+        display: flex;
+        min-height: 54px;
+        padding: 12px;
+    }
+
+    .sperrlager-waiting-items {
+        display: grid;
+        gap: 8px;
+        grid-template-columns: 1fr;
+        max-height: calc(100% - 64px);
+        overflow-y: auto;
+        padding-right: 4px;
+    }
+
+    .sperrlager-waiting-item {
+        background: rgba(127, 29, 29, 0.3);
+        border: 1px solid rgba(239, 68, 68, 0.35);
+        border-radius: 6px;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        min-height: 78px;
+        min-width: 0;
+        padding: 8px;
+        text-align: left;
+    }
+
+    .sperrlager-waiting-item:hover {
+        background: rgba(185, 28, 28, 0.45);
+        border-color: rgba(248, 113, 113, 0.75);
+    }
+
+    .sperrlager-waiting-item span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sperrlager-waiting-meta {
+        color: #fecaca;
+        display: flex;
+        font-size: 0.75rem;
+        justify-content: space-between;
+        margin-top: auto;
+    }
+
+    .sperrlager-actions {
+        align-items: stretch;
+        background: rgba(15, 23, 42, 0.55);
+        border: 1px solid rgba(239, 68, 68, 0.45);
+        border-radius: 8px;
+        display: grid;
+        flex: 0 0 auto;
+        gap: 10px;
+        grid-template-columns: 240px minmax(280px, 1fr) 430px;
+        padding: 10px;
+    }
+
+    .sperrlager-action-info {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        min-width: 0;
+    }
+
+    .sperrlager-action-input {
+        min-width: 0;
+    }
+
+    .sperrlager-action-buttons {
+        align-items: end;
+        display: grid;
+        gap: 8px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .sperrlager-action-buttons .btn {
+        min-height: 42px;
+    }
+
+    .sperrlager-action-message {
+        color: #fecaca;
+        font-size: 0.9rem;
+        grid-column: 1 / -1;
+    }
+
+    .platz-selected {
+        outline: 3px solid #fef08a;
+        outline-offset: -3px;
+    }
+
+    .sperrlager-slot.platz-empty {
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px dashed rgba(148, 163, 184, 0.38);
+        color: #94a3b8 !important;
+    }
+
+    .sperrlager-slot.platz-occupied {
+        background: rgba(30, 41, 59, 0.88);
+        border: 1px solid rgba(239, 68, 68, 0.5);
+    }
+
+    .sperrlager-slot.clickable:hover {
+        background: rgba(51, 65, 85, 0.94);
+        border-color: rgba(248, 113, 113, 0.85);
+        cursor: pointer;
+        transform: translateY(-1px);
+    }
+
+    .sperrlager-slot-content {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .sperrlager-slot-title {
+        color: #fecaca;
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .sperrlager-slot-charges {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .sperrlager-slot-charge-row {
+        display: grid;
+        gap: 5px;
+        grid-template-columns: minmax(0, 1fr) 34px;
+    }
+
+    .sperrlager-slot-charge {
+        background: rgba(127, 29, 29, 0.26);
+        border: 1px solid rgba(248, 113, 113, 0.28);
+        border-radius: 6px;
+        color: #fff;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        padding: 7px;
+        text-align: left;
+    }
+
+    .sperrlager-slot-copy {
+        align-items: center;
+        background: rgba(15, 23, 42, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.28);
+        border-radius: 6px;
+        color: #cbd5e1;
+        display: flex;
+        justify-content: center;
+    }
+
+    .sperrlager-slot-charge:hover,
+    .sperrlager-slot-copy:hover {
+        background: rgba(185, 28, 28, 0.42);
+        border-color: rgba(252, 165, 165, 0.72);
+        color: #fff;
+    }
+
+    .sperrlager-slot-charge span {
+        font-size: 0.86rem;
+        font-weight: 800;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .sperrlager-slot-charge small {
+        color: #cbd5e1;
+        font-size: 0.7rem;
+    }
+
+    .charge-detail-overlay {
+        align-items: center;
+        background: rgba(0, 0, 0, 0.68);
+        display: flex;
+        inset: 0;
+        justify-content: center;
+        position: fixed;
+        z-index: 1065;
+    }
+
+    .charge-detail-dialog {
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid rgba(239, 68, 68, 0.5);
+        border-radius: 8px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
+        max-height: 86vh;
+        overflow-y: auto;
+        padding: 18px;
+        width: min(760px, 94vw);
+    }
+
+    .charge-detail-header {
+        align-items: center;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.22);
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+    }
+
+    .charge-detail-loading {
+        align-items: center;
+        color: #fff;
+        display: flex;
+        gap: 12px;
+        min-height: 160px;
+        justify-content: center;
+    }
+
+    .charge-detail-grid {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .charge-detail-grid div,
+    .charge-detail-note {
+        background: rgba(30, 41, 59, 0.72);
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 6px;
+        padding: 10px;
+    }
+
+    .charge-detail-grid span,
+    .charge-detail-note span {
+        color: #94a3b8;
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 800;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+    }
+
+    .charge-detail-grid strong {
+        color: #fff;
+        display: block;
+        overflow-wrap: anywhere;
+    }
+
+    .charge-detail-note {
+        margin-top: 10px;
+    }
+
+    .charge-detail-note p {
+        color: #fff;
+        margin: 0;
+        white-space: pre-wrap;
+    }
+
     .platz-slot {
         min-width: 0;
         display: flex;

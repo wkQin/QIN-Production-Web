@@ -53,6 +53,7 @@ Datei:
 - [x] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
 - [ ] Default-Dickenmessung pro Material in `dbo.Materialliste` eintragen.
 - [x] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.
+- [ ] Regal QRCodes erstellen und kleben.
 
 ## Chargensperre System
 
@@ -63,17 +64,18 @@ Datei:
 - [x] Im Produktionslayout im rot markierten Bereich aus dem Bild einen neuen Regalplatz ergänzen.
 - [x] In `dbo.Lagerorte` die 12 Sperrlager-Plätze `H2R17P1S` bis `H2R17P12S` für Halle 2, Regal 17 anlegen.
 - [ ] Der neue Regalplatz soll alle gesperrten Chargen enthalten.
-- [ ] Chargen entsperren soll im Produktionslayout über die Regalview möglich sein.
-- [ ] Chargen vermüllen soll im Produktionslayout über die Regalview möglich sein.
-- [ ] Für das Chargenregal eine eigene Regalview erstellen.
-- [ ] Als Vorlage die vorhandene Logik oder Ansicht für Regal `43-47` prüfen.
-- [ ] Für das Chargenregal nur 2 Regale anzeigen, nicht 5 wie bei Regal `43-47`.
-- [ ] Beim Klick auf eine Charge im Chargenregal nicht die Chargenanalyse öffnen.
-- [ ] Beim Klick auf eine Charge im Chargenregal ein Popup mit detaillierten Informationen öffnen.
-- [ ] Das Popup soll anzeigen, warum die Charge gesperrt wurde.
-- [ ] Das Popup soll anzeigen, wo die Charge gesperrt wurde.
-- [ ] Das Popup soll anzeigen, von wem die Charge gesperrt wurde.
-- [ ] Das Popup soll Materialinformationen anzeigen.
-- [ ] Das Popup soll Zeitinformationen anzeigen.
-- [ ] Für die Detailinformationen zur Chargensperre eine extra Datentabelle anlegen.
-- [ ] In der neuen Datentabelle alle nötigen Informationen zur Sperre speichern, damit das Popup vollständig gefüllt werden kann.
+- [x] Chargen entsperren soll im Produktionslayout über die Regalview möglich sein.
+- [x] Chargen vermüllen soll im Produktionslayout über die Regalview möglich sein.
+- [x] Für das Chargenregal eine eigene Regalview erstellen.
+- [x] Als Vorlage die vorhandene Logik oder Ansicht für Regal `43-47` prüfen.
+- [x] Für das Chargenregal nur 2 Regale anzeigen, nicht 5 wie bei Regal `43-47`.
+- [x] Beim Klick auf eine Charge im Chargenregal nicht die Chargenanalyse öffnen.
+- [x] Im Sperrlager eine kleine Liste mit gesperrten Chargen anzeigen, die noch nicht eingelagert sind.
+- [x] Beim Klick auf eine Charge im Chargenregal ein Popup mit detaillierten Informationen öffnen.
+- [x] Das Popup soll anzeigen, warum die Charge gesperrt wurde.
+- [x] Das Popup soll anzeigen, wo die Charge gesperrt wurde.
+- [x] Das Popup soll anzeigen, von wem die Charge gesperrt wurde.
+- [x] Das Popup soll Materialinformationen anzeigen.
+- [x] Das Popup soll Zeitinformationen anzeigen.
+- [x] Für die Detailinformationen zur Chargensperre eine extra Datentabelle anlegen.
+- [x] In der neuen Datentabelle alle nötigen Informationen zur Sperre speichern, damit das Popup vollständig gefüllt werden kann.
