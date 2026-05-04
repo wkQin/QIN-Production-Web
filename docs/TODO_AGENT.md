@@ -21,16 +21,16 @@ Dateien:
 - [x] Den Sollwert der Dickenmessung im UI anzeigen, zum Beispiel `0,5`.
 - [x] Für die Dickenmessung eine Toleranz von 10 Prozent erlauben.
 - [x] Beispiel für die Toleranz prüfen: Bei Sollwert `0,5` müssen Werte von `0,45` bis `0,55` akzeptiert werden.
-- [ ] Wenn die Dickenmessung beim Speichern nicht passt, zuerst eine große Fehlermeldung anzeigen.
-- [ ] Die Fehlermeldung soll klar sagen, dass die Dickenmessung außerhalb der erlaubten Werte liegt.
-- [ ] Die Fehlermeldung soll klar warnen, dass die Charge beim nächsten falschen Versuch gesperrt wird.
-- [ ] Beim zweiten falschen Speicher-Versuch alle Chargen der Bestellung sperren.
-- [ ] Die Sperre über `dbo.chargen` setzen.
-- [ ] Für die Sperre die Spalte `Gesperrt` in `dbo.chargen` verwenden.
+- [x] Wenn die Dickenmessung beim Speichern nicht passt, zuerst eine große Fehlermeldung anzeigen.
+- [x] Die Fehlermeldung soll klar sagen, dass die Dickenmessung außerhalb der erlaubten Werte liegt.
+- [x] Die Fehlermeldung soll klar warnen, dass die Charge beim nächsten falschen Versuch gesperrt wird.
+- [x] Beim zweiten falschen Speicher-Versuch alle Chargen der Bestellung sperren.
+- [x] Die Sperre über `dbo.chargen` setzen.
+- [x] Für die Sperre die Spalte `Gesperrt` in `dbo.chargen` verwenden.
 - [ ] Wenn gesperrte Chargen gedruckt werden, muss auf dem Etikett sichtbar stehen, dass die Charge gesperrt ist.
-- [ ] Bei einer Sperre direkt eine E-Mail an `QSIntern` senden.
-- [ ] Für den E-Mail-Versand das bestehende System in [Data/WareneingangService.cs](../Data/WareneingangService.cs) verwenden.
-- [ ] Im UI den Text `Letzte Buchungen` in `Offene Wareneingänge` ändern.
+- [x] Bei einer Sperre direkt eine E-Mail an `QSIntern` senden.
+- [x] Für den E-Mail-Versand das bestehende System in [Data/WareneingangService.cs](../Data/WareneingangService.cs) verwenden.
+- [x] Im UI den Text `Letzte Buchungen` in `Offene Wareneingänge` ändern.
 - [x] Im UI die Dickenmessung anzeigen.
 - [x] Im UI die Toleranz zur Dickenmessung anzeigen.
 
@@ -49,6 +49,7 @@ Datei:
 - [ ] Über das Auto-Export-Tool auch Non-Automotive-EBs übertragen.
 - [ ] Wareneingangs-Anweisung anpassen.
 - [ ] In die Wareneingangs-Anweisung aufnehmen, was der Werker bei einem Druckproblem machen kann.
+- [ ] Wareneingangs-Anweisung Dickenmessung Fehlermeldung beschreiben.
 - [x] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
 - [ ] Default-Dickenmessung pro Material in `dbo.Materialliste` eintragen.
 - [x] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.

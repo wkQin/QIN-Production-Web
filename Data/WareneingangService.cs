@@ -334,6 +334,23 @@ namespace QIN_Production_Web.Data
 
         public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material, string? dickenmessung)
         {
+            var result = await SaveWareneingangCoreAsync(id, lieferant, lsNr, pos, chargenList, zustand, liefermenge, palettentausch, bemerkung, session, eintragBearbeiten, ebe, material, dickenmessung);
+            return result.Success;
+        }
+
+        public static async Task<bool> InsertWareneingangAndSperreChargenAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material, string? dickenmessung, string sperrgrund)
+        {
+            var result = await SaveWareneingangCoreAsync(id, lieferant, lsNr, pos, chargenList, zustand, liefermenge, palettentausch, bemerkung, session, eintragBearbeiten, ebe, material, dickenmessung);
+            if (!result.Success || result.ActiveId <= 0)
+            {
+                return false;
+            }
+
+            return await SperreChargenFuerWareneingangAsync(result.ActiveId, session, sperrgrund);
+        }
+
+        private static async Task<(bool Success, int ActiveId)> SaveWareneingangCoreAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material, string? dickenmessung)
+        {
             string query = eintragBearbeiten ? 
                 @"UPDATE Wareneingang SET Lieferant=@Lieferant, LS_Nr=@LSNr, Pos=@Pos, Zustand=@Zustand, Palettentausch=@Palettentausch, Bemerkung=@Bemerkung, Artikel=@Artikel, Eingangsdatum=@Eingangsdatum, Benutzer=@Benutzer, EBE_Nr=@EBE, Dickenmessung=@Dickenmessung WHERE ID=@ID" :
                 @"INSERT INTO Wareneingang (Lieferant, LS_Nr, Pos, Zustand, Palettentausch, Artikel, Eingangsdatum, Benutzer, Bemerkung, EBE_Nr, Dickenmessung) VALUES (@Lieferant, @LSNr, @Pos, @Zustand, @Palettentausch, @Artikel, @Eingangsdatum, @Benutzer, @Bemerkung, @EBE, @Dickenmessung); SELECT SCOPE_IDENTITY();";
@@ -369,11 +386,12 @@ namespace QIN_Production_Web.Data
                             ? $"[Wareneingang] Eintrag ID {activeId} aktualisiert (Material: {material ?? "Unbekannt"})"
                             : $"[Wareneingang] Neuer Eintrag ID {activeId} erstellt (Lieferant: {lieferant ?? "Unbekannt"}, Material: {material ?? "Unbekannt"})";
                         await ActivityLogService.InsertLogAsync(session.Name ?? "Unbekannt", actionText);
+
+                        return (true, activeId);
                     }
                 }
-                return true;
             }
-            catch (Exception ex) { Console.WriteLine(ex.Message); return false; }
+            catch (Exception ex) { Console.WriteLine(ex.Message); return (false, 0); }
         }
 
         private static async Task InsertChargenAsync(int wareneingangId, List<ChargenEntry> chargenList, SqlConnection connection, string liefermenge)
@@ -401,6 +419,53 @@ namespace QIN_Production_Web.Data
                         await cmd.ExecuteNonQueryAsync();
                     }
                 }
+            }
+        }
+
+        private static async Task<bool> SperreChargenFuerWareneingangAsync(int wareneingangId, UserSession session, string sperrgrund)
+        {
+            const string updateQuery = @"UPDATE dbo.Chargen SET Gesperrt = 1 WHERE Wareneingang_ID = @WareneingangID;";
+            const string countQuery = @"SELECT COUNT(*) FROM dbo.Chargen WHERE Wareneingang_ID = @WareneingangID;";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
+                {
+                    await connection.OpenAsync();
+
+                    int existingChargen;
+                    using (SqlCommand countCommand = new SqlCommand(countQuery, connection))
+                    {
+                        countCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                        existingChargen = Convert.ToInt32(await countCommand.ExecuteScalarAsync());
+                    }
+
+                    if (existingChargen <= 0)
+                    {
+                        return false;
+                    }
+
+                    int affectedRows;
+                    using (SqlCommand updateCommand = new SqlCommand(updateQuery, connection))
+                    {
+                        updateCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                        affectedRows = await updateCommand.ExecuteNonQueryAsync();
+                    }
+
+                    if (affectedRows > 0)
+                    {
+                        await ActivityLogService.InsertLogAsync(
+                            session.Name ?? "Unbekannt",
+                            $"[Wareneingang] {affectedRows} Charge(n) für Wareneingang ID {wareneingangId} gesperrt. Grund: {sperrgrund}");
+                    }
+
+                    return affectedRows > 0;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
             }
         }
 

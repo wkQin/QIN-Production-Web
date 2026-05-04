@@ -109,6 +109,7 @@
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Zustand")'>Zustand @GetSortIcon("Zustand")</th>
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Artikel")'>Artikel @GetSortIcon("Artikel")</th>
+                                <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Bemerkung")'>Bemerkung @GetSortIcon("Bemerkung")</th>
                                 <th class="text-info resizable-th" style="cursor: pointer;" @onclick='() => SortWE("LS_Nr")'>LS Nr @GetSortIcon("LS_Nr")</th>
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Menge")'>Menge @GetSortIcon("Menge")</th>
                                 <th class="resizable-th" style="cursor: pointer;" @onclick='() => SortWE("Chargen")'>Chargen @GetSortIcon("Chargen")</th>
@@ -161,6 +162,7 @@
                                     </td>
                                     <td>@row.Lieferant</td>
                                     <td>@row.Artikel</td>
+                                    <td class="text-secondary" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@row.Bemerkung">@FormatBemerkung(row.Bemerkung)</td>
                                     <td class="fw-bold text-info">@row.LS_Nr</td>
                                     <td>@row.Menge</td>
                                     <td>
@@ -305,6 +307,7 @@
                 (x.LS_Nr != null && x.LS_Nr.ToLower().Contains(q)) ||
                 (x.Lieferant != null && x.Lieferant.ToLower().Contains(q)) ||
                 (x.Artikel != null && x.Artikel.ToLower().Contains(q)) ||
+                (x.Bemerkung != null && x.Bemerkung.ToLower().Contains(q)) ||
                 (x.Zustand != null && x.Zustand.ToLower().Contains(q)) ||
                 (x.Eingangsdatum != null && x.Eingangsdatum.ToLower().Contains(q)) ||
                 (x.Dickenmessung != null && x.Dickenmessung.ToLower().Contains(q)) ||
@@ -589,6 +592,11 @@
         return value.Contains("mm", StringComparison.OrdinalIgnoreCase) ? value : $"{value} mm";
     }
 
+    private static string FormatBemerkung(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
+    }
+
     private static List<string> GetChargeValidationErrors(ChargeEntry charge)
     {
         var errors = new List<string>();
@@ -768,7 +776,7 @@
         else
         {
             SortColumn = column;
-            SortAscending = column is "Lieferant" or "Artikel" or "LS_Nr" or "EBEPos" or "Zustand";
+            SortAscending = column is "Lieferant" or "Artikel" or "Bemerkung" or "LS_Nr" or "EBEPos" or "Zustand";
         }
 
         ApplyWESort();
@@ -782,6 +790,7 @@
             "Zustand" => SortAscending ? FilteredWERows.OrderBy(x => x.Zustand) : FilteredWERows.OrderByDescending(x => x.Zustand),
             "Lieferant" => SortAscending ? FilteredWERows.OrderBy(x => x.Lieferant) : FilteredWERows.OrderByDescending(x => x.Lieferant),
             "Artikel" => SortAscending ? FilteredWERows.OrderBy(x => x.Artikel) : FilteredWERows.OrderByDescending(x => x.Artikel),
+            "Bemerkung" => SortAscending ? FilteredWERows.OrderBy(x => x.Bemerkung) : FilteredWERows.OrderByDescending(x => x.Bemerkung),
             "LS_Nr" => SortAscending ? FilteredWERows.OrderBy(x => x.LS_Nr) : FilteredWERows.OrderByDescending(x => x.LS_Nr),
             "EBEPos" => SortAscending ? FilteredWERows.OrderBy(x => FormatEbePos(x)) : FilteredWERows.OrderByDescending(x => FormatEbePos(x)),
             "Menge" => SortAscending ? FilteredWERows.OrderBy(x => ParseInt(x.Menge)) : FilteredWERows.OrderByDescending(x => ParseInt(x.Menge)),

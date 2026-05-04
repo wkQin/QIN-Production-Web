@@ -4,6 +4,14 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Dokumentation: Die Wareneingang-Dokumentation, Backend-Doku und Arbeitsanweisung wurden auf Mustermaterial, Dickenmessung-Toleranz, Chargensperre, Bemerkungen und Druckproblem-Hinweise aktualisiert.
+- Wareneingang: Bei automatischer Chargensperre bleibt eine vorhandene Werker-Bemerkung erhalten und die Sperr-Bemerkung wird ergänzt.
+- Wareneingang: Bei automatischer Chargensperre wird die Sperr-Bemerkung jetzt auch im Wareneingang gespeichert.
+- Datenbank: `dbo.Wareneingang` hat jetzt auch in `qinFSK\table1` die Spalte `Bemerkung`, passend zur Fertigungsdatenbank.
+- Wareneingang: Die Bemerkung wird jetzt in den Wareneingangstabellen in Fertigung und Verwaltung angezeigt, durchsucht und in der Verwaltung sortiert.
+- Wareneingang: Der Bereich `Letzte Buchungen` heißt jetzt `Offene Wareneingänge`.
+- Wareneingang: Bei falscher Dickenmessung erscheint zuerst ein großes Warnfenster; beim nächsten falschen Speicher-Versuch werden vorhandene Chargen der Bestellung gesperrt.
+- Wareneingang: Die Chargensperre nutzt `dbo.Chargen.Gesperrt` und sendet bei einer Sperre direkt eine QS-Mail.
 - Wareneingang: Der Dickenmessung-Hinweis zeigt den Sollwert jetzt grün und formuliert die Grenze als `Erlaubte Toleranz`.
 - Wareneingang: Die Dickenmessung nutzt bei bekannten Materialien jetzt den Sollwert aus `dbo.Materialliste` und prüft mit 10 Prozent Toleranz.
 - Wareneingang: Ohne Materialtreffer bleibt für neue Erfassungen der Standardbereich `0,23 mm` bis `1,2 mm` gültig.

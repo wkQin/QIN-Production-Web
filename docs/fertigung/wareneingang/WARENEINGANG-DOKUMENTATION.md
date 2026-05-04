@@ -2,7 +2,7 @@
 
 Allgemeine Dokumentation für den Wareneingang in QIN Production Web.
 
-Stand: Update 3.2.2
+Stand: Update 3.2.4
 
 ## Zweck
 
@@ -37,8 +37,11 @@ Der Wareneingang umfasst:
 - Erfassen von Position und EBE-Nummer
 - Bewerten des Warenzustands
 - Dokumentieren von Palettentausch
+- Erfassen von Mustermaterial
 - Erfassen einer Dickenmessung
+- Prüfen der Dickenmessung gegen Material-Sollwert und Toleranz
 - Erfassen von Chargen und Mengen
+- Automatisches Sperren von Chargen bei wiederholt falscher Dickenmessung
 - Drucken von Chargenetiketten
 - Anzeigen und Bearbeiten offener Wareneingänge
 - Senden einer QS-Mail nach dem Speichern
@@ -59,6 +62,7 @@ Dazu gehören:
 - EBE-Nummer
 - Zustand der Ware
 - Palettentausch
+- Mustermaterial
 - Dickenmessung
 - Bemerkung
 
@@ -70,11 +74,11 @@ Chargen können gescannt oder manuell hinzugefügt werden.
 
 Die Gesamtmenge wird in der Maske angezeigt.
 
-### Historie
+### Offene Wareneingänge
 
-In der Historie werden offene Wareneingänge angezeigt.
+Im Bereich `Offene Wareneingänge` werden noch nicht gebuchte Wareneingänge angezeigt.
 
-Über die Historie kann ein bestehender Eintrag geladen und bearbeitet werden.
+Über die Tabelle kann ein bestehender Eintrag geladen und bearbeitet werden.
 
 ## Zustände der Ware
 
@@ -110,17 +114,46 @@ Bei Zustand `Schlecht` wird die E-Mail als wichtiger Prüffall gekennzeichnet.
 
 Bei jedem Wareneingang muss angegeben werden, ob ein Palettentausch stattgefunden hat.
 
-Wenn Palettentausch ausgewählt wird, ist eine Bemerkung Pflicht.
+Die Bemerkung soll bei Besonderheiten kurz beschreiben, was getauscht wurde.
 
-Die Bemerkung soll kurz beschreiben, was getauscht wurde.
+Aktueller Hinweis:
+
+- Palettentausch macht die Bemerkung nicht mehr automatisch zum Pflichtfeld.
+- Eine Bemerkung bleibt bei Zustand `Schlecht` Pflicht.
+- Eine Bemerkung ist trotzdem sinnvoll, wenn Besonderheiten später nachvollziehbar sein sollen.
+
+## Mustermaterial
+
+Für Mustermaterial gibt es eine eigene Checkbox.
+
+Wenn `Mustermaterial` aktiviert ist:
+
+- Das Feld für den Materialnamen wird angezeigt.
+- Die Dickenmessung wird ausgeblendet.
+- Pflichtfeldprüfungen werden nicht erzwungen.
+
+Mustermaterial wird verwendet, wenn das Material noch nicht wie normales Serienmaterial geprüft oder zugeordnet werden kann.
 
 ## Dickenmessung
 
-Die Dickenmessung ist für relevante Lieferanten ein Pflichtfeld.
+Die Dickenmessung ist für relevante Lieferanten ein Pflichtfeld, außer wenn `Mustermaterial` aktiv ist.
 
-Erlaubter Bereich:
+Wenn kein Material-Sollwert gefunden wird, gilt der Standardbereich:
 
 - `0,23 mm` bis `1,2 mm`
+
+Wenn das Material in `dbo.Materialliste` gefunden wird, verwendet das System den dort gepflegten Sollwert aus `Dickenmessung`.
+
+Die Materialsuche berücksichtigt:
+
+- `Suchbegriff`
+- `Beschreibung`
+- `Beschreibung2`
+
+Zum Sollwert wird eine erlaubte Toleranz angezeigt. Beispiel:
+
+- Sollwert: `0,5 mm`
+- Erlaubte Toleranz: `0,45 mm` bis `0,55 mm`
 
 Das System akzeptiert Eingaben mit Komma oder Punkt.
 
@@ -129,6 +162,18 @@ Beispiele:
 - `0,23`
 - `0.23`
 - `1,2`
+
+Wenn die Dickenmessung außerhalb der erlaubten Toleranz liegt:
+
+1. Das System zeigt zuerst ein großes Warnfenster.
+2. Der Werker soll den Messwert prüfen und korrigieren.
+3. Wenn beim nächsten Speicher-Versuch wieder ein falscher Wert eingetragen wird, werden vorhandene Chargen dieser Bestellung gesperrt.
+4. Die Sperre wird in `dbo.Chargen.Gesperrt` gesetzt.
+5. QSIntern erhält automatisch eine E-Mail.
+
+Eine Sperre ist nur möglich, wenn Chargen vorhanden sind.
+
+Wenn der Werker bereits eine Bemerkung eingetragen hat, bleibt diese erhalten. Die automatische Sperr-Bemerkung wird ergänzt.
 
 ## Chargen
 
@@ -157,7 +202,7 @@ Das Etikett muss auf das passende Gebinde oder den passenden Karton geklebt werd
 
 ## Bearbeiten von Einträgen
 
-Offene Wareneingänge können über die Historie erneut geladen werden.
+Offene Wareneingänge können über die Tabelle `Offene Wareneingänge` erneut geladen werden.
 
 Nach dem Laden können Angaben korrigiert und gespeichert werden.
 
@@ -177,6 +222,7 @@ Ein Qualitätsfall liegt vor, wenn:
 
 - Zustand `Schlecht` ausgewählt wird.
 - Die Dickenmessung außerhalb des erlaubten Bereichs liegt.
+- Chargen wegen wiederholt falscher Dickenmessung gesperrt wurden.
 - Ware beschädigt oder auffällig ist.
 - Chargen oder Mengen nicht plausibel sind.
 
@@ -185,6 +231,8 @@ In diesen Fällen:
 1. Bemerkung im System eintragen.
 2. QS informieren.
 3. Ware nach interner Vorgabe kennzeichnen oder separieren.
+
+Bei automatischer Chargensperre werden die betroffenen Chargen zusätzlich technisch gesperrt und müssen nach QS-Vorgabe behandelt werden.
 
 Wenn der Wareneingang gespeichert wird, sendet das System eine QS-Mail an `qsintern@qin-form.de`.
 
@@ -227,7 +275,8 @@ Nach dem Speichern:
 
 - Der Wareneingang ist im System erfasst.
 - Chargen sind gespeichert.
-- Die Historie wird aktualisiert.
+- Die Tabelle `Offene Wareneingänge` wird aktualisiert.
 - Bei Bedarf kann ein Etikett gedruckt werden.
 - QS erhält eine systemgenerierte E-Mail an `qsintern@qin-form.de`.
 - Bei Zustand `Schlecht` wird die QS-Mail als wichtiger Prüffall markiert.
+- Bei wiederholt falscher Dickenmessung werden vorhandene Chargen gesperrt und QS wird informiert.

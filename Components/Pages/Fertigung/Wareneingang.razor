@@ -253,7 +253,7 @@
     <div class="glass-card qin-panel p-0 overflow-hidden mt-2 mb-4">
         <div class="p-4 border-bottom d-flex justify-content-between align-items-center" style="border-color: var(--border-color) !important;">
             <div>
-                <h4 class="text-white fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Letzte Buchungen (Historie)</h4>
+                <h4 class="text-white fw-bold mb-1"><i class="fa-solid fa-clock-rotate-left text-primary me-2"></i> Offene Wareneingänge</h4>
                 <span class="text-secondary small">Klicken Sie auf eine Zeile, um den Eintrag in die Maske oben zu laden.</span>
             </div>
             <button class="btn btn-glass btn-sm px-3" @onclick="RefreshHistorie"><i class="fa-solid fa-rotate me-2"></i>Aktualisieren</button>
@@ -269,13 +269,14 @@
                         <th style="cursor: pointer;" @onclick='() => SortTable("EBE")'>EBE-Nr. @GetSortIcon("EBE")</th>
                         <th style="cursor: pointer;" @onclick='() => SortTable("Lieferant")'>Lieferant @GetSortIcon("Lieferant")</th>
                         <th style="cursor: pointer;" @onclick='() => SortTable("Material")'>Material / Artikel @GetSortIcon("Material")</th>
+                        <th style="cursor: pointer;" @onclick='() => SortTable("Bemerkung")'>Bemerkung @GetSortIcon("Bemerkung")</th>
                         <th class="text-end" style="cursor: pointer;" @onclick='() => SortTable("Menge")'>Gebuchte LM/STK @GetSortIcon("Menge")</th>
                         <th class="text-center" style="padding-right: 1.5rem; cursor: pointer;" @onclick='() => SortTable("Chargen")'>Anzahl Chargen @GetSortIcon("Chargen")</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if(WarenList.Count == 0) {
-                        <tr><td colspan="6" class="text-secondary text-center py-5">Keine Historie verfügbar.</td></tr>
+                        <tr><td colspan="9" class="text-secondary text-center py-5">Keine offenen Wareneingänge verfügbar.</td></tr>
                     }
                     @foreach(var w in WarenList)
                     {
@@ -286,6 +287,7 @@
                             <td class="text-info fw-bold py-3">@w.EBE_NR</td>
                             <td class="text-white py-3">@w.Lieferant</td>
                             <td class="text-secondary py-3" style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Artikel">@w.Artikel</td>
+                            <td class="text-secondary py-3" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Bemerkung">@FormatBemerkung(w.Bemerkung)</td>
                             <td class="text-warning fw-bold text-end py-3">@w.Menge LM/STK</td>
                             <td class="text-center py-3" style="padding-right: 1.5rem;">
                                 <span class="badge bg-secondary px-3 py-2 fs-6 rounded-pill">@w.Chargen</span>
@@ -329,6 +331,62 @@
     </div>
 }
 
+@if (ShowDickenmessungWarning)
+{
+    <div class="modal fade show d-block charge-confirmation-backdrop" tabindex="-1" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content charge-confirmation-modal text-white border-0">
+                <div class="modal-header border-danger">
+                    <h4 class="modal-title fw-bold text-danger">
+                        <i class="fa-solid fa-triangle-exclamation me-2"></i>Dickenmessung außerhalb der Toleranz
+                    </h4>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CloseDickenmessungWarning" aria-label="Schließen"></button>
+                </div>
+                <div class="modal-body py-4 px-4">
+                    <div class="alert alert-danger fw-bold fs-5 mb-4" role="alert">
+                        Die eingetragene Dickenmessung passt nicht zum erlaubten Bereich.
+                    </div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded border border-secondary h-100">
+                                <div class="modern-label mb-1">Eingetragen</div>
+                                <div class="fs-4 fw-bold text-danger">@DickenmessungAnzeige</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded border border-secondary h-100">
+                                <div class="modern-label mb-1">Sollwert</div>
+                                <div class="fs-4 fw-bold text-success">@DickenmessungSollwertAnzeige</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded border border-secondary h-100">
+                                <div class="modern-label mb-1">Erlaubte Toleranz</div>
+                                <div class="fs-5 fw-bold text-warning">@DickenmessungToleranzAnzeige</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="fs-5 fw-semibold mb-2">Bitte Messwert prüfen und korrigieren.</p>
+                    <p class="text-warning fw-bold mb-0">
+                        Wenn beim nächsten Speicher-Versuch wieder ein falscher Wert eingetragen wird, werden alle vorhandenen Chargen dieser Bestellung gesperrt.
+                    </p>
+                    @if (!ChargenList.Any())
+                    {
+                        <p class="text-secondary mt-3 mb-0">
+                            Hinweis: Eine Sperre kann nur gesetzt werden, wenn Chargen erfasst sind.
+                        </p>
+                    }
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="button" class="btn btn-gradient-primary px-4 py-2 fw-bold" @onclick="CloseDickenmessungWarning">
+                        <i class="fa-solid fa-check me-2"></i>Verstanden
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     // Form
     private string Lieferschein = "";
@@ -349,6 +407,8 @@
     private bool IsEditMode = false;
     private bool ShowChargeConfirmation = false;
     private bool IsSelectedLieferantAutomotiv = true;
+    private bool ShowDickenmessungWarning = false;
+    private bool DickenmessungWarningShown = false;
     private MaterialDickenmessungInfo? MaterialDickenmessung;
     
     private List<string> Lieferanten = new();
@@ -374,6 +434,9 @@
     private const decimal DickenmessungToleranz = 0.10m;
     private decimal DickenmessungMin => MaterialDickenmessung == null ? DefaultDickenmessungMin : MaterialDickenmessung.Dickenmessung * (1 - DickenmessungToleranz);
     private decimal DickenmessungMax => MaterialDickenmessung == null ? DefaultDickenmessungMax : MaterialDickenmessung.Dickenmessung * (1 + DickenmessungToleranz);
+    private string DickenmessungAnzeige => string.IsNullOrWhiteSpace(Dickenmessung) ? "-" : $"{Dickenmessung} mm";
+    private string DickenmessungSollwertAnzeige => MaterialDickenmessung == null ? "Standardbereich" : $"{FormatDickenmessungValue(MaterialDickenmessung.Dickenmessung)} mm";
+    private string DickenmessungToleranzAnzeige => $"{FormatDickenmessungValue(DickenmessungMin)} bis {FormatDickenmessungValue(DickenmessungMax)} mm";
     private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -408,6 +471,7 @@
         {
             Dickenmessung = string.Empty;
             MaterialDickenmessung = null;
+            ResetDickenmessungWarning();
         }
     }
 
@@ -493,6 +557,17 @@
         PendingMenge = "";
     }
 
+    private void CloseDickenmessungWarning()
+    {
+        ShowDickenmessungWarning = false;
+    }
+
+    private void ResetDickenmessungWarning()
+    {
+        ShowDickenmessungWarning = false;
+        DickenmessungWarningShown = false;
+    }
+
     private async Task FocusChargeInputAsync()
     {
         await JS.InvokeVoidAsync("eval", "document.getElementById('chargeInput').focus()");
@@ -564,6 +639,11 @@
 
     private async Task SaveEintrag()
     {
+        if (IsDickenmessungRelevant && !TryNormalizeDickenmessung(Dickenmessung, DickenmessungMin, DickenmessungMax, out _))
+        {
+            await HandleInvalidDickenmessungAsync();
+            return;
+        }
 
         var validationErrors = GetValidationErrors();
         if (validationErrors.Count > 0)
@@ -581,6 +661,7 @@
             TryNormalizeDickenmessung(Dickenmessung, DickenmessungMin, DickenmessungMax, out var normalizedValue);
             normalizedDickenmessung = normalizedValue;
             Dickenmessung = normalizedValue;
+            ResetDickenmessungWarning();
         }
         else if (!string.IsNullOrWhiteSpace(Dickenmessung))
         {
@@ -637,6 +718,65 @@
         }
     }
 
+    private async Task HandleInvalidDickenmessungAsync()
+    {
+        if (!DickenmessungWarningShown)
+        {
+            DickenmessungWarningShown = true;
+            ShowDickenmessungWarning = true;
+            return;
+        }
+
+        if (!ChargenList.Any())
+        {
+            ShowDickenmessungWarning = true;
+            return;
+        }
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        string actualUserName = user.Identity?.Name ?? "Unbekannt";
+        string pNummer = user.Claims.FirstOrDefault(c => c.Type == "UserId")?.Value ?? "100";
+        var userSession = new UserSession { Name = actualUserName, Personalnummer = pNummer };
+        var sperrgrund = $"Dickenmessung außerhalb der erlaubten Toleranz. Eingetragen: {DickenmessungAnzeige}. Erlaubt: {DickenmessungToleranzAnzeige}.";
+        var automatischeSperrBemerkung = $"{sperrgrund} Die Chargen dieser Bestellung wurden automatisch gesperrt.";
+        var sperrBemerkung = string.IsNullOrWhiteSpace(Bemerkung)
+            ? automatischeSperrBemerkung
+            : $"{Bemerkung.Trim()}\n\nAutomatische Sperre:\n{automatischeSperrBemerkung}";
+
+        bool gesperrt = await WareneingangService.InsertWareneingangAndSperreChargenAsync(
+            SelectedEntry?.ID.ToString(), SelectedLieferant, Lieferschein, Pos, ChargenList,
+            Zustand, GesamtLaufmeter.ToString(), Palettentausch, sperrBemerkung, userSession, IsEditMode, EBE, Material, Dickenmessung, sperrgrund);
+
+        if (!gesperrt)
+        {
+            await JS.InvokeVoidAsync("alert", "Die Chargen konnten nicht gesperrt werden. Bitte prüfen, ob Chargen vorhanden sind.");
+            return;
+        }
+
+        string savedLieferschein = Lieferschein;
+        string savedEBE = EBE;
+        string savedLieferant = SelectedLieferant;
+        string savedMaterial = Material;
+        string qsBemerkung = sperrBemerkung;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, qsBemerkung, actualUserName, "qsintern@qin-form.de", "Schlecht");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fire-and-forget Sperr-Email failed: {ex.Message}");
+            }
+        });
+
+        await JS.InvokeVoidAsync("alert", "Die Dickenmessung ist erneut außerhalb der Toleranz. Alle vorhandenen Chargen dieser Bestellung wurden gesperrt und QSIntern wurde informiert.");
+        WarenList = await WareneingangService.LoadWareneingangAsync(string.IsNullOrEmpty(SelectedLieferant) ? null : SelectedLieferant);
+        RefreshForm();
+    }
+
     private async Task PrintSelectedCharge()
     {
         if (SelectedCharge == null || string.IsNullOrWhiteSpace(SelectedLieferant))
@@ -690,6 +830,7 @@
         Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
         IsMustermaterial = false;
         MaterialDickenmessung = null;
+        ResetDickenmessungWarning();
         IsSelectedLieferantAutomotiv = true;
     }
 
@@ -756,6 +897,7 @@
             case "EBE": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.EBE_NR).ToList() : WarenList.OrderByDescending(x => x.EBE_NR).ToList(); break;
             case "Lieferant": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Lieferant).ToList() : WarenList.OrderByDescending(x => x.Lieferant).ToList(); break;
             case "Material": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Artikel).ToList() : WarenList.OrderByDescending(x => x.Artikel).ToList(); break;
+            case "Bemerkung": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Bemerkung).ToList() : WarenList.OrderByDescending(x => x.Bemerkung).ToList(); break;
             case "Menge": WarenList = IsSortedAscending ? WarenList.OrderBy(x => int.TryParse(x.Menge, out int m) ? m : 0).ToList() : WarenList.OrderByDescending(x => int.TryParse(x.Menge, out int m) ? m : 0).ToList(); break;
             case "Chargen": WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.Chargen).ToList() : WarenList.OrderByDescending(x => x.Chargen).ToList(); break;
             default: WarenList = IsSortedAscending ? WarenList.OrderBy(x => x.ID).ToList() : WarenList.OrderByDescending(x => x.ID).ToList(); break;
@@ -767,6 +909,11 @@
         if (SortColumn != column) return @<span></span>;
         if (IsSortedAscending) return @<i class="fa-solid fa-sort-up ms-1 text-primary"></i>;
         return @<i class="fa-solid fa-sort-down ms-1 text-primary"></i>;
+    }
+
+    private static string FormatBemerkung(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
 }
 

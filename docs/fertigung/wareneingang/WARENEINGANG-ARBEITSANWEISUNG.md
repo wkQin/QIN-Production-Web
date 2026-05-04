@@ -2,7 +2,7 @@
 
 Arbeitsanweisung für Mitarbeiterinnen und Mitarbeiter im Wareneingang.
 
-Stand: Update 3.2.2
+Stand: Update 3.2.4
 
 ## Ziel
 
@@ -16,6 +16,7 @@ Am Ende müssen folgende Informationen im System stehen:
 - EBE-Nummer, falls vorhanden
 - Zustand der Ware
 - Palettentausch
+- Mustermaterial, falls zutreffend
 - Dickenmessung, wenn erforderlich
 - Chargen
 - Mengen
@@ -97,16 +98,33 @@ Bei `Palettentausch` immer `Ja` oder `Nein` auswählen.
 
 Wenn `Ja` ausgewählt wird:
 
-- In der Bemerkung kurz beschreiben, was getauscht wurde.
+- Bei Besonderheiten in der Bemerkung kurz beschreiben, was getauscht wurde.
 
-### 7. Dickenmessung eintragen
+Palettentausch allein macht die Bemerkung nicht zum Pflichtfeld.
+
+### 7. Mustermaterial erfassen
+
+Wenn es sich um Mustermaterial handelt:
+
+1. Checkbox `Mustermaterial` aktivieren.
+2. Materialnamen in das sichtbare Feld eintragen.
+3. Keine Dickenmessung eintragen, weil das Feld ausgeblendet wird.
+
+Bei Mustermaterial erzwingt das System keine Pflichtfelder.
+
+### 8. Dickenmessung eintragen
 
 Wenn das Feld `Dickenmessung` angezeigt wird, ist es ein Pflichtfeld.
 
-Erlaubter Bereich:
+Wenn kein Material-Sollwert erkannt wird, gilt der Standardbereich:
 
 - Minimum: `0,23 mm`
 - Maximum: `1,2 mm`
+
+Wenn ein Material-Sollwert erkannt wird, zeigt das System:
+
+- Sollwert
+- Erlaubte Toleranz
 
 Beispiele für gültige Eingaben:
 
@@ -118,11 +136,18 @@ Wenn der Wert außerhalb des Bereichs liegt:
 
 1. Wert erneut prüfen.
 2. Messung wiederholen.
-3. Bei Auffälligkeit QS informieren.
+3. Meldung im System beachten.
+
+Wichtig:
+
+- Beim ersten falschen Speichern erscheint eine große Warnmeldung.
+- Wenn beim nächsten Speichern wieder ein falscher Wert eingetragen wird, werden vorhandene Chargen automatisch gesperrt.
+- QSIntern wird bei einer automatischen Sperre informiert.
+- Eine vorhandene Bemerkung bleibt erhalten und die Sperr-Bemerkung wird ergänzt.
 
 ## Chargen erfassen
 
-### 8. Charge scannen
+### 9. Charge scannen
 
 Den Barcode der Charge in das Feld `Charge scannen` scannen.
 
@@ -132,7 +157,7 @@ Einheit:
 
 - Laufmeter oder Stück, je nach Material.
 
-### 9. Charge hinzufügen
+### 10. Charge hinzufügen
 
 Eine Charge wird hinzugefügt durch:
 
@@ -141,7 +166,7 @@ Eine Charge wird hinzugefügt durch:
 
 Nach dem Hinzufügen erscheint die Charge in der Chargenliste.
 
-### 10. Chargenliste prüfen
+### 11. Chargenliste prüfen
 
 Vor dem Speichern prüfen:
 
@@ -154,11 +179,11 @@ Falsche Chargen können über das `X` entfernt werden.
 
 ## Etikett drucken
 
-### 11. Charge auswählen
+### 12. Charge auswählen
 
 In der Chargenliste die gewünschte Charge anklicken.
 
-### 12. Etikett drucken
+### 13. Etikett drucken
 
 Auf `Auswahl Drucken` klicken.
 
@@ -175,23 +200,24 @@ Wichtig:
 
 ## Speichern
 
-### 13. Wareneingang buchen
+### 14. Wareneingang buchen
 
 Wenn alle Angaben geprüft sind, auf `Wareneingang Buchen` klicken.
 
 Nach erfolgreichem Speichern:
 
 - Die Maske wird geleert.
-- Der Eintrag erscheint in der Historie.
+- Der Eintrag erscheint in `Offene Wareneingänge`.
 - Die nächste Ware kann erfasst werden.
 - QS erhält automatisch eine E-Mail an `qsintern@qin-form.de`.
 - Bei Zustand `Schlecht` ist diese E-Mail als wichtiger Prüffall markiert.
+- Bei wiederholt falscher Dickenmessung werden vorhandene Chargen gesperrt.
 
 ## Bestehenden Eintrag bearbeiten
 
 Wenn ein Eintrag korrigiert werden muss:
 
-1. In der Historie auf den Eintrag klicken.
+1. In `Offene Wareneingänge` auf den Eintrag klicken.
 2. Die Daten werden in die Maske geladen.
 3. Korrektur vornehmen.
 4. Auf `Änderungen Speichern` klicken.
@@ -209,8 +235,9 @@ Diese Angaben müssen vorhanden sein:
 - Lieferschein
 - Zustand
 - Dickenmessung, wenn das Feld angezeigt wird
-- Bemerkung bei Palettentausch
 - Bemerkung bei Zustand `Schlecht`
+
+Bei Mustermaterial werden Pflichtfelder nicht erzwungen.
 
 ## Häufige Fehler
 
@@ -224,11 +251,21 @@ Lieferscheinnummer eintragen und erneut speichern.
 
 ### Bemerkung fehlt
 
-Bemerkung eintragen, wenn Palettentausch ausgewählt wurde oder Zustand `Schlecht` ist.
+Bemerkung eintragen, wenn Zustand `Schlecht` ist oder eine Besonderheit dokumentiert werden soll.
+
+Aktuell ist eine Bemerkung nur bei Zustand `Schlecht` Pflicht. Bei Palettentausch ist sie freiwillig, aber bei Besonderheiten sinnvoll.
 
 ### Dickenmessung ungültig
 
 Wert prüfen und im erlaubten Bereich eintragen.
+
+Wenn eine große Warnmeldung erscheint:
+
+1. Dickenmessung erneut prüfen.
+2. Wert korrigieren.
+3. Nicht erneut falsch speichern.
+
+Beim zweiten falschen Speichern werden vorhandene Chargen gesperrt.
 
 ### Falsche Charge
 
@@ -260,3 +297,11 @@ Bei Qualitätsproblemen:
 - QS informieren.
 - Bemerkung im System eintragen.
 - Wareneingang speichern, damit die QS-Mail ausgelöst wird.
+
+Bei Druckproblemen:
+
+- Druckdialog schließen.
+- Richtige Charge erneut auswählen.
+- `Auswahl Drucken` erneut klicken.
+- Wenn der Druck weiterhin nicht funktioniert, Vorgesetzten oder IT informieren.
+- Falsch gedruckte Etiketten nicht verwenden.

@@ -2,7 +2,7 @@
 
 Technische Dokumentation für die Wareneingang-Funktion in QIN Production Web.
 
-Stand: Update 3.2.2
+Stand: Update 3.2.4
 
 ## Zweck
 
@@ -22,7 +22,7 @@ Die Seite besteht aus drei Bereichen:
 
 1. Stammdaten
 2. Chargenerfassung
-3. Historie der letzten Wareneingänge
+3. Offene Wareneingänge
 
 ## Wichtige Code-Dateien
 
@@ -50,6 +50,7 @@ Wichtige Tabellen:
 - `Artikelliste`
 - `Fertigung.dbo.Wareneingang`
 - `Fertigung.dbo.Chargen`
+- `qinFSK\table1.dbo.Materialliste`
 - Aktivitätslog über `ActivityLogService`
 
 ## Datenmodelle
@@ -96,8 +97,8 @@ Wichtige Felder:
 Beim Öffnen der Seite passiert Folgendes:
 
 1. Lieferanten werden geladen.
-2. Die offene Wareneingangs-Historie wird geladen.
-3. Die Historie wird lokal sortiert.
+2. Die offenen Wareneingänge werden geladen.
+3. Die Tabelle wird lokal sortiert.
 4. Die Tabellenhilfe für Spaltenbreiten wird per JavaScript aktiviert.
 
 ## Stammdaten
@@ -110,10 +111,17 @@ Erfasst werden:
 - EBE-Nummer
 - Zustand der Ware
 - Palettentausch
+- Mustermaterial
 - Dickenmessung
 - Bemerkung
 
-Die Dickenmessung wird nur angezeigt, wenn der Lieferant als Automotive-relevant erkannt wird.
+Die Dickenmessung wird nur angezeigt, wenn der Lieferant als Automotive-relevant erkannt wird und `Mustermaterial` nicht aktiv ist.
+
+Bei `Mustermaterial`:
+
+- Materialname wird als freier Text erfasst.
+- Dickenmessung wird ausgeblendet.
+- Pflichtfeldprüfungen werden übersprungen.
 
 ## Validierung
 
@@ -122,10 +130,10 @@ Vor dem Speichern prüft die Oberfläche:
 - Lieferant muss ausgewählt sein.
 - Lieferschein darf nicht leer sein.
 - Zustand muss ausgewählt sein.
-- Bei Palettentausch ist eine Bemerkung Pflicht.
 - Bei Zustand `Schlecht` ist eine Bemerkung Pflicht.
 - Dickenmessung muss numerisch sein.
-- Dickenmessung muss zwischen `0,23 mm` und `1,2 mm` liegen.
+- Ohne Materialtreffer muss die Dickenmessung zwischen `0,23 mm` und `1,2 mm` liegen.
+- Mit Materialtreffer muss die Dickenmessung innerhalb der Toleranz zum Sollwert liegen.
 
 Die Dickenmessung wird vor dem Speichern normalisiert:
 
@@ -133,6 +141,60 @@ Die Dickenmessung wird vor dem Speichern normalisiert:
 - Leerzeichen werden entfernt.
 - Punkt und Komma werden akzeptiert.
 - Gespeichert wird im deutschen Zahlenformat.
+
+### Dickenmessung nach Materialliste
+
+Service-Methode:
+
+`WareneingangService.FindMaterialDickenmessungAsync(...)`
+
+Quelle:
+
+`qinFSK\table1.dbo.Materialliste`
+
+Verwendete Felder:
+
+- `Suchbegriff`
+- `Beschreibung`
+- `Beschreibung2`
+- `Dickenmessung`
+
+Die Suche bewertet direkte Treffer und Teiltreffer. Damit werden einfache Treffer wie `Kurz: KUGA Carbon Black Weave` und Materialtexte mit Maßangaben wie `675 x 355 x 0,25mm` unterstützt.
+
+Wenn ein Sollwert gefunden wird:
+
+- Sollwert wird im UI grün angezeigt.
+- Erlaubte Toleranz wird angezeigt.
+- Toleranz beträgt 10 Prozent.
+
+Beispiel:
+
+- Sollwert `0,5 mm`
+- Erlaubt `0,45 mm` bis `0,55 mm`
+
+Wenn kein Sollwert gefunden wird, gilt der Standardbereich `0,23 mm` bis `1,2 mm`.
+
+### Sperre bei falscher Dickenmessung
+
+Beim ersten falschen Speicher-Versuch zeigt die Oberfläche ein großes Warnfenster.
+
+Beim nächsten falschen Speicher-Versuch:
+
+1. Es wird geprüft, ob Chargen vorhanden sind.
+2. Der Wareneingang wird gespeichert.
+3. Die zugehörigen Chargen werden über `dbo.Chargen.Gesperrt = 1` gesperrt.
+4. QSIntern erhält eine E-Mail.
+5. Die Sperr-Bemerkung wird in `Wareneingang.Bemerkung` gespeichert.
+
+Wenn bereits eine Werker-Bemerkung vorhanden ist, wird sie nicht überschrieben. Die automatische Sperr-Bemerkung wird darunter ergänzt.
+
+Service-Methode:
+
+`WareneingangService.InsertWareneingangAndSperreChargenAsync(...)`
+
+Interne Sperrmethode:
+
+`SperreChargenFuerWareneingangAsync(...)`
 
 ## Chargenerfassung
 
@@ -201,7 +263,7 @@ Gesetzte Werte:
 
 ## Bearbeiten bestehender Einträge
 
-Beim Klick auf eine Historienzeile:
+Beim Klick auf eine Zeile in `Offene Wareneingänge`:
 
 1. Der Eintrag wird ausgewählt.
 2. Die Maske wechselt in den Bearbeitungsmodus.
@@ -209,9 +271,9 @@ Beim Klick auf eine Historienzeile:
 4. Chargen werden aus der Datenbank geladen.
 5. Die Gesamtmenge wird neu berechnet.
 
-## Historie
+## Offene Wareneingänge
 
-Die Historie zeigt offene Wareneingänge.
+Der Bereich `Offene Wareneingänge` zeigt offene Wareneingänge.
 
 SQL-Basis:
 
@@ -219,7 +281,9 @@ SQL-Basis:
 - Filter `Gebucht = 0`
 - Chargenanzahl über Unterabfrage aus `Chargen`
 
-Die Sortierung der Historie erfolgt in der Oberfläche.
+Die Sortierung der Tabelle erfolgt in der Oberfläche.
+
+Die Bemerkung wird in der Tabelle angezeigt. Lange Texte werden gekürzt dargestellt und vollständig als Tooltip angeboten.
 
 ## Etikettendruck
 
@@ -252,6 +316,8 @@ Empfänger:
 
 Die Mail wird nach dem Speichern im Hintergrund ausgelöst.
 
+Bei automatischer Chargensperre wird zusätzlich eine QS-Mail mit Sperrgrund versendet.
+
 ## Aktivitätslog
 
 Nach dem Speichern wird ein Aktivitätslog geschrieben.
@@ -263,7 +329,7 @@ Beispiele:
 
 ## Bekannte technische Hinweise
 
-- Die Materialliste wird geladen, ist in der aktuellen Oberfläche aber nicht als sichtbares Auswahlfeld eingebunden.
+- Die Materialliste wird für die Soll-Dickenmessung durchsucht.
 - Beim Bearbeiten werden vorhandene Chargen angezeigt. Gespeichert werden nur neu hinzugefügte Chargen.
 - Die Gesamtmenge wird in der Oberfläche berechnet.
 - Wenn kein Datenbankmechanismus für `Wareneingang.Menge` existiert, muss geprüft werden, ob diese Spalte immer aktuell ist.
@@ -276,7 +342,9 @@ Nach technischen Änderungen am Wareneingang prüfen:
 2. Lieferanten werden geladen.
 3. Chargen können gescannt und manuell hinzugefügt werden.
 4. Dickenmessung wird korrekt validiert.
-5. Speichern erzeugt Wareneingang und Chargen.
-6. Historie aktualisiert sich.
-7. Etikettendruck öffnet die Druckansicht.
-8. Aktivitätslog wird geschrieben.
+5. Falsche Dickenmessung zeigt zuerst das Warnfenster.
+6. Zweiter falscher Versuch sperrt vorhandene Chargen.
+7. Speichern erzeugt Wareneingang und Chargen.
+8. Offene Wareneingänge aktualisieren sich.
+9. Etikettendruck öffnet die Druckansicht.
+10. Aktivitätslog wird geschrieben.

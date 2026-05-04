@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -35,13 +35,13 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <body>
 <div class="document">
 <div class='doc-header'><div><div class='doc-brand'>QIN Production Web</div><div class='doc-title-small'>Wareneingang Dokumentation</div></div><img class='doc-logo' src='../../assets/QIN-Form_Logo_blau_unten_small_transparent.png' alt='QIN-FORM Logo'></div>
-<h1>Wareneingang Dokumentation</h1>
 <div class='meta'>Quelle: WARENEINGANG-DOKUMENTATION.md</div>
-<p>Allgemeine Dokumentation f&#252;r den Wareneingang in QIN Production Web.</p>
-<p>Stand: Update 3.2.2</p>
+<h1>Wareneingang Dokumentation</h1>
+<p>Allgemeine Dokumentation für den Wareneingang in QIN Production Web.</p>
+<p>Stand: Update 3.2.4</p>
 <h2>Zweck</h2>
-<p>Der Wareneingang dient dazu, angeliefertes Produktionsmaterial sauber zu erfassen, Chargen zu dokumentieren und Etiketten f&#252;r die Weiterverarbeitung zu drucken.</p>
-<p>Die Erfassung hilft dabei, Materialbewegungen nachvollziehbar zu machen und Qualit&#228;tsf&#228;lle fr&#252;h sichtbar zu machen.</p>
+<p>Der Wareneingang dient dazu, angeliefertes Produktionsmaterial sauber zu erfassen, Chargen zu dokumentieren und Etiketten für die Weiterverarbeitung zu drucken.</p>
+<p>Die Erfassung hilft dabei, Materialbewegungen nachvollziehbar zu machen und Qualitätsfälle früh sichtbar zu machen.</p>
 <h2>Zielgruppe</h2>
 <p>Diese Dokumentation richtet sich an:</p>
 <ul>
@@ -51,9 +51,9 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>QS</li>
 <li>Verwaltung</li>
 </ul>
-<p>F&#252;r die technische Umsetzung gibt es ein eigenes Dokument:</p>
+<p>Für die technische Umsetzung gibt es ein eigenes Dokument:</p>
 <p><code>WARENEINGANG-BACKEND.md</code></p>
-<p>F&#252;r die direkte Arbeit am Arbeitsplatz gibt es eine Arbeitsanweisung:</p>
+<p>Für die direkte Arbeit am Arbeitsplatz gibt es eine Arbeitsanweisung:</p>
 <p><code>WARENEINGANG-ARBEITSANWEISUNG.md</code></p>
 <h2>Funktionsumfang</h2>
 <p>Der Wareneingang umfasst:</p>
@@ -63,17 +63,20 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>Erfassen von Position und EBE-Nummer</li>
 <li>Bewerten des Warenzustands</li>
 <li>Dokumentieren von Palettentausch</li>
+<li>Erfassen von Mustermaterial</li>
 <li>Erfassen einer Dickenmessung</li>
+<li>Prüfen der Dickenmessung gegen Material-Sollwert und Toleranz</li>
 <li>Erfassen von Chargen und Mengen</li>
+<li>Automatisches Sperren von Chargen bei wiederholt falscher Dickenmessung</li>
 <li>Drucken von Chargenetiketten</li>
-<li>Anzeigen und Bearbeiten offener Wareneing&#228;nge</li>
+<li>Anzeigen und Bearbeiten offener Wareneingänge</li>
 <li>Senden einer QS-Mail nach dem Speichern</li>
 </ul>
 <h2>Seitenaufbau</h2>
 <p>Die Seite besteht aus drei Hauptbereichen.</p>
 <h3>Stammdaten</h3>
 <p>In diesem Bereich werden die allgemeinen Daten des Wareneingangs erfasst.</p>
-<p>Dazu geh&#246;ren:</p>
+<p>Dazu gehören:</p>
 <ul>
 <li>Lieferant</li>
 <li>Lieferschein</li>
@@ -81,40 +84,67 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>EBE-Nummer</li>
 <li>Zustand der Ware</li>
 <li>Palettentausch</li>
+<li>Mustermaterial</li>
 <li>Dickenmessung</li>
 <li>Bemerkung</li>
 </ul>
 <h3>Chargenerfassung</h3>
 <p>In diesem Bereich werden Chargen und Mengen erfasst.</p>
-<p>Chargen k&#246;nnen gescannt oder manuell hinzugef&#252;gt werden.</p>
+<p>Chargen können gescannt oder manuell hinzugefügt werden.</p>
 <p>Die Gesamtmenge wird in der Maske angezeigt.</p>
-<h3>Historie</h3>
-<p>In der Historie werden offene Wareneing&#228;nge angezeigt.</p>
-<p>&#220;ber die Historie kann ein bestehender Eintrag geladen und bearbeitet werden.</p>
-<h2>Zust&#228;nde der Ware</h2>
-<p>Es gibt drei Zust&#228;nde:</p>
+<h3>Offene Wareneingänge</h3>
+<p>Im Bereich <code>Offene Wareneingänge</code> werden noch nicht gebuchte Wareneingänge angezeigt.</p>
+<p>Über die Tabelle kann ein bestehender Eintrag geladen und bearbeitet werden.</p>
+<h2>Zustände der Ware</h2>
+<p>Es gibt drei Zustände:</p>
 <h3>Gut</h3>
 <p>Die Ware ist in Ordnung.</p>
-<p>Es ist keine zus&#228;tzliche QS-Meldung erforderlich.</p>
+<p>Es ist keine zusätzliche QS-Meldung erforderlich.</p>
 <h3>Mittel</h3>
-<p>Die Ware hat leichte Auff&#228;lligkeiten.</p>
-<p>Eine Bemerkung ist sinnvoll, wenn die Auff&#228;lligkeit sp&#228;ter nachvollziehbar sein soll.</p>
+<p>Die Ware hat leichte Auffälligkeiten.</p>
+<p>Eine Bemerkung ist sinnvoll, wenn die Auffälligkeit später nachvollziehbar sein soll.</p>
 <h3>Schlecht</h3>
-<p>Die Ware hat deutliche M&#228;ngel oder muss durch QS gepr&#252;ft werden.</p>
+<p>Die Ware hat deutliche Mängel oder muss durch QS geprüft werden.</p>
 <p>Bei <code>Schlecht</code> ist eine Bemerkung Pflicht.</p>
-<p>Zus&#228;tzlich muss QS informiert werden.</p>
+<p>Zusätzlich muss QS informiert werden.</p>
 <p>Nach dem Speichern sendet das System eine E-Mail an:</p>
 <p><code>qsintern@qin-form.de</code></p>
-<p>Bei Zustand <code>Schlecht</code> wird die E-Mail als wichtiger Pr&#252;ffall gekennzeichnet.</p>
+<p>Bei Zustand <code>Schlecht</code> wird die E-Mail als wichtiger Prüffall gekennzeichnet.</p>
 <h2>Palettentausch</h2>
 <p>Bei jedem Wareneingang muss angegeben werden, ob ein Palettentausch stattgefunden hat.</p>
-<p>Wenn Palettentausch ausgew&#228;hlt wird, ist eine Bemerkung Pflicht.</p>
-<p>Die Bemerkung soll kurz beschreiben, was getauscht wurde.</p>
+<p>Die Bemerkung soll bei Besonderheiten kurz beschreiben, was getauscht wurde.</p>
+<p>Aktueller Hinweis:</p>
+<ul>
+<li>Palettentausch macht die Bemerkung nicht mehr automatisch zum Pflichtfeld.</li>
+<li>Eine Bemerkung bleibt bei Zustand <code>Schlecht</code> Pflicht.</li>
+<li>Eine Bemerkung ist trotzdem sinnvoll, wenn Besonderheiten später nachvollziehbar sein sollen.</li>
+</ul>
+<h2>Mustermaterial</h2>
+<p>Für Mustermaterial gibt es eine eigene Checkbox.</p>
+<p>Wenn <code>Mustermaterial</code> aktiviert ist:</p>
+<ul>
+<li>Das Feld für den Materialnamen wird angezeigt.</li>
+<li>Die Dickenmessung wird ausgeblendet.</li>
+<li>Pflichtfeldprüfungen werden nicht erzwungen.</li>
+</ul>
+<p>Mustermaterial wird verwendet, wenn das Material noch nicht wie normales Serienmaterial geprüft oder zugeordnet werden kann.</p>
 <h2>Dickenmessung</h2>
-<p>Die Dickenmessung ist f&#252;r relevante Lieferanten ein Pflichtfeld.</p>
-<p>Erlaubter Bereich:</p>
+<p>Die Dickenmessung ist für relevante Lieferanten ein Pflichtfeld, außer wenn <code>Mustermaterial</code> aktiv ist.</p>
+<p>Wenn kein Material-Sollwert gefunden wird, gilt der Standardbereich:</p>
 <ul>
 <li><code>0,23 mm</code> bis <code>1,2 mm</code></li>
+</ul>
+<p>Wenn das Material in <code>dbo.Materialliste</code> gefunden wird, verwendet das System den dort gepflegten Sollwert aus <code>Dickenmessung</code>.</p>
+<p>Die Materialsuche berücksichtigt:</p>
+<ul>
+<li><code>Suchbegriff</code></li>
+<li><code>Beschreibung</code></li>
+<li><code>Beschreibung2</code></li>
+</ul>
+<p>Zum Sollwert wird eine erlaubte Toleranz angezeigt. Beispiel:</p>
+<ul>
+<li>Sollwert: <code>0,5 mm</code></li>
+<li>Erlaubte Toleranz: <code>0,45 mm</code> bis <code>0,55 mm</code></li>
 </ul>
 <p>Das System akzeptiert Eingaben mit Komma oder Punkt.</p>
 <p>Beispiele:</p>
@@ -123,18 +153,28 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li><code>0.23</code></li>
 <li><code>1,2</code></li>
 </ul>
+<p>Wenn die Dickenmessung außerhalb der erlaubten Toleranz liegt:</p>
+<ol>
+<li>Das System zeigt zuerst ein großes Warnfenster.</li>
+<li>Der Werker soll den Messwert prüfen und korrigieren.</li>
+<li>Wenn beim nächsten Speicher-Versuch wieder ein falscher Wert eingetragen wird, werden vorhandene Chargen dieser Bestellung gesperrt.</li>
+<li>Die Sperre wird in <code>dbo.Chargen.Gesperrt</code> gesetzt.</li>
+<li>QSIntern erhält automatisch eine E-Mail.</li>
+</ol>
+<p>Eine Sperre ist nur möglich, wenn Chargen vorhanden sind.</p>
+<p>Wenn der Werker bereits eine Bemerkung eingetragen hat, bleibt diese erhalten. Die automatische Sperr-Bemerkung wird ergänzt.</p>
 <h2>Chargen</h2>
 <p>Jede Lieferung kann eine oder mehrere Chargen enthalten.</p>
-<p>F&#252;r jede Charge wird erfasst:</p>
+<p>Für jede Charge wird erfasst:</p>
 <ul>
 <li>Chargennummer</li>
 <li>Menge</li>
 <li>Art der Erfassung</li>
 </ul>
-<p>Die Menge wird als Laufmeter oder St&#252;ck angezeigt.</p>
+<p>Die Menge wird als Laufmeter oder Stück angezeigt.</p>
 <h2>Etikettendruck</h2>
-<p>F&#252;r ausgew&#228;hlte Chargen kann ein Etikett gedruckt werden.</p>
-<p>Das Etikett enth&#228;lt:</p>
+<p>Für ausgewählte Chargen kann ein Etikett gedruckt werden.</p>
+<p>Das Etikett enthält:</p>
 <ul>
 <li>Charge</li>
 <li>Menge</li>
@@ -142,9 +182,9 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>Eingangsdatum</li>
 </ul>
 <p>Das Etikett muss auf das passende Gebinde oder den passenden Karton geklebt werden.</p>
-<h2>Bearbeiten von Eintr&#228;gen</h2>
-<p>Offene Wareneing&#228;nge k&#246;nnen &#252;ber die Historie erneut geladen werden.</p>
-<p>Nach dem Laden k&#246;nnen Angaben korrigiert und gespeichert werden.</p>
+<h2>Bearbeiten von Einträgen</h2>
+<p>Offene Wareneingänge können über die Tabelle <code>Offene Wareneingänge</code> erneut geladen werden.</p>
+<p>Nach dem Laden können Angaben korrigiert und gespeichert werden.</p>
 <p>Typische Korrekturen:</p>
 <ul>
 <li>Lieferschein</li>
@@ -153,43 +193,45 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>Zustand</li>
 <li>Bemerkung</li>
 <li>Dickenmessung</li>
-<li>zus&#228;tzliche Chargen</li>
+<li>zusätzliche Chargen</li>
 </ul>
-<h2>Qualit&#228;tsf&#228;lle</h2>
-<p>Ein Qualit&#228;tsfall liegt vor, wenn:</p>
+<h2>Qualitätsfälle</h2>
+<p>Ein Qualitätsfall liegt vor, wenn:</p>
 <ul>
-<li>Zustand <code>Schlecht</code> ausgew&#228;hlt wird.</li>
-<li>Die Dickenmessung au&#223;erhalb des erlaubten Bereichs liegt.</li>
-<li>Ware besch&#228;digt oder auff&#228;llig ist.</li>
+<li>Zustand <code>Schlecht</code> ausgewählt wird.</li>
+<li>Die Dickenmessung außerhalb des erlaubten Bereichs liegt.</li>
+<li>Chargen wegen wiederholt falscher Dickenmessung gesperrt wurden.</li>
+<li>Ware beschädigt oder auffällig ist.</li>
 <li>Chargen oder Mengen nicht plausibel sind.</li>
 </ul>
-<p>In diesen F&#228;llen:</p>
+<p>In diesen Fällen:</p>
 <ol>
 <li>Bemerkung im System eintragen.</li>
 <li>QS informieren.</li>
 <li>Ware nach interner Vorgabe kennzeichnen oder separieren.</li>
 </ol>
+<p>Bei automatischer Chargensperre werden die betroffenen Chargen zusätzlich technisch gesperrt und müssen nach QS-Vorgabe behandelt werden.</p>
 <p>Wenn der Wareneingang gespeichert wird, sendet das System eine QS-Mail an <code>qsintern@qin-form.de</code>.</p>
-<p>Bei Zustand <code>Schlecht</code> enth&#228;lt die E-Mail einen deutlichen Hinweis, dass der Vorgang zeitnah gepr&#252;ft werden soll.</p>
+<p>Bei Zustand <code>Schlecht</code> enthält die E-Mail einen deutlichen Hinweis, dass der Vorgang zeitnah geprüft werden soll.</p>
 <h2>Verantwortlichkeiten</h2>
 <p>Wareneingang und Fertigung:</p>
 <ul>
 <li>Daten korrekt erfassen.</li>
-<li>Chargen und Mengen pr&#252;fen.</li>
+<li>Chargen und Mengen prüfen.</li>
 <li>Etiketten korrekt drucken und anbringen.</li>
 </ul>
 <p>QS:</p>
 <ul>
-<li>Qualit&#228;tsf&#228;lle pr&#252;fen.</li>
-<li>Weitere Ma&#223;nahmen festlegen.</li>
+<li>Qualitätsfälle prüfen.</li>
+<li>Weitere Maßnahmen festlegen.</li>
 </ul>
 <p>Schichtleitung:</p>
 <ul>
-<li>Bei Unklarheiten unterst&#252;tzen.</li>
+<li>Bei Unklarheiten unterstützen.</li>
 <li>Korrekturen freigeben, falls erforderlich.</li>
 </ul>
-<h2>Mindestpr&#252;fung vor dem Speichern</h2>
-<p>Vor dem Speichern muss gepr&#252;ft werden:</p>
+<h2>Mindestprüfung vor dem Speichern</h2>
+<p>Vor dem Speichern muss geprüft werden:</p>
 <ol>
 <li>Lieferant stimmt.</li>
 <li>Lieferschein stimmt.</li>
@@ -205,12 +247,13 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <ul>
 <li>Der Wareneingang ist im System erfasst.</li>
 <li>Chargen sind gespeichert.</li>
-<li>Die Historie wird aktualisiert.</li>
+<li>Die Tabelle <code>Offene Wareneingänge</code> wird aktualisiert.</li>
 <li>Bei Bedarf kann ein Etikett gedruckt werden.</li>
-<li>QS erh&#228;lt eine systemgenerierte E-Mail an <code>qsintern@qin-form.de</code>.</li>
-<li>Bei Zustand <code>Schlecht</code> wird die QS-Mail als wichtiger Pr&#252;ffall markiert.</li>
+<li>QS erhält eine systemgenerierte E-Mail an <code>qsintern@qin-form.de</code>.</li>
+<li>Bei Zustand <code>Schlecht</code> wird die QS-Mail als wichtiger Prüffall markiert.</li>
+<li>Bei wiederholt falscher Dickenmessung werden vorhandene Chargen gesperrt und QS wird informiert.</li>
 </ul>
-<div class='doc-footer'><span>Version 3.2.2</span><span>27.04.2026</span></div>
-</div></body></html>
-
-
+<div class='doc-footer'><span>QIN Production Web</span><span>Stand: Update 3.2.4</span></div>
+</div>
+</body>
+</html>
