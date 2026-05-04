@@ -4,6 +4,9 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Datenbank: Für das Sperrlager wurden in `dbo.Lagerorte` die 12 Plätze `H2R17P1S` bis `H2R17P12S` angelegt.
+- Produktionslayout: Der Sperrlager-Button wurde auf die finale Position gesetzt und der Einstell-Overlay wurde wieder ausgeblendet.
+- Produktionslayout: Für das kommende Sperrlager wurde ein roter Sperrlager-Button auf der Produktionskarte ergänzt.
 - Dokumentation: Die Wareneingang-Dokumentation, Backend-Doku und Arbeitsanweisung wurden auf Mustermaterial, Dickenmessung-Toleranz, Chargensperre, Bemerkungen und Druckproblem-Hinweise aktualisiert.
 - Wareneingang: Bei automatischer Chargensperre bleibt eine vorhandene Werker-Bemerkung erhalten und die Sperr-Bemerkung wird ergänzt.
 - Wareneingang: Bei automatischer Chargensperre wird die Sperr-Bemerkung jetzt auch im Wareneingang gespeichert.

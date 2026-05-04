@@ -60,7 +60,8 @@ Datei:
 
 - [Components/Pages/Produktion/Produktionslayout.razor](../Components/Pages/Produktion/Produktionslayout.razor)
 
-- [ ] Im Produktionslayout im rot markierten Bereich aus dem Bild einen neuen Regalplatz ergänzen.
+- [x] Im Produktionslayout im rot markierten Bereich aus dem Bild einen neuen Regalplatz ergänzen.
+- [x] In `dbo.Lagerorte` die 12 Sperrlager-Plätze `H2R17P1S` bis `H2R17P12S` für Halle 2, Regal 17 anlegen.
 - [ ] Der neue Regalplatz soll alle gesperrten Chargen enthalten.
 - [ ] Chargen entsperren soll im Produktionslayout über die Regalview möglich sein.
 - [ ] Chargen vermüllen soll im Produktionslayout über die Regalview möglich sein.
