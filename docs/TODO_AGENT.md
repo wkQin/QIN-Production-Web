@@ -48,7 +48,7 @@ Datei:
 
 ## Manuelle Aufgaben
 
-- [ ] Über das Auto-Export-Tool auch Non-Automotive-EBs übertragen.
+- [x] Über das Auto-Export-Tool auch Non-Automotive-EBs übertragen.
 - [x] Wareneingangs-Anweisung anpassen.
 - [x] In die Wareneingangs-Anweisung aufnehmen, was der Werker bei einem Druckproblem machen kann.
 - [x] In die Wareneingangs-Anweisung aufnehmen, dass Zebra Browser Print im Hintergrund laufen muss und der richtige Zebra-Drucker als Default Device gesetzt sein muss.

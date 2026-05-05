@@ -4,6 +4,8 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Dokumentation: Der Admin- und KI-Guide schreibt jetzt vor, dass jede Zeile in Update-Benachrichtigungen mit `- ` beginnt.
+- Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.3 Web` auf `v3.2.4 Web` aktualisiert.
 - Dokumentation: Die drei manuellen Wareneingangs-Anweisungspunkte zu Druckproblem, Zebra Browser Print und Dickenmessung-Fehlermeldung wurden in der TODO-Liste abgehakt.
 - Wareneingang: QS-E-Mails zeigen oben einen Hinweis, wenn für die Dickenmessung keine Standardwerte aus `dbo.Materialliste` vorhanden waren.
 - Wareneingang: Gesperrte Chargen werden beim Etikettendruck mit einem deutlich sichtbaren `GESPERRT`-Hinweis auf dem Zebra-Etikett gedruckt.

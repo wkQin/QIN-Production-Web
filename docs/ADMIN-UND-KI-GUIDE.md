@@ -126,6 +126,7 @@ Titel:
 Nachricht:
 
 - Pro Zeile ein kurzer Satz.
+- Jede Zeile in einer Update-Benachrichtigung mit `- ` beginnen.
 - Echte Zeilenumbrüche verwenden.
 - Änderungen zuerst, Umbenennungen zuletzt.
 - Keine langen Einleitungen.
@@ -145,9 +146,9 @@ Vorlage:
 INSERT INTO Alerts (Title, Message, CreatedAt, CreatedBy, TargetGroup)
 VALUES (
     N'Update (<Version>) <Bereich>',
-    N'<Kurzer Satz 1>
-<Kurzer Satz 2>
-<Kurzer Satz 3>',
+    N'- <Kurzer Satz 1>
+- <Kurzer Satz 2>
+- <Kurzer Satz 3>',
     SYSDATETIME(),
     N'System',
     NULL
@@ -157,9 +158,9 @@ VALUES (
 Beispieltext:
 
 ```text
-Zeiterfassung springt bei Buchungen jetzt direkt zum Buchungsdatum.
-Wareneingang hat jetzt eine Dickenmessung.
-Kunde IAC wurde durch Artifex ersetzt.
+- Zeiterfassung springt bei Buchungen jetzt direkt zum Buchungsdatum.
+- Wareneingang hat jetzt eine Dickenmessung.
+- Kunde IAC wurde durch Artifex ersetzt.
 ```
 
 ## KI-Checkliste
