@@ -34,6 +34,7 @@ Dateien:
 - [x] Im UI die Dickenmessung anzeigen.
 - [x] Im UI die Toleranz zur Dickenmessung anzeigen.
 - [ ] Wenn Dickenmessungs standart werte nicht da sind und gespeichert wird muss das in die Email rein.
+- [ ] Möglichkeit alle Etiketten auf einmal zu Drucken.
 
 ## Wareneingang Verwaltung
 
@@ -54,7 +55,7 @@ Datei:
 - [x] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
 - [ ] Default-Dickenmessung pro Material in `dbo.Materialliste` eintragen.
 - [x] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.
-- [ ] Regal QRCodes erstellen und kleben.
+- [x] Regal QRCodes erstellen und kleben.
 
 ## Chargensperre System
 
@@ -64,7 +65,7 @@ Datei:
 
 - [x] Im Produktionslayout im rot markierten Bereich aus dem Bild einen neuen Regalplatz ergänzen.
 - [x] In `dbo.Lagerorte` die 12 Sperrlager-Plätze `H2R17P1S` bis `H2R17P12S` für Halle 2, Regal 17 anlegen.
-- [ ] Der neue Regalplatz soll alle gesperrten Chargen enthalten.
+- [x] Der neue Regalplatz soll alle gesperrten Chargen enthalten.
 - [x] Chargen entsperren soll im Produktionslayout über die Regalview möglich sein.
 - [x] Chargen vermüllen soll im Produktionslayout über die Regalview möglich sein.
 - [x] Für das Chargenregal eine eigene Regalview erstellen.

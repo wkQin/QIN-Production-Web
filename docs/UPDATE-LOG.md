@@ -4,6 +4,7 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Dokumentation: Für das Sperrlager wurden eine fachliche Dokumentation und eine Backend-Dokumentation ergänzt.
 - Produktionslayout: Im Sperrlager-Detailpopup wurde `Chargendatum` entfernt.
 - Sperrlager: Beim Vermüllen bleibt eine Charge gesperrt, wird als vermüllt markiert und verschwindet nur aus der offenen gesperrten Chargenliste.
 - Produktionslayout: Sperrlager-Aktionen melden jetzt konkret, welche eingegebenen Chargen nicht in `dbo.Chargen` gefunden wurden.
