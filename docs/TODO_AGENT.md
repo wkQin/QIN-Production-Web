@@ -33,6 +33,7 @@ Dateien:
 - [x] Im UI den Text `Letzte Buchungen` in `Offene Wareneingänge` ändern.
 - [x] Im UI die Dickenmessung anzeigen.
 - [x] Im UI die Toleranz zur Dickenmessung anzeigen.
+- [ ] Wenn Dickenmessungs standart werte nicht da sind und gespeichert wird muss das in die Email rein.
 
 ## Wareneingang Verwaltung
 
