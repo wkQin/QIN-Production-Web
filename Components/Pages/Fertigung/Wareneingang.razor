@@ -78,10 +78,89 @@
                 <div class="row g-3 mb-3">
                     <div class="col-12">
                         <label class="modern-label">Lieferant</label>
-                        <select class="form-select modern-select fw-bold @LieferantFieldClass" value="@SelectedLieferant" @onchange="OnLieferantChanged">
+                        <div class="lieferant-picker">
+                            <button type="button"
+                                    class="lieferant-picker-button @LieferantFieldClass"
+                                    @onclick="ToggleLieferantDropdown">
+                                <span class="lieferant-picker-main">
+                                    <span class="lieferant-picker-name">@(SelectedLieferantInfo?.Lieferant ?? "Bitte wählen...")</span>
+                                    @if (SelectedLieferantInfo != null)
+                                    {
+                                        <span class="lieferant-type-chip @(SelectedLieferantInfo.Automotiv ? "automotive" : "non-automotive")">
+                                            @SelectedLieferantInfo.TypText
+                                        </span>
+                                    }
+                                </span>
+                                <i class="fa-solid @(ShowLieferantDropdown ? "fa-chevron-up" : "fa-chevron-down")"></i>
+                            </button>
+
+                            @if (ShowLieferantDropdown)
+                            {
+                                <div class="lieferant-picker-menu" @onclick:stopPropagation="true">
+                                    <div class="lieferant-picker-search">
+                                        <i class="fa-solid fa-magnifying-glass"></i>
+                                        <input type="text"
+                                               placeholder="Lieferant suchen..."
+                                               @bind="LieferantSuche"
+                                               @bind:event="oninput" />
+                                    </div>
+
+                                    @if (FilteredLieferanten(true).Any())
+                                    {
+                                        <div class="lieferant-picker-section">
+                                            <div class="lieferant-picker-section-title">
+                                                <span>Automotive</span>
+                                                <span>@FilteredLieferanten(true).Count()</span>
+                                            </div>
+                                            @foreach (var lieferant in FilteredLieferanten(true))
+                                            {
+                                                <button type="button" class="lieferant-picker-option @(SelectedLieferant == lieferant.Lieferant ? "active" : "")" @onclick="() => SelectLieferantAsync(lieferant.Lieferant)">
+                                                    <span>@lieferant.Lieferant</span>
+                                                    <span class="lieferant-type-chip automotive">@lieferant.TypText</span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+
+                                    @if (FilteredLieferanten(false).Any())
+                                    {
+                                        <div class="lieferant-picker-section">
+                                            <div class="lieferant-picker-section-title">
+                                                <span>Non-Automotive</span>
+                                                <span>@FilteredLieferanten(false).Count()</span>
+                                            </div>
+                                            @foreach (var lieferant in FilteredLieferanten(false))
+                                            {
+                                                <button type="button" class="lieferant-picker-option @(SelectedLieferant == lieferant.Lieferant ? "active" : "")" @onclick="() => SelectLieferantAsync(lieferant.Lieferant)">
+                                                    <span>@lieferant.Lieferant</span>
+                                                    <span class="lieferant-type-chip non-automotive">@lieferant.TypText</span>
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+
+                                    @if (!FilteredLieferanten(true).Any() && !FilteredLieferanten(false).Any())
+                                    {
+                                        <div class="lieferant-picker-empty">Kein Lieferant gefunden.</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <select class="form-select modern-select fw-bold @LieferantFieldClass d-none" value="@SelectedLieferant" @onchange="OnLieferantChanged">
                             <option value="">Bitte wählen...</option>
-                            @foreach(var l in Lieferanten) { <option value="@l">@l</option> }
+                            <optgroup label="Automotive">
+                                @foreach(var l in Lieferanten.Where(l => l.Automotiv)) { <option value="@l.Lieferant">@l.Anzeige</option> }
+                            </optgroup>
+                            <optgroup label="Non-Automotive">
+                                @foreach(var l in Lieferanten.Where(l => !l.Automotiv)) { <option value="@l.Lieferant">@l.Anzeige</option> }
+                            </optgroup>
                         </select>
+                        @if (!string.IsNullOrWhiteSpace(SelectedLieferant))
+                        {
+                            <div class="d-none mt-2 small @(IsSelectedLieferantAutomotiv ? "text-success" : "text-info") fw-bold">
+                                @(IsSelectedLieferantAutomotiv ? "Automotive-Lieferant" : "Non-Automotive-Lieferant")
+                            </div>
+                        }
                     </div>
                 </div>
 
@@ -412,11 +491,12 @@
     private bool IsEditMode = false;
     private bool ShowChargeConfirmation = false;
     private bool IsSelectedLieferantAutomotiv = true;
+    private bool ShowLieferantDropdown = false;
     private bool ShowDickenmessungWarning = false;
     private bool DickenmessungWarningShown = false;
     private MaterialDickenmessungInfo? MaterialDickenmessung;
     
-    private List<string> Lieferanten = new();
+    private List<LieferantInfo> Lieferanten = new();
     private List<string> Materialien = new();
     private List<ChargenEntry> ChargenList = new();
     private List<WareneingangEntry> WarenList = new();
@@ -424,6 +504,7 @@
     private ChargenEntry? SelectedCharge;
     private string PendingCharge = "";
     private string PendingMenge = "";
+    private string LieferantSuche = "";
     
     private string SortColumn = "ID";
     private bool IsSortedAscending = false;
@@ -442,6 +523,7 @@
     private string DickenmessungAnzeige => string.IsNullOrWhiteSpace(Dickenmessung) ? "-" : $"{Dickenmessung} mm";
     private string DickenmessungSollwertAnzeige => MaterialDickenmessung == null ? "Standardbereich" : $"{FormatDickenmessungValue(MaterialDickenmessung.Dickenmessung)} mm";
     private string DickenmessungToleranzAnzeige => $"{FormatDickenmessungValue(DickenmessungMin)} bis {FormatDickenmessungValue(DickenmessungMax)} mm";
+    private LieferantInfo? SelectedLieferantInfo => Lieferanten.FirstOrDefault(l => l.Lieferant == SelectedLieferant);
     private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
     protected override async Task OnInitializedAsync()
@@ -462,6 +544,36 @@
     private async Task OnLieferantChanged(ChangeEventArgs e)
     {
         SelectedLieferant = e.Value?.ToString() ?? "";
+        await ApplyLieferantSelectionAsync();
+    }
+
+    private void ToggleLieferantDropdown()
+    {
+        ShowLieferantDropdown = !ShowLieferantDropdown;
+    }
+
+    private async Task SelectLieferantAsync(string lieferant)
+    {
+        SelectedLieferant = lieferant;
+        ShowLieferantDropdown = false;
+        LieferantSuche = "";
+        await ApplyLieferantSelectionAsync();
+    }
+
+    private IEnumerable<LieferantInfo> FilteredLieferanten(bool automotiv)
+    {
+        var query = Lieferanten.Where(l => l.Automotiv == automotiv);
+
+        if (!string.IsNullOrWhiteSpace(LieferantSuche))
+        {
+            query = query.Where(l => l.Lieferant.Contains(LieferantSuche.Trim(), StringComparison.OrdinalIgnoreCase));
+        }
+
+        return query;
+    }
+
+    private async Task ApplyLieferantSelectionAsync()
+    {
         await UpdateLieferantAutomotivStatusAsync(clearDickenmessungWhenNotRelevant: true);
         Materialien = await WareneingangService.FindAllMaterialsAsync(SelectedLieferant);
         await UpdateMaterialDickenmessungAsync();
@@ -860,6 +972,8 @@
         Pos = SelectedEntry.Pos ?? "";
         EBE = SelectedEntry.EBE_NR ?? "";
         SelectedLieferant = SelectedEntry.Lieferant ?? "";
+        ShowLieferantDropdown = false;
+        LieferantSuche = "";
         Zustand = SelectedEntry.Zustand ?? "";
         Dickenmessung = SelectedEntry.Dickenmessung ?? "";
         await UpdateLieferantAutomotivStatusAsync();
@@ -881,6 +995,8 @@
         Palettentausch = false; ChargenList.Clear(); GesamtLaufmeter = 0;
         IsMustermaterial = false;
         MaterialDickenmessung = null;
+        ShowLieferantDropdown = false;
+        LieferantSuche = "";
         ResetDickenmessungWarning();
         IsSelectedLieferantAutomotiv = true;
     }
@@ -1016,6 +1132,187 @@
 
     [data-theme='light'] .scanner-focus::placeholder {
         color: #64748b;
+    }
+
+    .lieferant-picker {
+        position: relative;
+        z-index: 20;
+    }
+
+    .lieferant-picker-button {
+        width: 100%;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.7rem 0.95rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        background: rgba(15, 23, 42, 0.82);
+        color: var(--text-primary);
+        font-weight: 700;
+        text-align: left;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    }
+
+    .lieferant-picker-button:hover,
+    .lieferant-picker-button:focus {
+        border-color: rgba(59, 130, 246, 0.75);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+        outline: none;
+    }
+
+    .lieferant-picker-main {
+        min-width: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        flex-wrap: wrap;
+    }
+
+    .lieferant-picker-name {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lieferant-type-chip {
+        display: inline-flex;
+        align-items: center;
+        min-height: 24px;
+        padding: 0.18rem 0.55rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+
+    .lieferant-type-chip.automotive {
+        color: #bbf7d0;
+        background: rgba(22, 163, 74, 0.18);
+        border: 1px solid rgba(34, 197, 94, 0.4);
+    }
+
+    .lieferant-type-chip.non-automotive {
+        color: #bae6fd;
+        background: rgba(2, 132, 199, 0.18);
+        border: 1px solid rgba(14, 165, 233, 0.4);
+    }
+
+    .lieferant-picker-menu {
+        position: absolute;
+        inset: calc(100% + 8px) 0 auto 0;
+        max-height: 360px;
+        overflow: auto;
+        padding: 0.75rem;
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.24);
+        background: rgba(15, 23, 42, 0.98);
+        box-shadow: 0 22px 54px rgba(0, 0, 0, 0.36);
+        z-index: 1050;
+    }
+
+    .lieferant-picker-search {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.55rem 0.7rem;
+        margin-bottom: 0.7rem;
+        border: 1px solid rgba(148, 163, 184, 0.22);
+        border-radius: 10px;
+        background: rgba(2, 6, 23, 0.42);
+        color: #93c5fd;
+    }
+
+    .lieferant-picker-search input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: var(--text-primary);
+        font-weight: 700;
+    }
+
+    .lieferant-picker-search input::placeholder {
+        color: rgba(148, 163, 184, 0.82);
+    }
+
+    .lieferant-picker-section + .lieferant-picker-section {
+        margin-top: 0.8rem;
+        padding-top: 0.8rem;
+        border-top: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .lieferant-picker-section-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.15rem 0.35rem;
+        color: var(--text-secondary);
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+
+    .lieferant-picker-option {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        padding: 0.62rem 0.65rem;
+        border: 1px solid transparent;
+        border-radius: 9px;
+        background: transparent;
+        color: var(--text-primary);
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .lieferant-picker-option:hover,
+    .lieferant-picker-option.active {
+        border-color: rgba(59, 130, 246, 0.28);
+        background: rgba(59, 130, 246, 0.14);
+    }
+
+    .lieferant-picker-option span:first-child {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .lieferant-picker-empty {
+        padding: 1rem;
+        color: var(--text-secondary);
+        text-align: center;
+        font-weight: 700;
+    }
+
+    [data-theme='light'] .lieferant-picker-button,
+    [data-theme='light'] .lieferant-picker-menu {
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 18px 46px rgba(15, 23, 42, 0.16);
+    }
+
+    [data-theme='light'] .lieferant-picker-search {
+        background: rgba(241, 245, 249, 0.92);
+    }
+
+    [data-theme='light'] .lieferant-type-chip.automotive {
+        color: #14532d;
+        background: #dcfce7;
+        border-color: #16a34a;
+    }
+
+    [data-theme='light'] .lieferant-type-chip.non-automotive {
+        color: #0c4a6e;
+        background: #e0f2fe;
+        border-color: #0284c7;
     }
 
     .wareneingang-charge-panel {

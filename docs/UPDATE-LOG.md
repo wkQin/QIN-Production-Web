@@ -3,7 +3,12 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.2.5
+
 ## Update 3.2.4
+- Wareneingang: Die Automotive- und Non-Automotive-Badges der Lieferantenauswahl sind im Light-Modus jetzt mit dunklen, gut lesbaren Farben dargestellt.
+- Wareneingang: Die Lieferantenauswahl wurde als übersichtlicher Picker mit Suche, getrennten Automotive-Bereichen und Status-Badges gestaltet.
+- Wareneingang: Die Lieferantenliste ist jetzt nach Automotive-Lieferanten sortiert und zeigt sichtbar, ob ein Lieferant Automotive oder Non-Automotive ist.
 - Dokumentation: Der Admin- und KI-Guide schreibt jetzt vor, dass jede Zeile in Update-Benachrichtigungen mit `- ` beginnt.
 - Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.3 Web` auf `v3.2.4 Web` aktualisiert.
 - Dokumentation: Die drei manuellen Wareneingangs-Anweisungspunkte zu Druckproblem, Zebra Browser Print und Dickenmessung-Fehlermeldung wurden in der TODO-Liste abgehakt.

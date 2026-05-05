@@ -37,6 +37,14 @@ namespace QIN_Production_Web.Data
         public bool Gesperrt { get; set; }
     }
 
+    public class LieferantInfo
+    {
+        public string Lieferant { get; set; } = string.Empty;
+        public bool Automotiv { get; set; }
+        public string TypText => Automotiv ? "Automotive" : "Non-Automotive";
+        public string Anzeige => $"{Lieferant} ({TypText})";
+    }
+
     public class MaterialDickenmessungInfo
     {
         public decimal Dickenmessung { get; set; }
@@ -50,10 +58,15 @@ namespace QIN_Production_Web.Data
 
     public class WareneingangService
     {
-        public static async Task<List<string>> GetLieferantenAsync()
+        public static async Task<List<LieferantInfo>> GetLieferantenAsync()
         {
-            var lieferanten = new List<string>();
-            string query = "SELECT Lieferant FROM Lieferanten";
+            var lieferanten = new List<LieferantInfo>();
+            string query = @"
+                SELECT Lieferant, Automotiv
+                FROM Lieferanten
+                ORDER BY
+                    CASE WHEN ISNULL(Automotiv, 0) = 1 THEN 0 ELSE 1 END,
+                    Lieferant;";
             using (SqlConnection connection = new SqlConnection(SqlManager.connectionString))
             {
                 try
@@ -65,7 +78,14 @@ namespace QIN_Production_Web.Data
                         while (await reader.ReadAsync())
                         {
                             string? lieferant = reader["Lieferant"]?.ToString();
-                            if (!string.IsNullOrWhiteSpace(lieferant)) lieferanten.Add(lieferant);
+                            if (!string.IsNullOrWhiteSpace(lieferant))
+                            {
+                                lieferanten.Add(new LieferantInfo
+                                {
+                                    Lieferant = lieferant,
+                                    Automotiv = reader["Automotiv"] != DBNull.Value && Convert.ToBoolean(reader["Automotiv"])
+                                });
+                            }
                         }
                     }
                 }
