@@ -8,7 +8,7 @@ namespace QIN_Production_Web.Helpers
 {
     public static class EmailHelper
     {
-        public static async Task<bool> SendQSEmailAsync(string lsnr, string ebe, string lieferant, string material, string bemerkung, string username, string recipientEmails, string zustand)
+        public static async Task<bool> SendQSEmailAsync(string lsnr, string ebe, string lieferant, string material, string bemerkung, string username, string recipientEmails, string zustand, string? hinweisOben = null)
         {
             try
             {
@@ -25,6 +25,11 @@ namespace QIN_Production_Web.Helpers
                 string subjectPrefix = isBad ? "WICHTIG: " : "Info: ";
                 string titleColor = isBad ? "#d9534f" : "#2ca02c";
                 string titleText = isBad ? "Wareneingang mit mangelhaftem Zustand" : "Neuer Wareneingang erfasst";
+                string topNoticeHtml = string.IsNullOrWhiteSpace(hinweisOben)
+                    ? ""
+                    : $@"<div style='background: #fff3cd; border: 2px solid #ffc107; color: #664d03; padding: 12px 14px; margin: 0 0 18px 0; font-size: 15px; font-weight: bold;'>
+                            {hinweisOben}
+                        </div>";
                 string alertHtml = isBad ? "<p style='font-size: 15px; color: #d9534f; font-weight: bold;'>⚠️ Bitte prüfen Sie diesen Vorgang zeitnah, da der Zustand als 'Schlecht' markiert wurde.</p>" : "";
 
                 message.Subject = $"{subjectPrefix}Wareneingang erfasst - Zustand: {zustand} (EBE: {ebe})";
@@ -32,6 +37,7 @@ namespace QIN_Production_Web.Helpers
                 string htmlBody = $@"
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;'>
                     <h2 style='color: {titleColor}; border-bottom: 2px solid {titleColor}; padding-bottom: 5px;'>{titleText}</h2>
+                    {topNoticeHtml}
                     <p style='font-size: 14px;'>Hallo QS-Team,</p>
                     <p style='font-size: 14px;'>im Wareneingang wurde soeben ein neuer Eintrag mit dem Zustand <strong>{zustand}</strong> erfasst.</p>
                     {alertHtml}

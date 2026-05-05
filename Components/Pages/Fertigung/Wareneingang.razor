@@ -237,11 +237,16 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <label class="modern-label text-warning mb-1"><i class="fa-solid fa-print me-1"></i> Chargen-Etikett</label>
-                            <p class="text-secondary small mb-0">Oeffnet die Druckansicht im Browser und zeigt den normalen Druckdialog</p>
+                            <p class="text-secondary small mb-0">Druckt lokal über Zebra Browser Print</p>
                         </div>
-                        <button class="btn btn-glass qin-btn-outline-primary px-4 py-2 fw-bold" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
-                            <i class="fa-solid fa-print text-warning me-2"></i> Auswahl Drucken
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-glass qin-btn-outline-primary px-4 py-2 fw-bold" disabled="@(SelectedCharge == null)" @onclick="PrintSelectedCharge">
+                                <i class="fa-solid fa-print text-warning me-2"></i> Auswahl Drucken
+                            </button>
+                            <button class="btn btn-gradient-primary px-4 py-2 fw-bold" disabled="@(!ChargenList.Any())" @onclick="PrintAllCharges">
+                                <i class="fa-solid fa-print me-2"></i> Alle Drucken
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -702,11 +707,14 @@
             string savedMaterial = Material ?? "N/A";
             string savedBemerkung = Bemerkung;
             string savedZustand = Zustand;
+            string? dickenmessungStandardHinweis = IsDickenmessungRelevant && MaterialDickenmessung == null
+                ? $"Hinweis für QS: Für dieses Material wurden keine Standardwerte für die Dickenmessung in dbo.Materialliste gefunden. Es wurde der Standardbereich {FormatDickenmessungValue(DefaultDickenmessungMin)} bis {FormatDickenmessungValue(DefaultDickenmessungMax)} mm verwendet."
+                : null;
 
             _ = Task.Run(async () => {
                 try {
                     string empfaenger = "qsintern@qin-form.de";
-                    await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, savedBemerkung, actualUserName, empfaenger, savedZustand);
+                    await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, savedBemerkung, actualUserName, empfaenger, savedZustand, dickenmessungStandardHinweis);
                 } 
                 catch (Exception ex) {
                     Console.WriteLine($"Fire-and-forget Email failed: {ex.Message}");
@@ -759,12 +767,15 @@
         string savedLieferant = SelectedLieferant;
         string savedMaterial = Material;
         string qsBemerkung = sperrBemerkung;
+        string? dickenmessungStandardHinweis = IsDickenmessungRelevant && MaterialDickenmessung == null
+            ? $"Hinweis für QS: Für dieses Material wurden keine Standardwerte für die Dickenmessung in dbo.Materialliste gefunden. Es wurde der Standardbereich {FormatDickenmessungValue(DefaultDickenmessungMin)} bis {FormatDickenmessungValue(DefaultDickenmessungMax)} mm verwendet."
+            : null;
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, qsBemerkung, actualUserName, "qsintern@qin-form.de", "Schlecht");
+                await EmailHelper.SendQSEmailAsync(savedLieferschein, savedEBE, savedLieferant, savedMaterial, qsBemerkung, actualUserName, "qsintern@qin-form.de", "Schlecht", dickenmessungStandardHinweis);
             }
             catch (Exception ex)
             {
@@ -788,8 +799,11 @@
         try
         {
             string eingangsDatum = await WareneingangService.GetEingangsDatumForChargeAsync(SelectedCharge.Charge);
-            string printHtml = WareneingangPrintHelper.BuildSingleChargePrintDocument(SelectedCharge.Charge, SelectedCharge.Menge, Material, eingangsDatum);
-            await JS.InvokeVoidAsync("printHtmlDocument", printHtml);
+            var sperrStatus = await WareneingangService.GetChargenGesperrtStatusAsync(new[] { SelectedCharge.Charge });
+            bool istGesperrt = SelectedCharge.Gesperrt
+                || (sperrStatus.TryGetValue(SelectedCharge.Charge, out bool dbGesperrt) && dbGesperrt);
+            string zpl = WareneingangPrintHelper.BuildSingleChargeZpl(SelectedCharge.Charge, SelectedCharge.Menge, Material, eingangsDatum, istGesperrt);
+            await JS.InvokeVoidAsync("qinZebraBrowserPrint.printZpl", zpl);
         }
         catch (Exception ex)
         {
@@ -798,6 +812,43 @@
     }
 
 
+
+    private async Task PrintAllCharges()
+    {
+        if (!ChargenList.Any() || string.IsNullOrWhiteSpace(SelectedLieferant))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte mindestens eine Charge und Lieferant auswÃ¤hlen!");
+            return;
+        }
+
+        try
+        {
+            var printableChargen = ChargenList
+                .Where(c => !string.IsNullOrWhiteSpace(c.Charge))
+                .ToList();
+            var firstCharge = printableChargen.FirstOrDefault();
+            string eingangsDatum = firstCharge == null
+                ? DateTime.Now.ToString("dd.MM.yyyy")
+                : await WareneingangService.GetEingangsDatumForChargeAsync(firstCharge.Charge);
+            var sperrStatus = await WareneingangService.GetChargenGesperrtStatusAsync(printableChargen.Select(c => c.Charge));
+
+            string zpl = WareneingangPrintHelper.BuildChargeZplBatch(
+                printableChargen.Select(c =>
+                {
+                    bool istGesperrt = c.Gesperrt
+                        || (sperrStatus.TryGetValue(c.Charge, out bool dbGesperrt) && dbGesperrt);
+                    return (c.Charge, c.Menge, istGesperrt);
+                }),
+                Material,
+                eingangsDatum);
+
+            await JS.InvokeVoidAsync("qinZebraBrowserPrint.printZpl", zpl);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", "Zebra-Druck konnte nicht gestartet werden: " + ex.Message);
+        }
+    }
 
     private async Task EditSelected(WareneingangEntry w)
     {

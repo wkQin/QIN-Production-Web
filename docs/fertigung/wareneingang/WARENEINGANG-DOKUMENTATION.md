@@ -191,12 +191,24 @@ Die Menge wird als Laufmeter oder Stück angezeigt.
 
 Für ausgewählte Chargen kann ein Etikett gedruckt werden.
 
+Der Wareneingang nutzt testweise Zebra Browser Print, damit Etiketten lokal am Werker-PC direkt auf einem Zebra-Drucker ausgegeben werden können.
+
 Das Etikett enthält:
 
 - Charge
 - Menge
 - Material
 - Eingangsdatum
+
+Über `Auswahl Drucken` wird die markierte Charge gedruckt.
+
+Über `Alle Drucken` werden alle in der aktuellen Erfassung vorhandenen Chargen als ZPL-Batch an den lokalen Zebra-Drucker gesendet.
+
+Voraussetzung:
+
+- Zebra Browser Print läuft auf dem Arbeitsplatz-PC.
+- Der richtige Zebra-Drucker ist als Default Device gesetzt.
+- Der Host der Weboberfläche steht in den Accepted Hosts von Zebra Browser Print.
 
 Das Etikett muss auf das passende Gebinde oder den passenden Karton geklebt werden.
 

@@ -34,6 +34,7 @@ namespace QIN_Production_Web.Data
         public string Menge { get; set; } = string.Empty;
         public int Scanner { get; set; }
         public int IsNew01 { get; set; }
+        public bool Gesperrt { get; set; }
     }
 
     public class MaterialDickenmessungInfo
@@ -310,7 +311,7 @@ namespace QIN_Production_Web.Data
             using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
             {
                 await connection.OpenAsync();
-                string query = "SELECT * FROM Chargen WHERE Wareneingang_ID = @Wareneingangs_id";
+                string query = "SELECT Charge, Aktuelle_Menge, Kontrolle, Gesperrt FROM Chargen WHERE Wareneingang_ID = @Wareneingangs_id";
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Wareneingangs_id", wareneingangsId);
@@ -323,13 +324,71 @@ namespace QIN_Production_Web.Data
                                 Charge = reader["Charge"]?.ToString() ?? "",
                                 Menge = reader["Aktuelle_Menge"]?.ToString() ?? "0",
                                 Scanner = reader["Kontrolle"] != DBNull.Value ? Convert.ToInt32(reader["Kontrolle"]) : 0,
-                                IsNew01 = 0
+                                IsNew01 = 0,
+                                Gesperrt = reader["Gesperrt"] != DBNull.Value && Convert.ToBoolean(reader["Gesperrt"])
                             });
                         }
                     }
                 }
             }
             return chargen;
+        }
+
+        public static async Task<Dictionary<string, bool>> GetChargenGesperrtStatusAsync(IEnumerable<string> chargen)
+        {
+            var chargenList = chargen
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Select(c => c.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var result = chargenList.ToDictionary(c => c, _ => false, StringComparer.OrdinalIgnoreCase);
+            if (chargenList.Count == 0)
+            {
+                return result;
+            }
+
+            var parameterNames = chargenList.Select((_, index) => $"@Charge{index}").ToList();
+            string query = $@"
+                SELECT Charge, MAX(CASE WHEN ISNULL(Gesperrt, 0) = 1 THEN 1 ELSE 0 END) AS IstGesperrt
+                FROM dbo.Chargen
+                WHERE Charge IN ({string.Join(", ", parameterNames)})
+                GROUP BY Charge;";
+
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
+                {
+                    await connection.OpenAsync();
+                    using (SqlCommand command = new SqlCommand(query, connection))
+                    {
+                        for (int i = 0; i < chargenList.Count; i++)
+                        {
+                            command.Parameters.AddWithValue(parameterNames[i], chargenList[i]);
+                        }
+
+                        using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                        {
+                            while (await reader.ReadAsync())
+                            {
+                                string charge = reader["Charge"]?.ToString() ?? "";
+                                if (string.IsNullOrWhiteSpace(charge))
+                                {
+                                    continue;
+                                }
+
+                                result[charge] = reader["IstGesperrt"] != DBNull.Value && Convert.ToInt32(reader["IstGesperrt"]) == 1;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
+
+            return result;
         }
 
         public static async Task<bool> InsertWareneingangAsync(string? id, string? lieferant, string? lsNr, string? pos, List<ChargenEntry> chargenList, string? zustand, string? liefermenge, bool? palettentausch, string? bemerkung, UserSession session, bool eintragBearbeiten, string? ebe, string? material, string? dickenmessung)

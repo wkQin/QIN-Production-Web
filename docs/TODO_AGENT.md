@@ -27,14 +27,14 @@ Dateien:
 - [x] Beim zweiten falschen Speicher-Versuch alle Chargen der Bestellung sperren.
 - [x] Die Sperre über `dbo.chargen` setzen.
 - [x] Für die Sperre die Spalte `Gesperrt` in `dbo.chargen` verwenden.
-- [ ] Wenn gesperrte Chargen gedruckt werden, muss auf dem Etikett sichtbar stehen, dass die Charge gesperrt ist.
+- [x] Wenn gesperrte Chargen gedruckt werden, muss auf dem Etikett sichtbar stehen, dass die Charge gesperrt ist.
 - [x] Bei einer Sperre direkt eine E-Mail an `QSIntern` senden.
 - [x] Für den E-Mail-Versand das bestehende System in [Data/WareneingangService.cs](../Data/WareneingangService.cs) verwenden.
 - [x] Im UI den Text `Letzte Buchungen` in `Offene Wareneingänge` ändern.
 - [x] Im UI die Dickenmessung anzeigen.
 - [x] Im UI die Toleranz zur Dickenmessung anzeigen.
-- [ ] Wenn Dickenmessungs standart werte nicht da sind und gespeichert wird muss das in die Email rein.
-- [ ] Möglichkeit alle Etiketten auf einmal zu Drucken.
+- [x] Wenn Dickenmessungs standart werte nicht da sind und gespeichert wird muss das in die Email rein.
+- [x] Möglichkeit alle Etiketten auf einmal zu Drucken.
 
 ## Wareneingang Verwaltung
 
@@ -49,9 +49,10 @@ Datei:
 ## Manuelle Aufgaben
 
 - [ ] Über das Auto-Export-Tool auch Non-Automotive-EBs übertragen.
-- [ ] Wareneingangs-Anweisung anpassen.
-- [ ] In die Wareneingangs-Anweisung aufnehmen, was der Werker bei einem Druckproblem machen kann.
-- [ ] Wareneingangs-Anweisung Dickenmessung Fehlermeldung beschreiben.
+- [x] Wareneingangs-Anweisung anpassen.
+- [x] In die Wareneingangs-Anweisung aufnehmen, was der Werker bei einem Druckproblem machen kann.
+- [x] In die Wareneingangs-Anweisung aufnehmen, dass Zebra Browser Print im Hintergrund laufen muss und der richtige Zebra-Drucker als Default Device gesetzt sein muss.
+- [x] Wareneingangs-Anweisung Dickenmessung Fehlermeldung beschreiben.
 - [x] In `dbo.Materialliste` ein neues Feld `Dickenmessung` erstellen.
 - [ ] Default-Dickenmessung pro Material in `dbo.Materialliste` eintragen.
 - [x] Sicherstellen, dass alle Materialien in `dbo.Materialliste` vorhanden sind.

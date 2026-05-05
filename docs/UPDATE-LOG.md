@@ -4,6 +4,15 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.4
+- Dokumentation: Die drei manuellen Wareneingangs-Anweisungspunkte zu Druckproblem, Zebra Browser Print und Dickenmessung-Fehlermeldung wurden in der TODO-Liste abgehakt.
+- Wareneingang: QS-E-Mails zeigen oben einen Hinweis, wenn für die Dickenmessung keine Standardwerte aus `dbo.Materialliste` vorhanden waren.
+- Wareneingang: Gesperrte Chargen werden beim Etikettendruck mit einem deutlich sichtbaren `GESPERRT`-Hinweis auf dem Zebra-Etikett gedruckt.
+- Wareneingang: Der QR-Code auf dem Zebra-Etikett wurde nochmals leicht vergrößert und der Etikettentext `Datum` wurde in `Eingang` geändert.
+- Wareneingang: Der QR-Code auf dem Zebra-Etikett wurde nochmals größer gesetzt und nutzt mehr freien Platz rechts und unten, ohne die Textspalte zu verschieben.
+- Wareneingang: Der Hinweistext zum Zebra-Druck wurde gekürzt und der QR-Code auf dem ZPL-Etikett wurde größer gesetzt, ohne die Textpositionen zu verschieben.
+- Dokumentation: In der TODO-Liste wurde ergänzt, dass Zebra Browser Print in die Wareneingangs-Arbeitsanweisung aufgenommen werden muss.
+- Wareneingang: Der Etikettendruck nutzt testweise Zebra Browser Print für lokalen Direktdruck ohne normalen Browser-Druckdialog.
+- Wareneingang: Chargenetiketten können jetzt gesammelt über `Alle Drucken` als ZPL-Batch an den lokalen Zebra-Drucker gesendet werden.
 - Dokumentation: Für das Sperrlager wurden eine fachliche Dokumentation und eine Backend-Dokumentation ergänzt.
 - Produktionslayout: Im Sperrlager-Detailpopup wurde `Chargendatum` entfernt.
 - Sperrlager: Beim Vermüllen bleibt eine Charge gesperrt, wird als vermüllt markiert und verschwindet nur aus der offenen gesperrten Chargenliste.

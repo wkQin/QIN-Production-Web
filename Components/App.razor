@@ -448,6 +448,102 @@
                 }
             });
         };
+
+        window.qinZebraBrowserPrint = (() => {
+            const restBases = [
+                'http://localhost:9100',
+                'http://127.0.0.1:9100',
+                'https://localhost:9101',
+                'https://127.0.0.1:9101'
+            ];
+
+            const timeout = (ms) => new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Zebra Browser Print antwortet nicht.')), ms);
+            });
+
+            const withTimeout = (promise, ms = 4000) => Promise.race([promise, timeout(ms)]);
+
+            const sendWithBrowserPrintLibrary = (zpl) => new Promise((resolve, reject) => {
+                if (!window.BrowserPrint || typeof window.BrowserPrint.getDefaultDevice !== 'function') {
+                    reject(new Error('BrowserPrint.js ist nicht geladen.'));
+                    return;
+                }
+
+                window.BrowserPrint.getDefaultDevice('printer', (device) => {
+                    if (!device || typeof device.send !== 'function') {
+                        reject(new Error('Kein Zebra-Standarddrucker in Browser Print gefunden.'));
+                        return;
+                    }
+
+                    device.send(zpl, resolve, (error) => {
+                        reject(new Error(error || 'ZPL konnte nicht an den Zebra-Drucker gesendet werden.'));
+                    });
+                }, (error) => {
+                    reject(new Error(error || 'Zebra Browser Print ist nicht erreichbar.'));
+                });
+            });
+
+            const sendWithRestApi = async (zpl) => {
+                let lastError = null;
+
+                for (const base of restBases) {
+                    try {
+                        const defaultResponse = await withTimeout(fetch(`${base}/default?type=printer`, {
+                            method: 'GET',
+                            mode: 'cors',
+                            cache: 'no-store'
+                        }));
+
+                        if (!defaultResponse.ok) {
+                            throw new Error(`Default-Drucker nicht erreichbar (${defaultResponse.status}).`);
+                        }
+
+                        const device = await defaultResponse.json();
+                        if (!device || !device.uid) {
+                            throw new Error('Kein Zebra-Standarddrucker gefunden.');
+                        }
+
+                        const writeResponse = await withTimeout(fetch(`${base}/write`, {
+                            method: 'POST',
+                            mode: 'cors',
+                            cache: 'no-store',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                device,
+                                data: zpl
+                            })
+                        }), 10000);
+
+                        if (!writeResponse.ok) {
+                            const errorText = await writeResponse.text();
+                            throw new Error(errorText || `Druckauftrag wurde abgelehnt (${writeResponse.status}).`);
+                        }
+
+                        return;
+                    } catch (error) {
+                        lastError = error;
+                    }
+                }
+
+                throw lastError || new Error('Zebra Browser Print ist nicht erreichbar.');
+            };
+
+            return {
+                async printZpl(zpl) {
+                    if (!zpl || typeof zpl !== 'string') {
+                        throw new Error('Keine ZPL-Druckdaten erhalten.');
+                    }
+
+                    try {
+                        await sendWithBrowserPrintLibrary(zpl);
+                    } catch {
+                        await sendWithRestApi(zpl);
+                    }
+                }
+            };
+        })();
     </script>
     <script src="_content/Blazor-ApexCharts/js/apex-charts.min.js"></script>
     <script src="_content/Blazor-ApexCharts/js/blazor-apex-charts.js"></script>

@@ -291,9 +291,15 @@ Methode im UI:
 
 `PrintSelectedCharge()`
 
+Zusätzliche Methode im UI:
+
+`PrintAllCharges()`
+
 Helper:
 
-`ZebraPrinterHelper.PrintSingleChargeQr(...)`
+`WareneingangPrintHelper.BuildSingleChargeZpl(...)`
+
+`WareneingangPrintHelper.BuildChargeZplBatch(...)`
 
 Das Label enthält:
 
@@ -305,6 +311,27 @@ Das Label enthält:
 Format:
 
 55 x 28 mm
+
+Der Druck wird testweise über Zebra Browser Print lokal am Client ausgelöst.
+
+JavaScript-Funktion:
+
+`qinZebraBrowserPrint.printZpl(...)`
+
+Ablauf:
+
+1. Die Blazor-Seite erzeugt ZPL für eine oder mehrere Chargen.
+2. Der Browser ruft `qinZebraBrowserPrint.printZpl(...)` auf.
+3. Die JavaScript-Funktion sucht den Zebra-Standarddrucker über Browser Print.
+4. Der ZPL-Druckauftrag wird an den lokalen Browser-Print-Dienst gesendet.
+
+Voraussetzungen am Arbeitsplatz-PC:
+
+- Zebra Browser Print ist installiert und läuft.
+- Der Zebra-Drucker ist als Default Device eingetragen.
+- Der aufgerufene Webhost ist in den Accepted Hosts freigegeben.
+
+Der alte HTML-Druckdialog bleibt als Hilfsfunktion `printHtmlDocument(...)` vorhanden, wird im Wareneingang aber nicht mehr für den normalen Etikettendruck verwendet.
 
 ## QS-Mail
 
