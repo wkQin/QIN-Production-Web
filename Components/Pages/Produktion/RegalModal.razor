@@ -133,6 +133,11 @@
                                     <input class="form-control form-control-lg" placeholder="01232188" @bind="actionCharge" @bind:event="oninput" />
                                 </div>
 
+                                <div class="sperrlager-action-input">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Gesperrte Menge</label>
+                                    <input class="form-control form-control-lg" type="number" min="1" step="1" placeholder="Menge" @bind="actionGesperrteMenge" @bind:event="oninput" />
+                                </div>
+
                                 <div class="sperrlager-action-buttons">
                                     <button class="btn btn-danger fw-bold" disabled="@(!CanSperren)" @onclick='() => ExecuteSperrlagerActionAsync("Sperren")'>
                                         <i class="fa-solid fa-lock me-1"></i>Sperren
@@ -184,6 +189,7 @@
                                                     <span class="text-secondary small" title="@charge.Artikel">@(string.IsNullOrWhiteSpace(charge.Artikel) ? "Artikel unbekannt" : charge.Artikel)</span>
                                                     <span class="sperrlager-waiting-meta">
                                                         <span>@charge.AktuelleMenge / @charge.EchteMenge @charge.Einheit</span>
+                                                        <span>Gesperrt: @(charge.GesperrteMenge?.ToString() ?? "-")</span>
                                                         <span>@((charge.Datum ?? charge.Eingangsdatum)?.ToString("dd.MM.yyyy") ?? "-")</span>
                                                     </span>
                                                 </button>
@@ -236,68 +242,114 @@
             }
             else
             {
-                <div class="charge-detail-grid">
-                    <div>
-                        <span>Artikel</span>
-                        <strong>@DisplayValue(selectedChargeDetail.Artikel)</strong>
+                <div class="charge-detail-section">
+                    <div class="charge-detail-section-title">Wareneingang</div>
+                    <div class="charge-detail-grid">
+                        <div>
+                            <span>Lieferant</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Lieferant)</strong>
+                        </div>
+                        <div>
+                            <span>Wareneingang von</span>
+                            <strong>@DisplayValue(selectedChargeDetail.WareneingangBenutzer)</strong>
+                        </div>
+                        <div>
+                            <span>Personalnummer</span>
+                            <strong>@DisplayValue(selectedChargeDetail.WareneingangPersonalnummer)</strong>
+                        </div>
+                        <div>
+                            <span>Wareneingang am</span>
+                            <strong>@FormatDateTime(selectedChargeDetail.Eingangsdatum)</strong>
+                        </div>
+                        <div>
+                            <span>LS-Nr.</span>
+                            <strong>@DisplayValue(selectedChargeDetail.LSNr)</strong>
+                        </div>
+                        <div>
+                            <span>EBE-Nr.</span>
+                            <strong>@DisplayValue(selectedChargeDetail.EBENr)</strong>
+                        </div>
+                        <div>
+                            <span>Position</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Pos)</strong>
+                        </div>
+                        <div>
+                            <span>Zustand</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Zustand)</strong>
+                        </div>
+                        <div>
+                            <span>Dickenmessung</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Dickenmessung)</strong>
+                        </div>
                     </div>
-                    <div>
-                        <span>Lieferant</span>
-                        <strong>@DisplayValue(selectedChargeDetail.Lieferant)</strong>
-                    </div>
-                    <div>
-                        <span>Lagerort</span>
-                        <strong>@DisplayValue(selectedChargeDetail.Lagerort)</strong>
-                    </div>
-                    <div>
-                        <span>Eingelagert</span>
-                        <strong>@FormatDateTime(selectedChargeDetail.EingelagertAm)</strong>
-                    </div>
-                    <div>
-                        <span>Menge</span>
-                        <strong>@selectedChargeDetail.AktuelleMenge / @selectedChargeDetail.EchteMenge @selectedChargeDetail.Einheit</strong>
-                    </div>
-                    <div>
-                        <span>LS-Nr.</span>
-                        <strong>@DisplayValue(selectedChargeDetail.LSNr)</strong>
-                    </div>
-                    <div>
-                        <span>EBE-Nr.</span>
-                        <strong>@DisplayValue(selectedChargeDetail.EBENr)</strong>
-                    </div>
-                    <div>
-                        <span>Zustand</span>
-                        <strong>@DisplayValue(selectedChargeDetail.Zustand)</strong>
-                    </div>
-                    <div>
-                        <span>Dickenmessung</span>
-                        <strong>@DisplayValue(selectedChargeDetail.Dickenmessung)</strong>
-                    </div>
-                    <div>
-                        <span>Wareneingang</span>
-                        <strong>@FormatDateTime(selectedChargeDetail.Eingangsdatum)</strong>
-                    </div>
-                    <div>
-                        <span>Sperrlager-Aktion</span>
-                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerAktion)</strong>
-                    </div>
-                    <div>
-                        <span>Bereich</span>
-                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerBereich)</strong>
-                    </div>
-                    <div>
-                        <span>Gesperrt/Vorgang von</span>
-                        <strong>@DisplayValue(selectedChargeDetail.SperrlagerBenutzer)</strong>
-                    </div>
-                    <div>
-                        <span>Vorgang am</span>
-                        <strong>@FormatDateTime(selectedChargeDetail.SperrlagerDatum)</strong>
+                    <div class="charge-detail-note">
+                        <span>Bemerkung Wareneingang</span>
+                        <p>@DisplayValue(selectedChargeDetail.Bemerkung)</p>
                     </div>
                 </div>
 
-                <div class="charge-detail-note">
-                    <span>Sperrgrund</span>
-                    <p>@DisplayValue(selectedChargeDetail.SperrlagerGrund)</p>
+                <div class="charge-detail-section">
+                    <div class="charge-detail-section-title">Sperr-Information</div>
+                    <div class="charge-detail-grid">
+                        <div>
+                            <span>Aktion</span>
+                            <strong>@DisplayValue(selectedChargeDetail.SperrlagerAktion)</strong>
+                        </div>
+                        <div>
+                            <span>Bereich</span>
+                            <strong>@DisplayValue(selectedChargeDetail.SperrlagerBereich)</strong>
+                        </div>
+                        <div>
+                            <span>Gesperrte Menge</span>
+                            <strong>@FormatMenge(selectedChargeDetail.GesperrteMenge, selectedChargeDetail.Einheit)</strong>
+                        </div>
+                        <div>
+                            <span>Vorgang von</span>
+                            <strong>@DisplayValue(selectedChargeDetail.SperrlagerBenutzer)</strong>
+                        </div>
+                        <div>
+                            <span>Vorgang am</span>
+                            <strong>@FormatDateTime(selectedChargeDetail.SperrlagerDatum)</strong>
+                        </div>
+                        <div>
+                            <span>Lagerort</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Lagerort)</strong>
+                        </div>
+                        <div>
+                            <span>Eingelagert</span>
+                            <strong>@FormatDateTime(selectedChargeDetail.EingelagertAm)</strong>
+                        </div>
+                        <div>
+                            <span>Status</span>
+                            <strong>@(selectedChargeDetail.Gesperrt ? "Gesperrt" : "Frei")</strong>
+                        </div>
+                    </div>
+                    <div class="charge-detail-note">
+                        <span>Sperrgrund</span>
+                        <p>@DisplayValue(selectedChargeDetail.SperrlagerGrund)</p>
+                    </div>
+                </div>
+
+                <div class="charge-detail-section">
+                    <div class="charge-detail-section-title">Charge & Menge</div>
+                    <div class="charge-detail-grid">
+                        <div>
+                            <span>Artikel</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Artikel)</strong>
+                        </div>
+                        <div>
+                            <span>Charge</span>
+                            <strong>@DisplayValue(selectedChargeDetail.Charge)</strong>
+                        </div>
+                        <div>
+                            <span>Menge aktuell</span>
+                            <strong>@selectedChargeDetail.AktuelleMenge @selectedChargeDetail.Einheit</strong>
+                        </div>
+                        <div>
+                            <span>Menge original</span>
+                            <strong>@selectedChargeDetail.EchteMenge @selectedChargeDetail.Einheit</strong>
+                        </div>
+                    </div>
                 </div>
             }
         </div>
@@ -315,10 +367,11 @@
     private bool isLoadingChargeDetails;
     private bool showWaitingSideview;
     private string actionCharge = "";
+    private string actionGesperrteMenge = "";
     private string actionMessage = "";
 
     private bool IsSperrlager => RangeTag == "Sperrlager";
-    private bool CanSperren => !string.IsNullOrWhiteSpace(actionCharge);
+    private bool CanSperren => !string.IsNullOrWhiteSpace(actionCharge) && selectedPlatz != null && TryGetActionGesperrteMenge(out _);
     private bool CanTextAction => !string.IsNullOrWhiteSpace(actionCharge);
     private string ModalTitle => IsSperrlager ? "Sperrlager Regal 17" : $"Regaldetails {RangeTag}";
 
@@ -329,6 +382,7 @@
         selectedChargeDetail = null;
         showWaitingSideview = false;
         actionCharge = "";
+        actionGesperrteMenge = "";
         actionMessage = "";
         IsVisible = true;
         isLoading = true;
@@ -404,9 +458,10 @@
     private async Task ExecuteSperrlagerActionAsync(string action)
     {
         var user = await GetCurrentUserAsync();
+        TryGetActionGesperrteMenge(out var gesperrteMenge);
         SperrlagerActionResult result = action switch
         {
-            "Sperren" => await LayoutService.SperreChargenImSperrlagerAsync(actionCharge, selectedPlatz?.QRCode ?? "", user.Name, user.Personalnummer),
+            "Sperren" => await LayoutService.SperreChargenImSperrlagerAsync(actionCharge, selectedPlatz?.QRCode ?? "", user.Name, user.Personalnummer, gesperrteMenge),
             "Entsperren" => await LayoutService.EntsperreChargenAsync(actionCharge, user.Name, user.Personalnummer),
             "Vermüllen" => await LayoutService.VermuelleChargenAsync(actionCharge, user.Name, user.Personalnummer),
             _ => new SperrlagerActionResult { Message = "Unbekannte Aktion." }
@@ -419,6 +474,7 @@
     private void SelectWaitingCharge(SperrlagerChargeInfo charge)
     {
         actionCharge = charge.Charge;
+        actionGesperrteMenge = (charge.GesperrteMenge ?? charge.AktuelleMenge).ToString();
         actionMessage = "";
         showWaitingSideview = false;
     }
@@ -520,6 +576,16 @@
     private static string FormatDateTime(DateTime? value)
     {
         return value.HasValue ? value.Value.ToString("dd.MM.yyyy HH:mm") : "-";
+    }
+
+    private bool TryGetActionGesperrteMenge(out int menge)
+    {
+        return int.TryParse(actionGesperrteMenge, out menge) && menge > 0;
+    }
+
+    private static string FormatMenge(int? menge, string einheit)
+    {
+        return menge.HasValue ? $"{menge.Value} {DisplayValue(einheit)}" : "-";
     }
 
     private RenderFragment RenderPlatz(string qrCode, bool selectOnly = false) => __builder =>
@@ -738,6 +804,7 @@
         color: #fecaca;
         display: flex;
         font-size: 0.75rem;
+        gap: 10px;
         justify-content: space-between;
         margin-top: auto;
     }
@@ -750,7 +817,7 @@
         display: grid;
         flex: 0 0 auto;
         gap: 10px;
-        grid-template-columns: 240px minmax(280px, 1fr) 430px;
+        grid-template-columns: 220px minmax(260px, 1fr) 180px 430px;
         padding: 10px;
     }
 
@@ -895,7 +962,7 @@
         max-height: 86vh;
         overflow-y: auto;
         padding: 18px;
-        width: min(760px, 94vw);
+        width: min(920px, 94vw);
     }
 
     .charge-detail-header {
@@ -920,6 +987,26 @@
         display: grid;
         gap: 10px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .charge-detail-section {
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        border-radius: 8px;
+        margin-top: 12px;
+        padding: 12px;
+    }
+
+    .charge-detail-section:first-of-type {
+        margin-top: 0;
+    }
+
+    .charge-detail-section-title {
+        color: #fecaca;
+        font-size: 0.78rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        margin-bottom: 10px;
+        text-transform: uppercase;
     }
 
     .charge-detail-grid div,

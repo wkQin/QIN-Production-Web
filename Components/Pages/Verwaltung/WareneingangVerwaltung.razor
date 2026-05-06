@@ -162,7 +162,7 @@
                                     </td>
                                     <td>@row.Lieferant</td>
                                     <td>@row.Artikel</td>
-                                    <td class="text-secondary" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@row.Bemerkung">@FormatBemerkung(row.Bemerkung)</td>
+                                    <td class="@(HasBemerkung(row.Bemerkung) ? "bemerkung-important" : "text-secondary")" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@row.Bemerkung">@FormatBemerkung(row.Bemerkung)</td>
                                     <td class="fw-bold text-info">@row.LS_Nr</td>
                                     <td>@row.Menge</td>
                                     <td>
@@ -597,6 +597,11 @@
         return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
 
+    private static bool HasBemerkung(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value);
+    }
+
     private static List<string> GetChargeValidationErrors(ChargeEntry charge)
     {
         var errors = new List<string>();
@@ -987,6 +992,17 @@
 
     .table-action-btn:hover {
         filter: brightness(1.06);
+    }
+
+    .modern-table td.bemerkung-important,
+    .bemerkung-important {
+        color: #f87171;
+        font-weight: 800;
+    }
+
+    [data-theme='light'] .modern-table td.bemerkung-important,
+    [data-theme='light'] .bemerkung-important {
+        color: #b91c1c;
     }
 
     .we-resizable-table th {

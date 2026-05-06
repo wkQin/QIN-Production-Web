@@ -48,12 +48,15 @@ namespace QIN_Production_Web.Data
     public class MaterialDickenmessungInfo
     {
         public decimal Dickenmessung { get; set; }
+        public decimal? DickenmessungToleranzProzent { get; set; }
         public string? Suchbegriff { get; set; }
         public string? Nr { get; set; }
         public string? Beschreibung { get; set; }
         public string? Beschreibung2 { get; set; }
         public string? Lieferant { get; set; }
         public string? MatchFeld { get; set; }
+        public decimal WirksameToleranzProzent => DickenmessungToleranzProzent.GetValueOrDefault(10m);
+        public bool NutztStandardToleranz => !DickenmessungToleranzProzent.HasValue;
     }
 
     public class WareneingangService
@@ -201,11 +204,6 @@ namespace QIN_Production_Web.Data
                 return null;
             }
 
-            const string query = @"
-                SELECT Suchbegriff, Nr, Beschreibung, Beschreibung2, Lieferant, Dickenmessung
-                FROM dbo.Materialliste
-                WHERE Dickenmessung IS NOT NULL;";
-
             var matches = new List<(MaterialDickenmessungInfo Info, int Score)>();
 
             try
@@ -213,6 +211,15 @@ namespace QIN_Production_Web.Data
                 using (SqlConnection connection = new SqlConnection(SqlManager.connectionString))
                 {
                     await connection.OpenAsync();
+                    bool hasToleranzColumn = await ColumnExistsAsync(connection, "dbo", "Materialliste", "Dickenmessung_Toleranz");
+                    string toleranzSelect = hasToleranzColumn
+                        ? "Dickenmessung_Toleranz"
+                        : "CAST(NULL AS decimal(10,2)) AS Dickenmessung_Toleranz";
+                    string query = $@"
+                SELECT Suchbegriff, Nr, Beschreibung, Beschreibung2, Lieferant, Dickenmessung, {toleranzSelect}
+                FROM dbo.Materialliste
+                WHERE Dickenmessung IS NOT NULL;";
+
                     using (SqlCommand command = new SqlCommand(query, connection))
                     using (SqlDataReader reader = await command.ExecuteReaderAsync())
                     {
@@ -225,7 +232,10 @@ namespace QIN_Production_Web.Data
                                 Beschreibung = reader["Beschreibung"]?.ToString(),
                                 Beschreibung2 = reader["Beschreibung2"]?.ToString(),
                                 Lieferant = reader["Lieferant"]?.ToString(),
-                                Dickenmessung = Convert.ToDecimal(reader["Dickenmessung"], CultureInfo.InvariantCulture)
+                                Dickenmessung = Convert.ToDecimal(reader["Dickenmessung"], CultureInfo.InvariantCulture),
+                                DickenmessungToleranzProzent = reader["Dickenmessung_Toleranz"] == DBNull.Value
+                                    ? null
+                                    : Convert.ToDecimal(reader["Dickenmessung_Toleranz"], CultureInfo.InvariantCulture)
                             };
 
                             var bestField = string.Empty;
@@ -553,9 +563,9 @@ namespace QIN_Production_Web.Data
 
         private static async Task InsertSperrlagerLogsForWareneingangAsync(SqlConnection connection, int wareneingangId, UserSession session, string sperrgrund)
         {
-            const string selectQuery = @"SELECT ID, Charge FROM dbo.Chargen WHERE Wareneingang_ID = @WareneingangID AND Gesperrt = 1;";
+            const string selectQuery = @"SELECT ID, Charge, Aktuelle_Menge FROM dbo.Chargen WHERE Wareneingang_ID = @WareneingangID AND Gesperrt = 1;";
 
-            var gesperrteChargen = new List<(int ID, string Charge)>();
+            var gesperrteChargen = new List<(int ID, string Charge, int GesperrteMenge)>();
             using (SqlCommand selectCommand = new SqlCommand(selectQuery, connection))
             {
                 selectCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
@@ -564,7 +574,8 @@ namespace QIN_Production_Web.Data
                 {
                     gesperrteChargen.Add((
                         reader["ID"] != DBNull.Value ? Convert.ToInt32(reader["ID"]) : 0,
-                        reader["Charge"]?.ToString() ?? ""));
+                        reader["Charge"]?.ToString() ?? "",
+                        reader["Aktuelle_Menge"] != DBNull.Value ? Convert.ToInt32(reader["Aktuelle_Menge"]) : 0));
                 }
             }
 
@@ -579,17 +590,22 @@ namespace QIN_Production_Web.Data
                     sperrgrund,
                     session.Name ?? "System",
                     session.Personalnummer ?? "System",
-                    null);
+                    null,
+                    charge.GesperrteMenge);
             }
         }
 
-        private static async Task InsertSperrlagerLogAsync(SqlConnection connection, int chargenId, string charge, string aktion, string bereich, string grund, string benutzer, string personalnummer, string? lagerortQRCode)
+        private static async Task InsertSperrlagerLogAsync(SqlConnection connection, int chargenId, string charge, string aktion, string bereich, string grund, string benutzer, string personalnummer, string? lagerortQRCode, int? gesperrteMenge)
         {
-            const string query = @"
+            bool hasGesperrteMengeColumn = await ColumnExistsAsync(connection, "dbo", "Sperrlager", "GesperrteMenge");
+            string mengeColumn = hasGesperrteMengeColumn ? ", GesperrteMenge" : "";
+            string mengeValue = hasGesperrteMengeColumn ? ", @GesperrteMenge" : "";
+
+            string query = $@"
                 INSERT INTO dbo.Sperrlager
-                    (Chargen_ID, Charge, Aktion, Bereich, Grund, GesperrtVon, GesperrtVonPersonalnummer, GesperrtAm, LagerortQRCode, Bemerkung)
+                    (Chargen_ID, Charge, Aktion, Bereich, Grund, GesperrtVon, GesperrtVonPersonalnummer, GesperrtAm, LagerortQRCode, Bemerkung{mengeColumn})
                 VALUES
-                    (@ChargenID, @Charge, @Aktion, @Bereich, @Grund, @Benutzer, @Personalnummer, SYSDATETIME(), @LagerortQRCode, @Grund);";
+                    (@ChargenID, @Charge, @Aktion, @Bereich, @Grund, @Benutzer, @Personalnummer, SYSDATETIME(), @LagerortQRCode, @Grund{mengeValue});";
 
             using SqlCommand command = new SqlCommand(query, connection);
             command.Parameters.AddWithValue("@ChargenID", chargenId);
@@ -600,7 +616,29 @@ namespace QIN_Production_Web.Data
             command.Parameters.AddWithValue("@Benutzer", string.IsNullOrWhiteSpace(benutzer) ? "System" : benutzer);
             command.Parameters.AddWithValue("@Personalnummer", string.IsNullOrWhiteSpace(personalnummer) ? "System" : personalnummer);
             command.Parameters.AddWithValue("@LagerortQRCode", string.IsNullOrWhiteSpace(lagerortQRCode) ? DBNull.Value : lagerortQRCode);
+            if (hasGesperrteMengeColumn)
+            {
+                command.Parameters.AddWithValue("@GesperrteMenge", gesperrteMenge.HasValue ? gesperrteMenge.Value : DBNull.Value);
+            }
+
             await command.ExecuteNonQueryAsync();
+        }
+
+        private static async Task<bool> ColumnExistsAsync(SqlConnection connection, string schema, string table, string column)
+        {
+            const string query = @"
+                SELECT COUNT(1)
+                FROM sys.columns c
+                INNER JOIN sys.tables t ON t.object_id = c.object_id
+                INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
+                WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
+
+            using SqlCommand command = new SqlCommand(query, connection);
+            command.Parameters.AddWithValue("@Schema", schema);
+            command.Parameters.AddWithValue("@Table", table);
+            command.Parameters.AddWithValue("@Column", column);
+
+            return Convert.ToInt32(await command.ExecuteScalarAsync()) > 0;
         }
 
         public static async Task<string> GetEingangsDatumForChargeAsync(string charge)

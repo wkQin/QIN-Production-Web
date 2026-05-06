@@ -230,7 +230,12 @@
                             {
                                 <small>
                                     <span class="text-success fw-bold">Sollwert: @FormatDickenmessungValue(MaterialDickenmessung.Dickenmessung) mm</span>
-                                    <span class="text-secondary ms-2">Erlaubte Toleranz: @FormatDickenmessungValue(DickenmessungMin) bis @FormatDickenmessungValue(DickenmessungMax) mm</span>
+                                    <span class="text-warning fw-bold ms-2">Toleranz: @DickenmessungToleranzProzentAnzeige</span>
+                                    <span class="text-secondary ms-2">Erlaubter Bereich: @FormatDickenmessungValue(DickenmessungMin) bis @FormatDickenmessungValue(DickenmessungMax) mm</span>
+                                    @if (MaterialDickenmessung.NutztStandardToleranz)
+                                    {
+                                        <span class="text-danger fw-bold d-block mt-1">@DickenmessungToleranzQuelleAnzeige</span>
+                                    }
                                 </small>
                             }
                         </div>
@@ -371,7 +376,7 @@
                             <td class="text-info fw-bold py-3">@w.EBE_NR</td>
                             <td class="text-white py-3">@w.Lieferant</td>
                             <td class="text-secondary py-3" style="max-width: 250px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Artikel">@w.Artikel</td>
-                            <td class="text-secondary py-3" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Bemerkung">@FormatBemerkung(w.Bemerkung)</td>
+                            <td class="py-3 @(HasBemerkung(w.Bemerkung) ? "bemerkung-important" : "text-secondary")" style="max-width: 260px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="@w.Bemerkung">@FormatBemerkung(w.Bemerkung)</td>
                             <td class="text-warning fw-bold text-end py-3">@w.Menge LM/STK</td>
                             <td class="text-center py-3" style="padding-right: 1.5rem;">
                                 <span class="badge bg-secondary px-3 py-2 fs-6 rounded-pill">@w.Chargen</span>
@@ -517,12 +522,17 @@
     private bool IsDickenmessungRelevant => !IsMustermaterial && (string.IsNullOrWhiteSpace(SelectedLieferant) || IsSelectedLieferantAutomotiv);
     private const decimal DefaultDickenmessungMin = 0.23m;
     private const decimal DefaultDickenmessungMax = 1.2m;
-    private const decimal DickenmessungToleranz = 0.10m;
-    private decimal DickenmessungMin => MaterialDickenmessung == null ? DefaultDickenmessungMin : MaterialDickenmessung.Dickenmessung * (1 - DickenmessungToleranz);
-    private decimal DickenmessungMax => MaterialDickenmessung == null ? DefaultDickenmessungMax : MaterialDickenmessung.Dickenmessung * (1 + DickenmessungToleranz);
+    private const decimal DefaultDickenmessungToleranzProzent = 10m;
+    private decimal DickenmessungToleranzFaktor => (MaterialDickenmessung?.WirksameToleranzProzent ?? DefaultDickenmessungToleranzProzent) / 100m;
+    private decimal DickenmessungMin => MaterialDickenmessung == null ? DefaultDickenmessungMin : MaterialDickenmessung.Dickenmessung * (1 - DickenmessungToleranzFaktor);
+    private decimal DickenmessungMax => MaterialDickenmessung == null ? DefaultDickenmessungMax : MaterialDickenmessung.Dickenmessung * (1 + DickenmessungToleranzFaktor);
     private string DickenmessungAnzeige => string.IsNullOrWhiteSpace(Dickenmessung) ? "-" : $"{Dickenmessung} mm";
     private string DickenmessungSollwertAnzeige => MaterialDickenmessung == null ? "Standardbereich" : $"{FormatDickenmessungValue(MaterialDickenmessung.Dickenmessung)} mm";
     private string DickenmessungToleranzAnzeige => $"{FormatDickenmessungValue(DickenmessungMin)} bis {FormatDickenmessungValue(DickenmessungMax)} mm";
+    private string DickenmessungToleranzProzentAnzeige => MaterialDickenmessung == null ? "-" : $"{FormatDickenmessungValue(MaterialDickenmessung.WirksameToleranzProzent)} %";
+    private string DickenmessungToleranzQuelleAnzeige => MaterialDickenmessung?.NutztStandardToleranz == true
+        ? "Standard-Toleranz 10 %, weil keine Material-Toleranz eingetragen ist."
+        : "Material-Toleranz aus dbo.Materialliste.";
     private LieferantInfo? SelectedLieferantInfo => Lieferanten.FirstOrDefault(l => l.Lieferant == SelectedLieferant);
     private string GetRequiredFieldClass(bool isMissing) => IsEditMode && isMissing ? "required-outline" : string.Empty;
 
@@ -819,9 +829,7 @@
             string savedMaterial = Material ?? "N/A";
             string savedBemerkung = Bemerkung;
             string savedZustand = Zustand;
-            string? dickenmessungStandardHinweis = IsDickenmessungRelevant && MaterialDickenmessung == null
-                ? $"Hinweis für QS: Für dieses Material wurden keine Standardwerte für die Dickenmessung in dbo.Materialliste gefunden. Es wurde der Standardbereich {FormatDickenmessungValue(DefaultDickenmessungMin)} bis {FormatDickenmessungValue(DefaultDickenmessungMax)} mm verwendet."
-                : null;
+            string? dickenmessungStandardHinweis = GetDickenmessungHinweisFuerQs();
 
             _ = Task.Run(async () => {
                 try {
@@ -879,9 +887,7 @@
         string savedLieferant = SelectedLieferant;
         string savedMaterial = Material;
         string qsBemerkung = sperrBemerkung;
-        string? dickenmessungStandardHinweis = IsDickenmessungRelevant && MaterialDickenmessung == null
-            ? $"Hinweis für QS: Für dieses Material wurden keine Standardwerte für die Dickenmessung in dbo.Materialliste gefunden. Es wurde der Standardbereich {FormatDickenmessungValue(DefaultDickenmessungMin)} bis {FormatDickenmessungValue(DefaultDickenmessungMax)} mm verwendet."
-            : null;
+        string? dickenmessungStandardHinweis = GetDickenmessungHinweisFuerQs();
 
         _ = Task.Run(async () =>
         {
@@ -1034,6 +1040,26 @@
         return value.ToString("0.##", new CultureInfo("de-DE"));
     }
 
+    private string? GetDickenmessungHinweisFuerQs()
+    {
+        if (!IsDickenmessungRelevant)
+        {
+            return null;
+        }
+
+        if (MaterialDickenmessung == null)
+        {
+            return $"Hinweis für QS: Für dieses Material wurden keine Standardwerte für die Dickenmessung in dbo.Materialliste gefunden. Es wurde der Standardbereich {FormatDickenmessungValue(DefaultDickenmessungMin)} bis {FormatDickenmessungValue(DefaultDickenmessungMax)} mm verwendet.";
+        }
+
+        if (MaterialDickenmessung.NutztStandardToleranz)
+        {
+            return "Hinweis für QS: Für dieses Material ist keine Dickenmessung_Toleranz in dbo.Materialliste eingetragen. Es wurde sichtbar die Standard-Toleranz 10 % verwendet.";
+        }
+
+        return null;
+    }
+
     private async Task RefreshHistorie()
     {
         WarenList = await WareneingangService.LoadWareneingangAsync();
@@ -1082,6 +1108,11 @@
     {
         return string.IsNullOrWhiteSpace(value) ? "-" : value.Trim();
     }
+
+    private static bool HasBemerkung(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value);
+    }
 }
 
 <style>
@@ -1093,6 +1124,17 @@
 
     .wareneingang-dashboard {
         color: var(--text-primary);
+    }
+
+    .modern-table td.bemerkung-important,
+    .bemerkung-important {
+        color: #f87171;
+        font-weight: 800;
+    }
+
+    [data-theme='light'] .modern-table td.bemerkung-important,
+    [data-theme='light'] .bemerkung-important {
+        color: #b91c1c;
     }
 
     .scanner-focus {

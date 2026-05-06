@@ -2,7 +2,7 @@
 
 Technische Dokumentation für die Wareneingang-Funktion in QIN Production Web.
 
-Stand: Update 3.2.4
+Stand: Update 3.2.5
 
 ## Zweck
 
@@ -158,6 +158,7 @@ Verwendete Felder:
 - `Beschreibung`
 - `Beschreibung2`
 - `Dickenmessung`
+- `Dickenmessung_Toleranz`
 
 Die Suche bewertet direkte Treffer und Teiltreffer. Damit werden einfache Treffer wie `Kurz: KUGA Carbon Black Weave` und Materialtexte mit Maßangaben wie `675 x 355 x 0,25mm` unterstützt.
 
@@ -165,7 +166,9 @@ Wenn ein Sollwert gefunden wird:
 
 - Sollwert wird im UI grün angezeigt.
 - Erlaubte Toleranz wird angezeigt.
-- Toleranz beträgt 10 Prozent.
+- Toleranz kommt aus `dbo.Materialliste.Dickenmessung_Toleranz`.
+- `Dickenmessung_Toleranz` ist ein Prozentwert. Für 10 Prozent wird `10` oder `10.00` eingetragen, nicht `0.10`.
+- Wenn die Spalte oder der Wert fehlt, verwendet das System sichtbar die Standard-Toleranz 10 Prozent.
 
 Beispiel:
 
@@ -173,6 +176,10 @@ Beispiel:
 - Erlaubt `0,45 mm` bis `0,55 mm`
 
 Wenn kein Sollwert gefunden wird, gilt der Standardbereich `0,23 mm` bis `1,2 mm`.
+
+SQL-Erweiterung:
+
+`docs/fertigung/wareneingang/WARENEINGANG-SPERRLAGER-ERWEITERUNG.sql`
 
 ### Sperre bei falscher Dickenmessung
 

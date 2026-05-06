@@ -37,6 +37,7 @@ namespace QIN_Production_Web.Data
         public int AktuelleMenge { get; set; }
         public int EchteMenge { get; set; }
         public string Einheit { get; set; } = "";
+        public int? GesperrteMenge { get; set; }
         public DateTime? Datum { get; set; }
         public DateTime? Eingangsdatum { get; set; }
     }
@@ -58,8 +59,11 @@ namespace QIN_Production_Web.Data
         public bool Gesperrt { get; set; }
         public DateTime? ChargenDatum { get; set; }
         public DateTime? Eingangsdatum { get; set; }
+        public string WareneingangBenutzer { get; set; } = "";
+        public string WareneingangPersonalnummer { get; set; } = "";
         public string Lagerort { get; set; } = "";
         public DateTime? EingelagertAm { get; set; }
+        public int? GesperrteMenge { get; set; }
         public string SperrlagerAktion { get; set; } = "";
         public string SperrlagerBereich { get; set; } = "";
         public string SperrlagerGrund { get; set; } = "";
@@ -293,18 +297,34 @@ namespace QIN_Production_Web.Data
             List<SperrlagerChargeInfo> gesperrteChargen;
             using (var conn = new SqlConnection(SqlManager.FertigungConnectionString))
             {
+                await conn.OpenAsync();
+                bool hasGesperrteMengeColumn = await ColumnExistsAsync(conn, "dbo", "Sperrlager", "GesperrteMenge");
+                string latestSperrlagerSelect = hasGesperrteMengeColumn
+                    ? "sl.GesperrteMenge"
+                    : "CAST(NULL AS int) AS GesperrteMenge";
+                string gesperrteMengeSelect = hasGesperrteMengeColumn
+                    ? "ISNULL(sl.GesperrteMenge, c.Aktuelle_Menge) AS GesperrteMenge,"
+                    : "CAST(NULL AS int) AS GesperrteMenge,";
+
                 var rows = await conn.QueryAsync<SperrlagerChargeInfo>(
-                    @"SELECT
+                    $@"SELECT
                           c.ID,
                           ISNULL(c.Charge, '') AS Charge,
                           ISNULL(w.Artikel, '') AS Artikel,
                           ISNULL(c.Aktuelle_Menge, 0) AS AktuelleMenge,
                           ISNULL(c.Echte_Menge, 0) AS EchteMenge,
                           ISNULL(c.Einheit, '') AS Einheit,
+                          {gesperrteMengeSelect}
                           c.Datum,
                           w.Eingangsdatum
                       FROM dbo.Chargen c
                       LEFT JOIN dbo.Wareneingang w ON w.ID = c.Wareneingang_ID
+                      OUTER APPLY (
+                          SELECT TOP 1 {latestSperrlagerSelect}
+                          FROM dbo.Sperrlager sl
+                          WHERE sl.Chargen_ID = c.ID OR sl.Charge = c.Charge
+                          ORDER BY sl.CreatedAt DESC, sl.ID DESC
+                      ) sl
                       WHERE c.Gesperrt = 1
                         AND ISNULL(c.Charge, '') <> ''
                         AND ISNULL(c.Status_ID, 0) <> 3
@@ -349,8 +369,17 @@ namespace QIN_Production_Web.Data
 
             using (var conn = new SqlConnection(SqlManager.FertigungConnectionString))
             {
+                await conn.OpenAsync();
+                bool hasGesperrteMengeColumn = await ColumnExistsAsync(conn, "dbo", "Sperrlager", "GesperrteMenge");
+                string latestSperrlagerSelect = hasGesperrteMengeColumn
+                    ? "sl.*"
+                    : "sl.*, CAST(NULL AS int) AS GesperrteMenge";
+                string gesperrteMengeSelect = hasGesperrteMengeColumn
+                    ? "sl.GesperrteMenge AS GesperrteMenge,"
+                    : "CAST(NULL AS int) AS GesperrteMenge,";
+
                 var detail = await conn.QueryFirstOrDefaultAsync<ChargeDetailInfo>(
-                    @"SELECT TOP 1
+                    $@"SELECT TOP 1
                           ISNULL(c.Charge, '') AS Charge,
                           ISNULL(w.Artikel, '') AS Artikel,
                           ISNULL(w.Lieferant, '') AS Lieferant,
@@ -366,6 +395,8 @@ namespace QIN_Production_Web.Data
                           CAST(c.Gesperrt AS bit) AS Gesperrt,
                           c.Datum AS ChargenDatum,
                           w.Eingangsdatum,
+                          ISNULL(CAST(w.Benutzer AS nvarchar(50)), '') AS WareneingangPersonalnummer,
+                          {gesperrteMengeSelect}
                           ISNULL(sl.Aktion, '') AS SperrlagerAktion,
                           ISNULL(sl.Bereich, '') AS SperrlagerBereich,
                           ISNULL(sl.Grund, '') AS SperrlagerGrund,
@@ -374,7 +405,7 @@ namespace QIN_Production_Web.Data
                       FROM dbo.Chargen c
                       LEFT JOIN dbo.Wareneingang w ON w.ID = c.Wareneingang_ID
                       OUTER APPLY (
-                          SELECT TOP 1 *
+                          SELECT TOP 1 {latestSperrlagerSelect}
                           FROM dbo.Sperrlager sl
                           WHERE sl.Chargen_ID = c.ID OR sl.Charge = c.Charge
                           ORDER BY sl.CreatedAt DESC, sl.ID DESC
@@ -387,11 +418,12 @@ namespace QIN_Production_Web.Data
 
                 detail.Lagerort = lagerort;
                 detail.EingelagertAm = eingelagertAm;
+                detail.WareneingangBenutzer = await GetBenutzerNameAsync(detail.WareneingangPersonalnummer);
                 return detail;
             }
         }
 
-        public async Task<SperrlagerActionResult> SperreChargenImSperrlagerAsync(string chargeText, string lagerortQRCode, string benutzer, string personalnummer)
+        public async Task<SperrlagerActionResult> SperreChargenImSperrlagerAsync(string chargeText, string lagerortQRCode, string benutzer, string personalnummer, int gesperrteMenge)
         {
             var charges = ParseChargeText(chargeText);
             if (charges.Count == 0)
@@ -399,12 +431,17 @@ namespace QIN_Production_Web.Data
                 return new SperrlagerActionResult { Message = "Keine Charge eingegeben." };
             }
 
+            if (gesperrteMenge <= 0)
+            {
+                return new SperrlagerActionResult { Message = "Bitte eine gesperrte Menge größer 0 eingeben." };
+            }
+
             if (string.IsNullOrWhiteSpace(lagerortQRCode))
             {
                 return new SperrlagerActionResult { Message = "Bitte zuerst einen Sperrlagerplatz auswählen." };
             }
 
-            var updateResult = await SetChargenGesperrtAsync(charges, true, false, benutzer, personalnummer, "Sperrlager", "Manuelle Sperre über Sperrlager", lagerortQRCode);
+            var updateResult = await SetChargenGesperrtAsync(charges, true, false, benutzer, personalnummer, "Sperrlager", "Manuelle Sperre über Sperrlager", lagerortQRCode, gesperrteMenge);
             if (updateResult.Found.Count == 0)
             {
                 return new SperrlagerActionResult { Message = BuildSperrlagerMessage("Keine passende Charge gefunden.", updateResult.Missing) };
@@ -428,7 +465,7 @@ namespace QIN_Production_Web.Data
                 return new SperrlagerActionResult { Message = "Keine Charge eingegeben." };
             }
 
-            var updateResult = await SetChargenGesperrtAsync(charges, false, false, benutzer, personalnummer, "Sperrlager", "Entsperrt über Sperrlager", null);
+            var updateResult = await SetChargenGesperrtAsync(charges, false, false, benutzer, personalnummer, "Sperrlager", "Entsperrt über Sperrlager", null, null);
             if (updateResult.Found.Count == 0)
             {
                 return new SperrlagerActionResult { Message = BuildSperrlagerMessage("Keine passende Charge gefunden.", updateResult.Missing) };
@@ -452,7 +489,7 @@ namespace QIN_Production_Web.Data
                 return new SperrlagerActionResult { Message = "Keine Charge eingegeben." };
             }
 
-            var updateResult = await SetChargenGesperrtAsync(charges, false, true, benutzer, personalnummer, "Sperrlager", "Vermüllt über Sperrlager", null);
+            var updateResult = await SetChargenGesperrtAsync(charges, false, true, benutzer, personalnummer, "Sperrlager", "Vermüllt über Sperrlager", null, null);
             if (updateResult.Found.Count == 0)
             {
                 return new SperrlagerActionResult { Message = BuildSperrlagerMessage("Keine passende Charge gefunden.", updateResult.Missing) };
@@ -488,7 +525,7 @@ namespace QIN_Production_Web.Data
                 .ToList();
         }
 
-        private async Task<SperrlagerChargeUpdateResult> SetChargenGesperrtAsync(List<string> charges, bool gesperrt, bool vermuellt, string benutzer, string personalnummer, string bereich, string grund, string? lagerortQRCode)
+        private async Task<SperrlagerChargeUpdateResult> SetChargenGesperrtAsync(List<string> charges, bool gesperrt, bool vermuellt, string benutzer, string personalnummer, string bereich, string grund, string? lagerortQRCode, int? gesperrteMenge)
         {
             var result = new SperrlagerChargeUpdateResult();
 
@@ -522,7 +559,7 @@ namespace QIN_Production_Web.Data
                               WHERE ID = @id",
                             new { id = row.ID });
 
-                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Vermüllt", bereich, grund, benutzer, personalnummer, lagerortQRCode);
+                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Vermüllt", bereich, grund, benutzer, personalnummer, lagerortQRCode, null);
                     }
                     else if (gesperrt)
                     {
@@ -532,7 +569,7 @@ namespace QIN_Production_Web.Data
                               WHERE ID = @id",
                             new { id = row.ID });
 
-                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Gesperrt", bereich, grund, benutzer, personalnummer, lagerortQRCode);
+                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Gesperrt", bereich, grund, benutzer, personalnummer, lagerortQRCode, gesperrteMenge);
                     }
                     else
                     {
@@ -542,7 +579,7 @@ namespace QIN_Production_Web.Data
                               WHERE ID = @id",
                             new { id = row.ID });
 
-                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Entsperrt", bereich, grund, benutzer, personalnummer, lagerortQRCode);
+                        await InsertSperrlagerLogAsync(conn, row.ID, row.Charge, "Entsperrt", bereich, grund, benutzer, personalnummer, lagerortQRCode, null);
                     }
 
                     result.Found.Add(row);
@@ -557,11 +594,15 @@ namespace QIN_Production_Web.Data
             return result;
         }
 
-        private static async Task InsertSperrlagerLogAsync(SqlConnection conn, int chargenId, string charge, string aktion, string bereich, string grund, string benutzer, string personalnummer, string? lagerortQRCode)
+        private static async Task InsertSperrlagerLogAsync(SqlConnection conn, int chargenId, string charge, string aktion, string bereich, string grund, string benutzer, string personalnummer, string? lagerortQRCode, int? gesperrteMenge)
         {
+            bool hasGesperrteMengeColumn = await ColumnExistsAsync(conn, "dbo", "Sperrlager", "GesperrteMenge");
+            string mengeColumn = hasGesperrteMengeColumn ? ", GesperrteMenge" : "";
+            string mengeValue = hasGesperrteMengeColumn ? ", @GesperrteMenge" : "";
+
             await conn.ExecuteAsync(
-                @"INSERT INTO dbo.Sperrlager
-                    (Chargen_ID, Charge, Aktion, Bereich, Grund, GesperrtVon, GesperrtVonPersonalnummer, GesperrtAm, EntsperrtVon, EntsperrtAm, VermuelltVon, VermuelltAm, LagerortQRCode, Bemerkung)
+                $@"INSERT INTO dbo.Sperrlager
+                    (Chargen_ID, Charge, Aktion, Bereich, Grund, GesperrtVon, GesperrtVonPersonalnummer, GesperrtAm, EntsperrtVon, EntsperrtAm, VermuelltVon, VermuelltAm, LagerortQRCode, Bemerkung{mengeColumn})
                   VALUES
                     (@ChargenId, @Charge, @Aktion, @Bereich, @Grund,
                      CASE WHEN @Aktion = N'Gesperrt' THEN @Benutzer ELSE NULL END,
@@ -571,7 +612,7 @@ namespace QIN_Production_Web.Data
                      CASE WHEN @Aktion = N'Entsperrt' THEN SYSDATETIME() ELSE NULL END,
                      CASE WHEN @Aktion = N'Vermüllt' THEN @Benutzer ELSE NULL END,
                      CASE WHEN @Aktion = N'Vermüllt' THEN SYSDATETIME() ELSE NULL END,
-                     @LagerortQRCode, @Grund);",
+                     @LagerortQRCode, @Grund{mengeValue});",
                 new
                 {
                     ChargenId = chargenId,
@@ -581,7 +622,8 @@ namespace QIN_Production_Web.Data
                     Grund = grund,
                     Benutzer = string.IsNullOrWhiteSpace(benutzer) ? "System" : benutzer,
                     Personalnummer = string.IsNullOrWhiteSpace(personalnummer) ? "System" : personalnummer,
-                    LagerortQRCode = lagerortQRCode
+                    LagerortQRCode = lagerortQRCode,
+                    GesperrteMenge = gesperrteMenge
                 });
         }
 
@@ -641,6 +683,35 @@ namespace QIN_Production_Web.Data
                       WHERE QRCode = @qr",
                     new { charges = string.Join(", ", filtered), qr = row.QRCode });
             }
+        }
+
+        private static async Task<bool> ColumnExistsAsync(SqlConnection conn, string schema, string table, string column)
+        {
+            const string query = @"
+                SELECT COUNT(1)
+                FROM sys.columns c
+                INNER JOIN sys.tables t ON t.object_id = c.object_id
+                INNER JOIN sys.schemas s ON s.schema_id = t.schema_id
+                WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
+
+            return await conn.ExecuteScalarAsync<int>(query, new { Schema = schema, Table = table, Column = column }) > 0;
+        }
+
+        private static async Task<string> GetBenutzerNameAsync(string personalnummer)
+        {
+            if (string.IsNullOrWhiteSpace(personalnummer))
+            {
+                return "";
+            }
+
+            using var conn = new SqlConnection(SqlManager.connectionString);
+            var name = await conn.QueryFirstOrDefaultAsync<string?>(
+                @"SELECT TOP 1 ISNULL(Benutzer, '')
+                  FROM dbo.LoginDaten
+                  WHERE Personalnummer = @Personalnummer",
+                new { Personalnummer = personalnummer });
+
+            return string.IsNullOrWhiteSpace(name) ? personalnummer : name;
         }
     }
 }

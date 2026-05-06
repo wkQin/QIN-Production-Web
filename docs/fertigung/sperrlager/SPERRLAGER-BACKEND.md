@@ -2,7 +2,7 @@
 
 Technische Dokumentation für die Sperrlager-Funktion in QIN Production Web.
 
-Stand: Update 3.2.4
+Stand: Update 3.2.5
 
 ## Zweck
 
@@ -110,6 +110,7 @@ Wichtige Felder:
 - `VermuelltAm`
 - `LagerortQRCode`
 - `Bemerkung`
+- `GesperrteMenge`
 - `CreatedAt`
 - `UpdatedAt`
 
@@ -123,6 +124,12 @@ Verwendete Bereiche:
 
 - `Wareneingang`
 - `Sperrlager`
+
+Die gesperrte Menge wird in `Fertigung.dbo.Sperrlager.GesperrteMenge` gespeichert. Das ist bewusst die Historientabelle, damit pro Sperrvorgang nachvollziehbar bleibt, welche Menge gesperrt wurde.
+
+SQL-Erweiterung:
+
+`docs/fertigung/wareneingang/WARENEINGANG-SPERRLAGER-ERWEITERUNG.sql`
 
 ## Datenmodelle
 
@@ -164,6 +171,7 @@ Wichtige Felder:
 - `AktuelleMenge`
 - `EchteMenge`
 - `Einheit`
+- `GesperrteMenge`
 - `Datum`
 - `Eingangsdatum`
 
@@ -184,8 +192,11 @@ Wichtige Felder:
 - `EchteMenge`
 - `Einheit`
 - `Eingangsdatum`
+- `WareneingangBenutzer`
+- `WareneingangPersonalnummer`
 - `Lagerort`
 - `EingelagertAm`
+- `GesperrteMenge`
 - `SperrlagerAktion`
 - `SperrlagerBereich`
 - `SperrlagerGrund`
@@ -283,7 +294,11 @@ Ablauf:
 
 Die letzte Aktion wird aus `Fertigung.dbo.Sperrlager` geladen.
 
-Das Popup zeigt keine Wareneingangs-Bemerkung und kein Chargendatum, weil der Sperrgrund für das Sperrlager die relevante Information ist.
+Das Popup ist in eigene Bereiche getrennt:
+
+- Wareneingang mit Lieferant, Benutzer, Personalnummer, Eingangsdatum, LS-Nr., EBE-Nr., Position, Zustand, Dickenmessung und Bemerkung.
+- Sperr-Information mit Aktion, Bereich, gesperrter Menge, Vorgang-Benutzer, Vorgangsdatum, Lagerort, Einlagerzeit und Sperrgrund.
+- Charge & Menge mit Artikel, Charge, aktueller Menge und originaler Menge.
 
 ## Eingabe mehrerer Chargen
 
@@ -305,19 +320,20 @@ Doppelte Chargen werden ignoriert.
 
 Service-Methode:
 
-`SperreChargenImSperrlagerAsync(string chargeText, string lagerortQRCode, string benutzer, string personalnummer)`
+`SperreChargenImSperrlagerAsync(string chargeText, string lagerortQRCode, string benutzer, string personalnummer, int gesperrteMenge)`
 
 Ablauf:
 
 1. Eingabetext wird in einzelne Chargen zerlegt.
-2. Es wird geprüft, ob ein Lagerort ausgewählt ist.
-3. Jede Charge wird in `Fertigung.dbo.Chargen` gesucht.
-4. Gefundene Chargen werden auf `Gesperrt = 1` gesetzt.
-5. Pro gefundener Charge wird ein Eintrag in `Fertigung.dbo.Sperrlager` geschrieben.
-6. Die Charge wird aus allen anderen Lagerorten entfernt.
-7. Die Charge wird beim ausgewählten Lagerort eingetragen.
-8. `LetzteNutzung` des Lagerorts wird aktualisiert.
-9. Ein Aktivitätslog wird geschrieben.
+2. Es wird geprüft, ob eine gesperrte Menge größer `0` eingegeben wurde.
+3. Es wird geprüft, ob ein Lagerort ausgewählt ist.
+4. Jede Charge wird in `Fertigung.dbo.Chargen` gesucht.
+5. Gefundene Chargen werden auf `Gesperrt = 1` gesetzt.
+6. Pro gefundener Charge wird ein Eintrag in `Fertigung.dbo.Sperrlager` inklusive `GesperrteMenge` geschrieben.
+7. Die Charge wird aus allen anderen Lagerorten entfernt.
+8. Die Charge wird beim ausgewählten Lagerort eingetragen.
+9. `LetzteNutzung` des Lagerorts wird aktualisiert.
+10. Ein Aktivitätslog wird geschrieben.
 
 Wenn eine Charge nicht gefunden wird, wird sie in der Rückmeldung angezeigt.
 

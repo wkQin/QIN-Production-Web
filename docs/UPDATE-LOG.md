@@ -4,6 +4,12 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.5
+- Wareneingang: Bemerkungen in den offenen Wareneingängen werden jetzt rot und deutlich sichtbar angezeigt.
+- Wareneingang: Die Dickenmessung nutzt jetzt `dbo.Materialliste.Dickenmessung_Toleranz` als Prozentwert pro Material; fehlt der Wert, wird sichtbar die Standard-Toleranz 10 Prozent verwendet.
+- Sperrlager: Automatische Wareneingang-Sperren protokollieren jetzt die komplette Chargenmenge als gesperrte Menge.
+- Sperrlager: Manuelle Sperren verlangen jetzt eine gesperrte Menge und speichern sie in `Fertigung.dbo.Sperrlager.GesperrteMenge`.
+- Sperrlager: Das Chargenpopup zeigt Wareneingang und Sperr-Informationen in getrennten Bereichen inklusive Wareneingang-Benutzer.
+- Datenbank: Für `dbo.Materialliste.Dickenmessung_Toleranz` und `Fertigung.dbo.Sperrlager.GesperrteMenge` wurde ein SQL-Erweiterungsskript ergänzt.
 - Projektpflege: Nicht mehr verwendete Druck-Helfer, alte DOCX-Werkzeuge, doppelte Font-Datei und ungenutzte Bootstrap-Dateien wurden entfernt.
 - Projektpflege: Nicht mehr verwendete NuGet-Pakete für alte Druck- und QR-Funktionen wurden entfernt.
 
