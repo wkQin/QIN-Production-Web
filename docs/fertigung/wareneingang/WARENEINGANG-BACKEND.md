@@ -30,7 +30,7 @@ Die Seite besteht aus drei Bereichen:
 - `Data/WareneingangService.cs`
 - `Data/ActivityLogService.cs`
 - `Helpers/EmailHelper.cs`
-- `Helpers/ZebraPrinterHelper.cs`
+- `Helpers/WareneingangPrintHelper.cs`
 - `Data/SqlManager.cs`
 
 ## Datenbanken
@@ -331,8 +331,6 @@ Voraussetzungen am Arbeitsplatz-PC:
 - Der Zebra-Drucker ist als Default Device eingetragen.
 - Der aufgerufene Webhost ist in den Accepted Hosts freigegeben.
 
-Der alte HTML-Druckdialog bleibt als Hilfsfunktion `printHtmlDocument(...)` vorhanden, wird im Wareneingang aber nicht mehr für den normalen Etikettendruck verwendet.
-
 ## QS-Mail
 
 Nach erfolgreichem Speichern wird eine Mail an QS vorbereitet.
@@ -373,5 +371,5 @@ Nach technischen Änderungen am Wareneingang prüfen:
 6. Zweiter falscher Versuch sperrt vorhandene Chargen.
 7. Speichern erzeugt Wareneingang und Chargen.
 8. Offene Wareneingänge aktualisieren sich.
-9. Etikettendruck öffnet die Druckansicht.
+9. Etikettendruck sendet ZPL an Zebra Browser Print.
 10. Aktivitätslog wird geschrieben.

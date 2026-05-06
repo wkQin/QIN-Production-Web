@@ -58,7 +58,7 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li><code>Data/WareneingangService.cs</code></li>
 <li><code>Data/ActivityLogService.cs</code></li>
 <li><code>Helpers/EmailHelper.cs</code></li>
-<li><code>Helpers/ZebraPrinterHelper.cs</code></li>
+<li><code>Helpers/WareneingangPrintHelper.cs</code></li>
 <li><code>Data/SqlManager.cs</code></li>
 </ul>
 <h2>Datenbanken</h2>
@@ -270,8 +270,11 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <h2>Etikettendruck</h2>
 <p>Methode im UI:</p>
 <p><code>PrintSelectedCharge()</code></p>
+<p>Zusätzliche Methode im UI:</p>
+<p><code>PrintAllCharges()</code></p>
 <p>Helper:</p>
-<p><code>ZebraPrinterHelper.PrintSingleChargeQr(...)</code></p>
+<p><code>WareneingangPrintHelper.BuildSingleChargeZpl(...)</code></p>
+<p><code>WareneingangPrintHelper.BuildChargeZplBatch(...)</code></p>
 <p>Das Label enthält:</p>
 <ul>
 <li>Charge</li>
@@ -312,7 +315,7 @@ pre { background: #f8fafc; border: 1px solid #cbd5e1; padding: 10px; white-space
 <li>Zweiter falscher Versuch sperrt vorhandene Chargen.</li>
 <li>Speichern erzeugt Wareneingang und Chargen.</li>
 <li>Offene Wareneingänge aktualisieren sich.</li>
-<li>Etikettendruck öffnet die Druckansicht.</li>
+<li>Etikettendruck sendet ZPL an Zebra Browser Print.</li>
 <li>Aktivitätslog wird geschrieben.</li>
 </ol>
 <div class='doc-footer'><span>QIN Production Web</span><span>Stand: Update 3.2.4</span></div>
