@@ -1,273 +1,455 @@
+@page "/fertigung/thermoformung"
 @page "/fertigung/kiefel"
 @inject IJSRuntime JS
 @inject UserService UserService
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Kiefel & Parco - Thermoformung</PageTitle>
+<PageTitle>Thermoformung - Fertigung</PageTitle>
 
-<div class="dashboard-header mb-4">
-    <h2>Kiefel & Parco Produktion</h2>
-    <p class="text-secondary">Auftragsdaten erfassen · Chargen verwalten · Freigaben</p>
-</div>
+<div class="thermo-workbench pb-5">
+    <section class="thermo-hero">
+        <div class="thermo-hero-copy">
+            <span class="thermo-eyebrow">Fertigung / Thermoformung</span>
+            <h1 class="thermo-title">Thermoformung</h1>
+            <p class="thermo-hero-text">
+                Produktionsläufe, Chargen und Freigaben für den laufenden Auftrag erfassen.
+            </p>
+        </div>
 
-<div class="card bg-dark border-secondary mb-4 p-3 d-flex flex-row justify-content-between align-items-center" style="background-color: var(--panel-color) !important;">
-    <div><span class="text-white">Aktuelles Material:</span> <span class="badge ms-2" style="background-color: #ffcc00; color: #000; font-size: 1.1rem; padding: 5px 12px; border: 2px solid #fff; box-shadow: 0 0 10px rgba(255,204,0,0.5); font-weight: 800;">@Material</span></div>
-    <div>
-        <button class="btn btn-outline-secondary me-3" @onclick="ShowFreigabeListe">Freigabe Liste</button>
-        <button class="btn @(IsFreigegeben ? "btn-success" : "btn-danger") fw-bold" @onclick="TryFreigeben">Freigegeben: @(IsFreigegeben ? "Ja" : "Nein")</button>
-    </div>
-</div>
+        <div class="thermo-hero-bar">
+            <div class="thermo-hero-facts">
+                <div class="thermo-inline-card">
+                    <span class="thermo-inline-label">FA-Nr.</span>
+                    <strong>@SelectedFaDisplay</strong>
+                </div>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-5">
-        <div class="content-card h-100">
-            <div class="card-header-flex">
-                <h4>Auftragsdaten</h4>
+                <div class="thermo-inline-card thermo-inline-card-material">
+                    <span class="thermo-inline-label">Material</span>
+                    <strong>@MaterialDisplay</strong>
+                </div>
+
+                <div class="thermo-inline-card">
+                    <span class="thermo-inline-label">Freigabe</span>
+                    <span class="thermo-status-chip @FreigabeStatusClass">
+                        <i class="fa-solid @(IsFreigegeben ? "fa-circle-check" : "fa-circle-exclamation")"></i>
+                        @FreigabeStatusText
+                    </span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">FA-Nr auswählen</label>
-                        <select class="form-select dark-input" value="@SelectedFaNr" @onchange="OnFaNrChanged">
-                            <option value="">FA-Nr...</option>
-                            @foreach(var fa in FaNrs) { <option value="@fa">@fa</option> }
+
+            <div class="thermo-command-actions thermo-command-actions-compact">
+                <button type="button"
+                        class="thermo-btn thermo-btn-secondary"
+                        disabled="@(!HasSelectedFa)"
+                        @onclick="ShowFreigabeListe">
+                    <i class="fa-solid fa-list-check"></i>
+                    Freigaben
+                </button>
+                <button type="button"
+                        class="thermo-btn thermo-btn-primary"
+                        disabled="@(!HasSelectedFa)"
+                        @onclick="TryFreigeben">
+                    <i class="fa-solid fa-shield-heart"></i>
+                    Freigabe erteilen
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <section class="thermo-stage-grid">
+        <article class="thermo-card">
+            <div class="thermo-card-header">
+                <div>
+                    <span class="thermo-section-label">Schritt 1</span>
+                    <h2 class="thermo-section-title">Auftragslauf erfassen</h2>
+                    <p class="thermo-section-text">
+                        Maschine, Zeitfenster und Bemerkung für den laufenden Auftrag dokumentieren.
+                    </p>
+                </div>
+                <div class="thermo-counter-pill">
+                    <strong>@Eingaben.Count</strong>
+                    <span>Einträge</span>
+                </div>
+            </div>
+
+            <div class="thermo-fields">
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-fa">FA-Nr</label>
+                        <select id="thermo-fa" class="thermo-select" value="@SelectedFaNr" @onchange="OnFaNrChanged">
+                            <option value="">Bitte auswählen...</option>
+                            @foreach (var fa in FaNrs)
+                            {
+                                <option value="@fa">@fa</option>
+                            }
                         </select>
+                        <span class="thermo-field-hint">Material: @MaterialDisplay</span>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Maschinen-Nr</label>
-                        <select class="form-select dark-input" @bind="MaschinenNr">
+
+                    <div class="thermo-field">
+                        <label for="thermo-machine">Maschinen-Nr</label>
+                        <select id="thermo-machine" class="thermo-select" @bind="MaschinenNr">
                             <option value="5192">5192</option>
                             <option value="5193">5193</option>
                         </select>
                     </div>
                 </div>
 
-                <div class="row g-3 mb-3">
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">Startdatum</label>
-                        <input type="date" class="form-control dark-input" @bind="StartDate" />
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-start-date">Startdatum</label>
+                        <input id="thermo-start-date" type="date" class="thermo-input" @bind="StartDate" />
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Enddatum</label>
-                        <input type="date" class="form-control dark-input" @bind="EndDate" />
+
+                    <div class="thermo-field">
+                        <label for="thermo-end-date">Enddatum</label>
+                        <input id="thermo-end-date" type="date" class="thermo-input" @bind="EndDate" />
                     </div>
                 </div>
 
-                <div class="row g-3 mb-3">
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">Startzeit</label>
-                        <input type="time" class="form-control dark-input" @bind="StartTime" />
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-start-time">Startzeit</label>
+                        <input id="thermo-start-time" type="time" class="thermo-input" @bind="StartTime" />
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Endzeit</label>
-                        <input type="time" class="form-control dark-input" @bind="EndTime" />
+
+                    <div class="thermo-field">
+                        <label for="thermo-end-time">Endzeit</label>
+                        <input id="thermo-end-time" type="time" class="thermo-input" @bind="EndTime" />
                     </div>
                 </div>
 
-                <div class="row g-3 mb-3">
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">Pausenzeit (min)</label>
-                        <input type="number" class="form-control dark-input" @bind="Pausen" />
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-break">Pausenzeit</label>
+                        <div class="thermo-input-group">
+                            <input id="thermo-break" type="number" class="thermo-input" @bind="Pausen" />
+                            <span>min</span>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Ausfallzeit (min)</label>
-                        <input type="number" class="form-control dark-input" @bind="Ausfall" />
+
+                    <div class="thermo-field">
+                        <label for="thermo-downtime">Ausfallzeit</label>
+                        <div class="thermo-input-group">
+                            <input id="thermo-downtime" type="number" class="thermo-input" @bind="Ausfall" />
+                            <span>min</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label text-secondary">Bemerkung</label>
-                    <input type="text" class="form-control dark-input" @bind="EingabeBemerkung" />
+                <div class="thermo-field">
+                    <label for="thermo-note">Bemerkung</label>
+                    <textarea id="thermo-note"
+                              class="thermo-textarea"
+                              rows="4"
+                              @bind="EingabeBemerkung"
+                              placeholder="z.B. Rüstung, Störung, Materialwechsel"></textarea>
                 </div>
 
-                <button class="btn btn-primary w-100" @onclick="AddEingabe">Eintrag hinzufügen</button>
+                <div class="thermo-action-row">
+                    <button type="button"
+                            class="thermo-btn thermo-btn-primary thermo-btn-block"
+                            disabled="@(!HasSelectedFa)"
+                            @onclick="AddEingabe">
+                        <i class="fa-solid fa-layer-group"></i>
+                        Lauf hinzufügen
+                    </button>
+                </div>
             </div>
-        </div>
-    </div>
+        </article>
 
-    <!-- Chargenverfolgung -->
-     <div class="col-md-7">
-        <div class="content-card h-100">
-            <div class="card-header-flex">
-                <h4>Chargenverfolgung & Messwerte</h4>
+        <article class="thermo-card">
+            <div class="thermo-card-header">
+                <div>
+                    <span class="thermo-section-label">Schritt 2</span>
+                    <h2 class="thermo-section-title">Chargen und Messwerte</h2>
+                    <p class="thermo-section-text">
+                        Verbrauch, Temperaturen und Gut-/Schlechtteile direkt am Auftrag verbuchen.
+                    </p>
+                </div>
+                <div class="thermo-counter-pill thermo-counter-pill-accent">
+                    <strong>@Chargen.Count</strong>
+                    <span>gebucht</span>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label text-secondary">Charge wählen oder scannen</label>
-                     <select class="form-select dark-input @(IsSelectedChargeRed ? "border-danger text-danger" : "border-success text-success")" value="@SelectedCharge" @onchange="OnChargeChanged">
-                        <option value="">Bitte wählen...</option>
-                        @foreach(var c in AvailableChargen) { 
-                            <option value="@c.Charge" style="color: @(c.IsRed ? "#ff4d4d" : "#00ff7f")">
-                                @(c.IsRed ? "🔴" : "🟢") @c.DisplayText
-                            </option> 
+
+            <div class="thermo-fields">
+                <div class="thermo-field">
+                    <label for="thermo-charge">Charge wählen oder scannen</label>
+                    <select id="thermo-charge"
+                            class="thermo-select thermo-charge-select @(IsSelectedChargeRed ? "is-alert" : "")"
+                            value="@SelectedCharge"
+                            @onchange="OnChargeChanged">
+                        <option value="">Bitte auswählen...</option>
+                        @foreach (var charge in AvailableChargen)
+                        {
+                            <option value="@charge.Charge" style="color: @(charge.IsRed ? "#ef4444" : "#22c55e")">
+                                @GetChargeOptionLabel(charge)
+                            </option>
                         }
                     </select>
                 </div>
 
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Ist (Lfm)</label>
-                        <input type="text" class="form-control dark-input" @bind="LfmIst" />
+                @if (IsSelectedChargeRed)
+                {
+                    <div class="thermo-warning-ribbon">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        Ältere Charge wurde übersprungen. Die FIFO-Begründung wird beim Buchen abgefragt.
                     </div>
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">WKZ Temp (°C)</label>
-                        <input type="text" class="form-control dark-input" @bind="WKZTemp" />
+                }
+
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-lfm">Ist (Lfm)</label>
+                        <input id="thermo-lfm" type="text" class="thermo-input" @bind="LfmIst" />
+                    </div>
+
+                    <div class="thermo-field">
+                        <label for="thermo-wkz">WKZ Temp</label>
+                        <div class="thermo-input-group">
+                            <input id="thermo-wkz" type="text" class="thermo-input" @bind="WKZTemp" />
+                            <span>°C</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Verbraucht (Lfm)</label>
-                        <input type="text" class="form-control dark-input" @bind="Verbraucht" />
+                <div class="thermo-grid-two">
+                    <div class="thermo-field">
+                        <label for="thermo-verbrauch">Verbraucht (Lfm)</label>
+                        <input id="thermo-verbrauch" type="text" class="thermo-input" @bind="Verbraucht" />
                     </div>
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">Folie Temp (°C)</label>
-                        <input type="text" class="form-control dark-input" @bind="FolieTemp" />
+
+                    <div class="thermo-field">
+                        <label for="thermo-folie">Folie Temp</label>
+                        <div class="thermo-input-group">
+                            <input id="thermo-folie" type="text" class="thermo-input" @bind="FolieTemp" />
+                            <span>°C</span>
+                        </div>
                     </div>
                 </div>
 
-                <hr class="border-secondary mb-3" />
+                <div class="thermo-grid-three">
+                    <div class="thermo-field">
+                        <label for="thermo-good">Gutteile</label>
+                        <input id="thermo-good" type="text" class="thermo-input" @bind="Gutteile" />
+                    </div>
 
-                <div class="row g-3 mb-4">
-                    <div class="col-12">
-                         <label class="form-label text-secondary">Gutteile</label>
-                         <input type="text" class="form-control dark-input" @bind="Gutteile" />
+                    <div class="thermo-field">
+                        <label for="thermo-bad-int">Schlecht intern</label>
+                        <input id="thermo-bad-int" type="text" class="thermo-input" @bind="Schlechtteile" />
                     </div>
-                    <div class="col-md-6">
-                        <label class="form-label text-secondary">Schlecht (Intern)</label>
-                        <input type="text" class="form-control dark-input" @bind="Schlechtteile" />
-                    </div>
-                     <div class="col-md-6">
-                        <label class="form-label text-secondary">Schlecht (Extern)</label>
-                        <input type="text" class="form-control dark-input" @bind="SchlechtteileExt" />
+
+                    <div class="thermo-field">
+                        <label for="thermo-bad-ext">Schlecht extern</label>
+                        <input id="thermo-bad-ext" type="text" class="thermo-input" @bind="SchlechtteileExt" />
                     </div>
                 </div>
 
-                 <div class="d-flex justify-content-end">
-                    <button class="btn btn-danger me-2 px-4">Sperren</button>
-                    <button class="btn btn-primary px-4" @onclick="AddCharge">Hinzufügen</button>
+                <div class="thermo-action-row thermo-action-row-end">
+                    <button type="button"
+                            class="thermo-btn thermo-btn-secondary"
+                            disabled>
+                        <i class="fa-solid fa-ban"></i>
+                        Sperren
+                    </button>
+                    <button type="button"
+                            class="thermo-btn thermo-btn-primary"
+                            disabled="@(!CanAddCharge)"
+                            @onclick="AddCharge">
+                        <i class="fa-solid fa-barcode"></i>
+                        Charge buchen
+                    </button>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+        </article>
+    </section>
 
-<div class="row g-4 mb-4">
-    <div class="col-md-5">
-         <div class="content-card h-100">
-             <div class="card-header-flex">
-                 <h4>Auftragsliste</h4>
-             </div>
-             <div class="table-responsive">
-                <table class="table table-dark table-hover custom-table mb-0">
+    <section class="thermo-board-grid">
+        <article class="thermo-card">
+            <div class="thermo-card-header">
+                <div>
+                    <span class="thermo-section-label">Board</span>
+                    <h2 class="thermo-section-title">Auftragsläufe</h2>
+                    <p class="thermo-section-text">Alle Zeitfenster für den geladenen Auftrag im Überblick.</p>
+                </div>
+            </div>
+
+            <div class="thermo-table-wrap">
+                <table class="thermo-table thermo-table-classic">
                     <thead>
                         <tr>
-                            <th>Del</th>
+                            <th></th>
                             <th>Maschine</th>
-                            <th>Begin</th>
+                            <th>Beginn</th>
                             <th>Ende</th>
                             <th>Pause</th>
+                            <th>Ausfall</th>
+                            <th>Bemerkung</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(var e in Eingaben)
+                        @if (!Eingaben.Any())
                         {
                             <tr>
-                                <td><button class="btn btn-sm btn-link text-danger" @onclick="() => Eingaben.Remove(e)"><i class="fa-solid fa-times"></i></button></td>
-                                <td>@e.MaschinenNr</td>
-                                <td>@e.Begin</td>
-                                <td>@e.Ende</td>
-                                <td>@e.Pausen</td>
+                                <td colspan="7" class="thermo-empty-cell">Noch keine Auftragsläufe erfasst.</td>
                             </tr>
+                        }
+                        else
+                        {
+                            @foreach (var eingabe in Eingaben)
+                            {
+                                <tr>
+                                    <td class="thermo-col-action">
+                                        <button type="button" class="thermo-delete-link" @onclick="() => RemoveEingabe(eingabe)">
+                                            <i class="fa-solid fa-times"></i>
+                                        </button>
+                                    </td>
+                                    <td>@eingabe.MaschinenNr</td>
+                                    <td>@FormatDateValue(eingabe.Begin)</td>
+                                    <td>@FormatDateValue(eingabe.Ende)</td>
+                                    <td class="thermo-table-amount">@($"{eingabe.Pausen} min")</td>
+                                    <td class="thermo-table-amount">@($"{eingabe.Ausfall} min")</td>
+                                    <td>@(string.IsNullOrWhiteSpace(eingabe.Bemerkung) ? "-" : eingabe.Bemerkung)</td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
             </div>
-         </div>
-    </div>
+        </article>
 
-     <div class="col-md-7">
-         <div class="content-card h-100">
-             <div class="card-header-flex">
-                 <h4>Chargenliste</h4>
-             </div>
-             <div class="table-responsive">
-                <table class="table table-dark table-hover custom-table mb-0">
+        <article class="thermo-card">
+            <div class="thermo-card-header">
+                <div>
+                    <span class="thermo-section-label">Board</span>
+                    <h2 class="thermo-section-title">Chargenliste</h2>
+                    <p class="thermo-section-text">Kompakte Übersicht wie in der alten Ansicht, aber sauber im neuen Design.</p>
+                </div>
+            </div>
+
+            <div class="thermo-table-wrap">
+                <table class="thermo-table thermo-table-classic thermo-table-wide">
                     <thead>
                         <tr>
-                            <th>Del</th>
+                            <th></th>
                             <th>Charge</th>
-                            <th>LFM Ist</th>
+                            <th>Lfm Ist</th>
                             <th>Verbr.</th>
                             <th>Gut</th>
                             <th>Schlecht</th>
+                            <th>Schlecht ext.</th>
+                            <th>WKZ °C</th>
+                            <th>Folie °C</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach(var c in Chargen)
+                        @if (!Chargen.Any())
                         {
                             <tr>
-                                <td><button class="btn btn-sm btn-link text-danger" @onclick="() => Chargen.Remove(c)"><i class="fa-solid fa-times"></i></button></td>
-                                <td>@c.Charge</td>
-                                <td>@c.Flfmlst</td>
-                                <td>@c.Verbraucht</td>
-                                <td>@c.Gutteile</td>
-                                <td>@c.Schlechtteile</td>
+                                <td colspan="9" class="thermo-empty-cell">Noch keine Chargen für diesen Auftrag gebucht.</td>
                             </tr>
+                        }
+                        else
+                        {
+                            @foreach (var charge in Chargen)
+                            {
+                                <tr>
+                                    <td class="thermo-col-action">
+                                        <button type="button" class="thermo-delete-link" @onclick="() => RemoveCharge(charge)">
+                                            <i class="fa-solid fa-times"></i>
+                                        </button>
+                                    </td>
+                                    <td>@charge.Charge</td>
+                                    <td class="thermo-table-amount">@charge.Flfmlst</td>
+                                    <td class="thermo-table-amount">@charge.Verbraucht</td>
+                                    <td class="thermo-table-amount">@charge.Gutteile</td>
+                                    <td class="thermo-table-amount">@charge.Schlechtteile</td>
+                                    <td class="thermo-table-amount">@charge.SchlechtteileExt</td>
+                                    <td class="thermo-table-amount">@(string.IsNullOrWhiteSpace(charge.WKZTemp) ? "-" : charge.WKZTemp)</td>
+                                    <td class="thermo-table-amount">@(string.IsNullOrWhiteSpace(charge.FolienTemp) ? "-" : charge.FolienTemp)</td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
             </div>
-         </div>
-    </div>
-</div>
+        </article>
+    </section>
 
-<div class="card bg-dark border-secondary p-3 mt-4" style="background-color: var(--panel-color) !important;">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
-            @if (!string.IsNullOrEmpty(statusMessage))
+    <section class="thermo-finish-bar">
+        <div class="thermo-status-panel">
+            @if (!string.IsNullOrWhiteSpace(statusMessage))
             {
-                <div class="alert @(statusMessage.Contains("Fehler") ? "alert-danger" : "alert-success") mb-0 py-2 border-0 shadow-sm">
-                    <i class="fa-solid @(statusMessage.Contains("Fehler") ? "fa-circle-xmark" : "fa-circle-check") me-2"></i>
-                    @statusMessage
+                <div class="thermo-status-note @(HasErrorStatus ? "is-error" : "is-success")">
+                    <i class="fa-solid @(HasErrorStatus ? "fa-circle-exclamation" : "fa-circle-check")"></i>
+                    <span>@statusMessage</span>
+                </div>
+            }
+            else
+            {
+                <div class="thermo-status-placeholder">
+                    <strong>Bereit zum Speichern</strong>
+                    <span>Freigabe, Chargen und Auftragsläufe werden gemeinsam gespeichert.</span>
                 </div>
             }
         </div>
-        <div class="d-flex align-items-center">
-            <div class="form-check form-switch me-4">
-                <input class="form-check-input" type="checkbox" role="switch" id="absendenCheck" @bind="Abgesendet" style="transform: scale(1.3);">
-                <label class="form-check-label text-secondary ms-2" for="absendenCheck" style="margin-top:2px;">Auftrag als fertig markieren</label>
-            </div>
-            <button class="btn btn-primary px-5 py-2 fw-bold" @onclick="SaveAll"><i class="fa-solid fa-save me-2"></i>Speichern & Abschließen</button>
+
+        <div class="thermo-finish-actions">
+            <label class="thermo-toggle">
+                <input type="checkbox" @bind="Abgesendet" />
+                <span class="thermo-toggle-copy">
+                    <strong>Auftrag abschließen</strong>
+                    <span>markiert den Auftrag nach dem Speichern als fertig</span>
+                </span>
+            </label>
+
+            <button type="button"
+                    class="thermo-btn thermo-btn-primary thermo-save-button"
+                    disabled="@(!HasSelectedFa)"
+                    @onclick="SaveAll">
+                <i class="fa-solid fa-floppy-disk"></i>
+                @SaveButtonLabel
+            </button>
         </div>
-    </div>
+    </section>
 </div>
 
-<FreigabeModal @bind-IsOpen="isFreigabeModalOpen" 
-               FaNr="@SelectedFaNr" 
-               Typ="FreigabeTyp.Thermoformung" 
-               Mode="freigabeModalMode" 
+<FreigabeModal @bind-IsOpen="isFreigabeModalOpen"
+               FaNr="@SelectedFaNr"
+               Typ="FreigabeTyp.Thermoformung"
+               Mode="freigabeModalMode"
                OnSuccess="RefreshFreigabeStatus" />
 
 @code {
     private List<string> FaNrs = new();
     private string SelectedFaNr = "";
-    private string Material = "Keine Gefunden";
+    private string Material = "Kein Material geladen";
     private bool IsFreigegeben = false;
     private string statusMessage = "";
-    
-    // Auftragsdaten State
+
+    private string SelectedFaDisplay => string.IsNullOrWhiteSpace(SelectedFaNr) ? "Keine Auswahl" : SelectedFaNr;
+    private string MaterialDisplay => string.IsNullOrWhiteSpace(Material) ? "Kein Material geladen" : Material;
+    private bool HasSelectedFa => !string.IsNullOrWhiteSpace(SelectedFaNr);
+    private bool CanAddCharge => HasSelectedFa && !string.IsNullOrWhiteSpace(SelectedCharge) && !string.IsNullOrWhiteSpace(LfmIst);
+    private string FreigabeStatusClass => IsFreigegeben ? "is-approved" : "is-blocked";
+    private string FreigabeStatusText => IsFreigegeben ? "Freigegeben" : "Freigabe fehlt";
+    private string SaveButtonLabel => Abgesendet ? "Speichern und abschließen" : "Zwischenspeichern";
+    private bool HasErrorStatus =>
+        !string.IsNullOrWhiteSpace(statusMessage) &&
+        (statusMessage.Contains("fehler", StringComparison.OrdinalIgnoreCase) ||
+         statusMessage.Contains("kritisch", StringComparison.OrdinalIgnoreCase) ||
+         statusMessage.Contains("system", StringComparison.OrdinalIgnoreCase));
+
     private string MaschinenNr = "5192";
     private DateTime? StartDate = DateTime.Today;
     private DateTime? EndDate = DateTime.Today;
-    private TimeOnly? StartTime = new TimeOnly(6,0);
-    private TimeOnly? EndTime = new TimeOnly(14,0);
+    private TimeOnly? StartTime = new TimeOnly(6, 0);
+    private TimeOnly? EndTime = new TimeOnly(14, 0);
     private string Pausen = "0";
     private string Ausfall = "0";
     private string EingabeBemerkung = "";
 
-    // Chargen State
     private List<ChargeComboItem> AvailableChargen = new();
     private string SelectedCharge = "";
     private bool IsSelectedChargeRed = false;
@@ -280,10 +462,8 @@
     private string FolieTemp = "";
     private string FIFO = "";
 
-    // Save State
     private bool Abgesendet = false;
 
-    // Collections
     private List<EingabeDaten> Eingaben = new();
     private List<FChargeDaten> Chargen = new();
 
@@ -295,13 +475,19 @@
     private async Task OnFaNrChanged(ChangeEventArgs e)
     {
         SelectedFaNr = e.Value?.ToString() ?? "";
-        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+        statusMessage = "";
+
+        if (string.IsNullOrEmpty(SelectedFaNr))
+        {
+            ResetLoadedData();
+            return;
+        }
 
         var data = await ThermoformungService.GetDataForFANrAsync(SelectedFaNr);
         Eingaben = data.Eingaben;
         Chargen = data.Chargen;
-        Material = data.Material;
-        
+        Material = string.IsNullOrWhiteSpace(data.Material) ? "Kein Material geladen" : data.Material;
+
         IsFreigegeben = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
         AvailableChargen = await ThermoformungService.GetAvailableChargenAsync(SelectedFaNr);
     }
@@ -315,7 +501,7 @@
 
     private async Task AddEingabe()
     {
-        if(StartDate == null || EndDate == null || StartTime == null || EndTime == null || string.IsNullOrWhiteSpace(EingabeBemerkung))
+        if (StartDate == null || EndDate == null || StartTime == null || EndTime == null || string.IsNullOrWhiteSpace(EingabeBemerkung))
         {
             await JS.InvokeVoidAsync("alert", "Bitte fülle alle markierten Felder und die Bemerkung aus.");
             return;
@@ -324,23 +510,25 @@
         DateTime begin = StartDate.Value.Date + StartTime.Value.ToTimeSpan();
         DateTime ende = EndDate.Value.Date + EndTime.Value.ToTimeSpan();
 
-        // Duplicate Check
-        bool exists = Eingaben.Any(e => 
-            e.MaschinenNr == MaschinenNr && 
-            DateTime.TryParse(e.Begin, out var b) && b == begin && 
-            DateTime.TryParse(e.Ende, out var ed) && ed == ende);
+        bool exists = Eingaben.Any(eingabe =>
+            eingabe.MaschinenNr == MaschinenNr &&
+            DateTime.TryParse(eingabe.Begin, out var beginLoaded) && beginLoaded == begin &&
+            DateTime.TryParse(eingabe.Ende, out var endeLoaded) && endeLoaded == ende);
 
         if (exists)
         {
             await JS.InvokeVoidAsync("alert", "Ein Eintrag mit dieser Maschine und diesem Zeitraum existiert bereits.");
             return;
         }
-        
-        Eingaben.Add(new EingabeDaten {
+
+        Eingaben.Add(new EingabeDaten
+        {
             MaschinenNr = MaschinenNr,
             Begin = begin.ToString("yyyy-MM-dd HH:mm:ss"),
             Ende = ende.ToString("yyyy-MM-dd HH:mm:ss"),
-            Pausen = Pausen, Ausfall = Ausfall, Bemerkung = EingabeBemerkung,
+            Pausen = Pausen,
+            Ausfall = Ausfall,
+            Bemerkung = EingabeBemerkung,
             IsNewRowAuftrag = true
         });
         StateHasChanged();
@@ -348,36 +536,51 @@
 
     private async Task AddCharge()
     {
-        if(string.IsNullOrWhiteSpace(SelectedCharge) || string.IsNullOrWhiteSpace(LfmIst)) return;
-
-        if (IsSelectedChargeRed)
+        if (string.IsNullOrWhiteSpace(SelectedCharge) || string.IsNullOrWhiteSpace(LfmIst))
         {
-            FIFO = await JS.InvokeAsync<string>("prompt", "Achtung: Sie buchen einen FIFO Verstoß! Bitte geben Sie eine Begründung ein:");
-            if (string.IsNullOrWhiteSpace(FIFO)) return;
+            return;
         }
 
-        Chargen.Add(new FChargeDaten {
-            Charge = SelectedCharge, Flfmlst = LfmIst, Verbraucht = Verbraucht,
-            Gutteile = Gutteile, Schlechtteile = Schlechtteile, SchlechtteileExt = SchlechtteileExt,
-            WKZTemp = WKZTemp, FolienTemp = FolieTemp, FIFO = FIFO,
+        FIFO = "";
+        if (IsSelectedChargeRed)
+        {
+            FIFO = await JS.InvokeAsync<string>("prompt", "Achtung: Sie buchen einen FIFO-Verstoß. Bitte geben Sie eine Begründung ein:");
+            if (string.IsNullOrWhiteSpace(FIFO))
+            {
+                return;
+            }
+        }
+
+        Chargen.Add(new FChargeDaten
+        {
+            Charge = SelectedCharge,
+            Flfmlst = LfmIst,
+            Verbraucht = Verbraucht,
+            Gutteile = Gutteile,
+            Schlechtteile = Schlechtteile,
+            SchlechtteileExt = SchlechtteileExt,
+            WKZTemp = WKZTemp,
+            FolienTemp = FolieTemp,
+            FIFO = FIFO,
             IsNewRow = true
         });
 
-        // Filter it out of available chargen visually
         AvailableChargen.RemoveAll(c => c.Charge == SelectedCharge);
         SelectedCharge = "";
+        IsSelectedChargeRed = false;
+        FIFO = "";
         StateHasChanged();
     }
 
     private async Task SaveAll()
     {
-        try 
+        try
         {
             statusMessage = "Prüfe Freigabe...";
             StateHasChanged();
-            await Task.Delay(1); // Force UI thread yield to render the status message
+            await Task.Delay(1);
 
-            if (string.IsNullOrEmpty(SelectedFaNr)) 
+            if (string.IsNullOrEmpty(SelectedFaNr))
             {
                 statusMessage = "Fehler: Kein Fertigungsauftrag ausgewählt.";
                 return;
@@ -390,7 +593,7 @@
                 IsFreigegeben = false;
                 return;
             }
-            
+
             statusMessage = "Speichere Daten...";
             StateHasChanged();
 
@@ -401,20 +604,19 @@
             var userSession = new UserSession { Name = actualUserName, Personalnummer = pNummer };
 
             bool success = await ThermoformungService.SaveDataAsync(SelectedFaNr, Abgesendet, Eingaben, Chargen, Material, userSession);
-            
+
             if (success)
             {
                 statusMessage = "Daten erfolgreich gespeichert.";
-                if (Abgesendet) 
+                if (Abgesendet)
                 {
-                    Eingaben.Clear();
-                    Chargen.Clear();
-                    SelectedFaNr = ""; // Reset
+                    ResetLoadedData();
+                    SelectedFaNr = "";
                 }
             }
             else
             {
-                statusMessage = "Kritischer Fehler beim Speichern!";
+                statusMessage = "Kritischer Fehler beim Speichern.";
             }
         }
         catch (Exception ex)
@@ -422,26 +624,33 @@
             statusMessage = $"Systemfehler: {ex.Message}";
             Console.WriteLine($"SaveAll Exception: {ex}");
         }
-        finally 
+        finally
         {
             StateHasChanged();
         }
     }
 
-    // Freigabe Modals Logic
     private bool isFreigabeModalOpen = false;
     private FreigabeModal.ModalMode freigabeModalMode = FreigabeModal.ModalMode.List;
 
     private void ShowFreigabeListe()
     {
-        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+        if (string.IsNullOrEmpty(SelectedFaNr))
+        {
+            return;
+        }
+
         freigabeModalMode = FreigabeModal.ModalMode.List;
         isFreigabeModalOpen = true;
     }
 
     private void TryFreigeben()
     {
-        if (string.IsNullOrEmpty(SelectedFaNr)) return;
+        if (string.IsNullOrEmpty(SelectedFaNr))
+        {
+            return;
+        }
+
         freigabeModalMode = FreigabeModal.ModalMode.Create;
         isFreigabeModalOpen = true;
     }
@@ -450,5 +659,54 @@
     {
         IsFreigegeben = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
         StateHasChanged();
+    }
+
+    private void RemoveEingabe(EingabeDaten row)
+    {
+        Eingaben.Remove(row);
+    }
+
+    private void RemoveCharge(FChargeDaten row)
+    {
+        Chargen.Remove(row);
+    }
+
+    private void ResetLoadedData()
+    {
+        Eingaben.Clear();
+        Chargen.Clear();
+        AvailableChargen.Clear();
+        Material = "Kein Material geladen";
+        IsFreigegeben = false;
+        SelectedCharge = "";
+        IsSelectedChargeRed = false;
+        FIFO = "";
+    }
+
+    private static int ParseInt(string? value)
+    {
+        return int.TryParse(value, out var parsed) ? parsed : 0;
+    }
+
+    private static string GetChargeOptionLabel(ChargeComboItem charge)
+    {
+        string marker = charge.IsRed ? "🔴" : "🟢";
+        string dateText = charge.Eingangsdatum == DateTime.MaxValue
+            ? ""
+            : charge.Eingangsdatum.ToString("dd.MM.yyyy");
+
+        return string.IsNullOrWhiteSpace(dateText)
+            ? $"{marker} {charge.Charge}"
+            : $"{marker} {charge.Charge} | {dateText}";
+    }
+
+    private static string FormatDateValue(string? value)
+    {
+        if (DateTime.TryParse(value, out var parsed))
+        {
+            return parsed.ToString("dd.MM.yyyy HH:mm");
+        }
+
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
     }
 }
