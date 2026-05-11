@@ -4,6 +4,11 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.6
+- Thermoformung: Der kleine Bereichshinweis im Kopf der Seite wurde entfernt, damit die Auftragsinfos kompakter wirken.
+- Thermoformung: Die Auftragsinfos zeigen die Fertigungsmenge jetzt hervorgehoben in einer kompakten Zeile mit den übrigen Auftragsdetails.
+- Thermoformung: Die Materialanzeige zeigt dem Werker jetzt nur noch die lesbare Materialbeschreibung ohne Materialnummer und Zusätze nach Komma oder Schrägstrich.
+- Thermoformung: Die Fertigungsmenge aus `dbo.Thermo_Auftrag.Fertigungsmenge` wird dem Werker jetzt direkt am Auftrag angezeigt.
+- Fertigung: Abfragen auf `dbo.Thermo_Auftrag` nutzen jetzt die umbenannte Spalte `Fertigungsmenge` statt `Liefermenge`.
 
 ## Update 3.2.5
 - Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.4 Web` auf `v3.2.5 Web` aktualisiert.

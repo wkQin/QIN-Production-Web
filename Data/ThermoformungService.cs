@@ -57,14 +57,14 @@ namespace QIN_Production_Web.Data
             return list;
         }
 
-        public static async Task<(List<EingabeDaten> Eingaben, List<FChargeDaten> Chargen, string Material, string Liefermenge)> GetDataForFANrAsync(string faNr)
+        public static async Task<(List<EingabeDaten> Eingaben, List<FChargeDaten> Chargen, string Material, string Fertigungsmenge)> GetDataForFANrAsync(string faNr)
         {
             var eingaben = new List<EingabeDaten>();
             var chargen = new List<FChargeDaten>();
             string material = "Kein Material gefunden";
-            string liefermenge = "0";
+            string fertigungsmenge = "0";
 
-            string eingabeQuery = "SELECT ID, Maschinen_Nr, Begin_Datum, End_Datum, Pausenzeit, Ausfallzeit, Bemerkung, Material, Liefermenge FROM dbo.Thermo_Auftrag WHERE FA_Nr = @FANr ORDER BY ID ASC";
+            string eingabeQuery = "SELECT ID, Maschinen_Nr, Begin_Datum, End_Datum, Pausenzeit, Ausfallzeit, Bemerkung, Material, Fertigungsmenge FROM dbo.Thermo_Auftrag WHERE FA_Nr = @FANr ORDER BY ID ASC";
             string chargenQuery = "SELECT Charge, Echte_Menge, Lfm_Ist, Gutteile, Schlechtteile, Schlechtteile_Ext, WKZ_Temp, Folien_Temp, FIFO FROM dbo.Chargen WHERE FA_Nr = @FANr";
 
             try
@@ -80,7 +80,7 @@ namespace QIN_Production_Web.Data
                             while (await reader.ReadAsync())
                             {
                                 material = reader["Material"]?.ToString() ?? material;
-                                liefermenge = reader["Liefermenge"]?.ToString() ?? liefermenge;
+                                fertigungsmenge = reader["Fertigungsmenge"]?.ToString() ?? fertigungsmenge;
                                 if (reader["Maschinen_Nr"] != DBNull.Value)
                                 {
                                     eingaben.Add(new EingabeDaten
@@ -125,7 +125,7 @@ namespace QIN_Production_Web.Data
                 }
             } 
             catch (Exception ex) { Console.WriteLine(ex.Message); }
-            return (eingaben, chargen, material, liefermenge);
+            return (eingaben, chargen, material, fertigungsmenge);
         }
 
         public static async Task<List<ChargeComboItem>> GetAvailableChargenAsync(string faNr)

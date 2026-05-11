@@ -126,7 +126,7 @@ namespace QIN_Production_Web.Data
                 {
                     await con.OpenAsync();
 
-                    using (var cmd = new SqlCommand("SELECT TOP (1) Material, Erstellungsdatum, Liefermenge FROM dbo.Thermo_Auftrag WHERE FA_Nr = @FANr ORDER BY ID ASC", con))
+                    using (var cmd = new SqlCommand("SELECT TOP (1) Material, Erstellungsdatum, Fertigungsmenge FROM dbo.Thermo_Auftrag WHERE FA_Nr = @FANr ORDER BY ID ASC", con))
                     {
                         cmd.Parameters.AddWithValue("@FANr", faNr);
                         using (var r = await cmd.ExecuteReaderAsync())
@@ -135,7 +135,7 @@ namespace QIN_Production_Web.Data
                             {
                                 string mat = r["Material"]?.ToString() ?? "";
                                 info.Auftragsdatum = r["Erstellungsdatum"] == DBNull.Value ? null : Convert.ToDateTime(r["Erstellungsdatum"]);
-                                info.Auftragsmenge = r["Liefermenge"] == DBNull.Value ? 0 : Convert.ToInt32(r["Liefermenge"]);
+                                info.Auftragsmenge = r["Fertigungsmenge"] == DBNull.Value ? 0 : Convert.ToInt32(r["Fertigungsmenge"]);
 
                                 var parts = mat.Split(';');
                                 if (parts.Length > 0) info.MaterialNr = parts[0].Trim();

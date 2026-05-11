@@ -10,7 +10,6 @@
 <div class="thermo-workbench pb-5">
     <section class="thermo-hero">
         <div class="thermo-hero-copy">
-            <span class="thermo-eyebrow">Fertigung / Thermoformung</span>
             <h1 class="thermo-title">Thermoformung</h1>
             <p class="thermo-hero-text">
                 Produktionsläufe, Chargen und Freigaben für den laufenden Auftrag erfassen.
@@ -19,6 +18,11 @@
 
         <div class="thermo-hero-bar">
             <div class="thermo-hero-facts">
+                <div class="thermo-inline-card thermo-inline-card-quantity">
+                    <span class="thermo-inline-label">Fertigungsmenge</span>
+                    <strong>@FertigungsmengeDisplay</strong>
+                </div>
+
                 <div class="thermo-inline-card">
                     <span class="thermo-inline-label">FA-Nr.</span>
                     <strong>@SelectedFaDisplay</strong>
@@ -84,7 +88,7 @@
                                 <option value="@fa">@fa</option>
                             }
                         </select>
-                        <span class="thermo-field-hint">Material: @MaterialDisplay</span>
+                        <span class="thermo-field-hint">Material: @MaterialDisplay | Fertigungsmenge: @FertigungsmengeDisplay</span>
                     </div>
 
                     <div class="thermo-field">
@@ -425,11 +429,13 @@
     private List<string> FaNrs = new();
     private string SelectedFaNr = "";
     private string Material = "Kein Material geladen";
+    private string Fertigungsmenge = "0";
     private bool IsFreigegeben = false;
     private string statusMessage = "";
 
     private string SelectedFaDisplay => string.IsNullOrWhiteSpace(SelectedFaNr) ? "Keine Auswahl" : SelectedFaNr;
-    private string MaterialDisplay => string.IsNullOrWhiteSpace(Material) ? "Kein Material geladen" : Material;
+    private string MaterialDisplay => FormatMaterialDisplay(Material);
+    private string FertigungsmengeDisplay => string.IsNullOrWhiteSpace(Fertigungsmenge) ? "0" : Fertigungsmenge;
     private bool HasSelectedFa => !string.IsNullOrWhiteSpace(SelectedFaNr);
     private bool CanAddCharge => HasSelectedFa && !string.IsNullOrWhiteSpace(SelectedCharge) && !string.IsNullOrWhiteSpace(LfmIst);
     private string FreigabeStatusClass => IsFreigegeben ? "is-approved" : "is-blocked";
@@ -487,6 +493,7 @@
         Eingaben = data.Eingaben;
         Chargen = data.Chargen;
         Material = string.IsNullOrWhiteSpace(data.Material) ? "Kein Material geladen" : data.Material;
+        Fertigungsmenge = string.IsNullOrWhiteSpace(data.Fertigungsmenge) ? "0" : data.Fertigungsmenge;
 
         IsFreigegeben = await FreigabeService.CheckFreigabeTodayAsync(SelectedFaNr, FreigabeTyp.Thermoformung);
         AvailableChargen = await ThermoformungService.GetAvailableChargenAsync(SelectedFaNr);
@@ -677,6 +684,7 @@
         Chargen.Clear();
         AvailableChargen.Clear();
         Material = "Kein Material geladen";
+        Fertigungsmenge = "0";
         IsFreigegeben = false;
         SelectedCharge = "";
         IsSelectedChargeRed = false;
@@ -708,5 +716,35 @@
         }
 
         return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private static string FormatMaterialDisplay(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "Kein Material geladen";
+        }
+
+        string display = value;
+        int separatorIndex = display.IndexOf(';');
+        if (separatorIndex >= 0 && separatorIndex < display.Length - 1)
+        {
+            display = display[(separatorIndex + 1)..];
+        }
+
+        int commaIndex = display.IndexOf(',');
+        if (commaIndex >= 0)
+        {
+            display = display[..commaIndex];
+        }
+
+        int slashIndex = display.IndexOf(" / ", StringComparison.Ordinal);
+        if (slashIndex >= 0)
+        {
+            display = display[..slashIndex];
+        }
+
+        display = display.Trim();
+        return string.IsNullOrWhiteSpace(display) ? "Kein Material geladen" : display;
     }
 }

@@ -10,7 +10,7 @@ namespace QIN_Production_Web.Data
         public string? FANR { get; set; }
         public string? Material { get; set; }
         public DateTime? EintragsDate { get; set; }
-        public int? Liefermenge { get; set; }
+        public int? Fertigungsmenge { get; set; }
         public int? MaschinenNr { get; set; }
     }
 
@@ -19,7 +19,7 @@ namespace QIN_Production_Web.Data
         public static async Task<List<PantherAuftragsData>> GetAuftraegeAsync()
         {
             var list = new List<PantherAuftragsData>();
-            string query = "SELECT TOP 100 FA_NR, Material, Liefermenge, ErstellungsDatum, Maschinen_Nr FROM dbo.Thermo_Auftrag ORDER BY ErstellungsDatum DESC"; 
+            string query = "SELECT TOP 100 FA_NR, Material, Fertigungsmenge, ErstellungsDatum, Maschinen_Nr FROM dbo.Thermo_Auftrag ORDER BY ErstellungsDatum DESC"; 
 
             try
             {
@@ -36,7 +36,7 @@ namespace QIN_Production_Web.Data
                                 FANR = reader["FA_Nr"]?.ToString(),
                                 Material = reader["Material"]?.ToString(),
                                 EintragsDate = reader["ErstellungsDatum"] != DBNull.Value ? (DateTime?)reader["ErstellungsDatum"] : null,
-                                Liefermenge = reader["Liefermenge"] != DBNull.Value ? Convert.ToInt32(reader["Liefermenge"]) : null,
+                                Fertigungsmenge = reader["Fertigungsmenge"] != DBNull.Value ? Convert.ToInt32(reader["Fertigungsmenge"]) : null,
                                 MaschinenNr = reader["Maschinen_Nr"] != DBNull.Value ? Convert.ToInt32(reader["Maschinen_Nr"]) : null
                             });
                         }

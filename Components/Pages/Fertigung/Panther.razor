@@ -74,7 +74,7 @@
                                     <tr @onclick="() => SelectAuftrag(row)" class="cursor-pointer @(SelectedAuftragFANR == row.FANR ? "table-active" : "")">
                                         <td>@row.FANR</td>
                                         <td>@row.Material</td>
-                                        <td>@row.Liefermenge</td>
+                                        <td>@row.Fertigungsmenge</td>
                                         <td>@row.MaschinenNr</td>
                                         <td>@(row.EintragsDate?.ToString("dd.MM.yyyy"))</td>
                                     </tr>
