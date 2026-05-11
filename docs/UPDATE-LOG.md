@@ -3,7 +3,10 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.2.6
+
 ## Update 3.2.5
+- Allgemein: Die sichtbare Web-Version im Navigationsmenü wurde von `v3.2.4 Web` auf `v3.2.5 Web` aktualisiert.
 - Wareneingang: Bemerkungen in den offenen Wareneingängen werden jetzt rot und deutlich sichtbar angezeigt.
 - Wareneingang: Die Dickenmessung nutzt jetzt `dbo.Materialliste.Dickenmessung_Toleranz` als Prozentwert pro Material; fehlt der Wert, wird sichtbar die Standard-Toleranz 10 Prozent verwendet.
 - Sperrlager: Automatische Wareneingang-Sperren protokollieren jetzt die komplette Chargenmenge als gesperrte Menge.
