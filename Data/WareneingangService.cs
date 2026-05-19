@@ -30,6 +30,7 @@ namespace QIN_Production_Web.Data
 
     public class ChargenEntry
     {
+        public int? ID { get; set; }
         public string Charge { get; set; } = string.Empty;
         public string Menge { get; set; } = string.Empty;
         public int Scanner { get; set; }
@@ -341,7 +342,7 @@ namespace QIN_Production_Web.Data
             using (SqlConnection connection = new SqlConnection(SqlManager.FertigungConnectionString))
             {
                 await connection.OpenAsync();
-                string query = "SELECT Charge, Aktuelle_Menge, Kontrolle, Gesperrt FROM Chargen WHERE Wareneingang_ID = @Wareneingangs_id";
+                string query = "SELECT ID, Charge, Aktuelle_Menge, Kontrolle, Gesperrt FROM Chargen WHERE Wareneingang_ID = @Wareneingangs_id";
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
                     command.Parameters.AddWithValue("@Wareneingangs_id", wareneingangsId);
@@ -351,6 +352,7 @@ namespace QIN_Production_Web.Data
                         {
                             chargen.Add(new ChargenEntry
                             {
+                                ID = reader["ID"] != DBNull.Value ? Convert.ToInt32(reader["ID"]) : null,
                                 Charge = reader["Charge"]?.ToString() ?? "",
                                 Menge = reader["Aktuelle_Menge"]?.ToString() ?? "0",
                                 Scanner = reader["Kontrolle"] != DBNull.Value ? Convert.ToInt32(reader["Kontrolle"]) : 0,
@@ -469,7 +471,17 @@ namespace QIN_Production_Web.Data
                         if (eintragBearbeiten) { await command.ExecuteNonQueryAsync(); activeId = int.Parse(id!); }
                         else { activeId = Convert.ToInt32(await command.ExecuteScalarAsync()); }
 
-                        if (activeId > 0 && chargenList != null) await InsertChargenAsync(activeId, chargenList, connection, liefermenge ?? "0");
+                        if (activeId > 0 && chargenList != null)
+                        {
+                            if (eintragBearbeiten)
+                            {
+                                await SyncChargenAsync(activeId, chargenList, connection, liefermenge ?? "0");
+                            }
+                            else
+                            {
+                                await InsertChargenAsync(activeId, chargenList, connection, liefermenge ?? "0");
+                            }
+                        }
 
                         string actionText = eintragBearbeiten 
                             ? $"[Wareneingang] Eintrag ID {activeId} aktualisiert (Material: {material ?? "Unbekannt"})"
@@ -507,6 +519,81 @@ namespace QIN_Production_Web.Data
                         cmd.Parameters["@Kontrolle"].Value = row.Scanner;
                         await cmd.ExecuteNonQueryAsync();
                     }
+                }
+            }
+        }
+
+        private static async Task SyncChargenAsync(int wareneingangId, List<ChargenEntry> chargenList, SqlConnection connection, string liefermenge)
+        {
+            var existingIds = new HashSet<int>();
+            using (SqlCommand loadCommand = new SqlCommand("SELECT ID FROM Chargen WHERE Wareneingang_ID = @WareneingangID", connection))
+            {
+                loadCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                using SqlDataReader reader = await loadCommand.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    existingIds.Add(reader.GetInt32(0));
+                }
+            }
+
+            var submittedExistingIds = chargenList
+                .Where(c => c.ID.HasValue && existingIds.Contains(c.ID.Value))
+                .Select(c => c.ID!.Value)
+                .ToHashSet();
+
+            foreach (int idToDelete in existingIds.Except(submittedExistingIds))
+            {
+                using SqlCommand deleteCommand = new SqlCommand(@"
+                    DELETE c
+                    FROM Chargen c
+                    WHERE c.Wareneingang_ID = @WareneingangID
+                      AND c.ID = @ID
+                      AND NOT EXISTS (SELECT 1 FROM dbo.Sperrlager s WHERE s.Chargen_ID = c.ID);", connection);
+                deleteCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                deleteCommand.Parameters.AddWithValue("@ID", idToDelete);
+                await deleteCommand.ExecuteNonQueryAsync();
+            }
+
+            const string updateQuery = @"
+                UPDATE Chargen
+                SET Charge = @ChargenNr,
+                    Aktuelle_Menge = @Menge,
+                    Echte_Menge = @Echte_Menge,
+                    Liefermenge = @Liefermenge,
+                    Kontrolle = @Kontrolle
+                WHERE Wareneingang_ID = @WareneingangID
+                  AND ID = @ID;";
+
+            foreach (var row in chargenList)
+            {
+                int menge = int.TryParse(row.Menge, out int parsedMenge) ? parsedMenge : 0;
+                int liefermengeValue = int.TryParse(liefermenge, out int parsedLiefermenge) ? parsedLiefermenge : 0;
+
+                if (row.ID.HasValue && existingIds.Contains(row.ID.Value))
+                {
+                    using SqlCommand updateCommand = new SqlCommand(updateQuery, connection);
+                    updateCommand.Parameters.AddWithValue("@WareneingangID", wareneingangId);
+                    updateCommand.Parameters.AddWithValue("@ID", row.ID.Value);
+                    updateCommand.Parameters.AddWithValue("@ChargenNr", row.Charge);
+                    updateCommand.Parameters.AddWithValue("@Menge", menge);
+                    updateCommand.Parameters.AddWithValue("@Echte_Menge", menge);
+                    updateCommand.Parameters.AddWithValue("@Liefermenge", liefermengeValue);
+                    updateCommand.Parameters.AddWithValue("@Kontrolle", row.Scanner);
+                    await updateCommand.ExecuteNonQueryAsync();
+                }
+                else if (!string.IsNullOrWhiteSpace(row.Charge))
+                {
+                    await InsertChargenAsync(wareneingangId, new List<ChargenEntry>
+                    {
+                        new ChargenEntry
+                        {
+                            Charge = row.Charge,
+                            Menge = row.Menge,
+                            Scanner = row.Scanner,
+                            IsNew01 = 1,
+                            Gesperrt = row.Gesperrt
+                        }
+                    }, connection, liefermenge);
                 }
             }
         }

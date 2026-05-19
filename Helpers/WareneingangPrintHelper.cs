@@ -47,7 +47,7 @@ namespace QIN_Production_Web.Helpers
                 $"^PW{labelWidth}" +
                 $"^LL{labelHeight}" +
                 "^LH0,0" +
-                $"^FO2,2^BQN,2,7^FDQA,{qrData}^FS" +
+                $"^FO2,2^BQN,2,5^FDQA,{qrData}^FS" +
                 labelText +
                 "^PQ1,0,1,N" +
                 "^XZ";
