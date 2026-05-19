@@ -121,6 +121,8 @@ namespace QIN_Production_Web.Data
         {
             try
             {
+                personalnummer = personalnummer?.Trim() ?? string.Empty;
+
                 using (var connection = new SqlConnection(SqlManager.connectionString))
                 {
                     await connection.OpenAsync();
@@ -128,8 +130,9 @@ namespace QIN_Production_Web.Data
                     string query = @"
                         SELECT Anmeldename, Rechte, Personalnummer, Benutzer
                         FROM LoginDaten
-                        WHERE Personalnummer = @Personalnummer 
-                          AND Rechte IN ('Admin', 'Verwaltung')";
+                        WHERE LTRIM(RTRIM(Personalnummer)) = @Personalnummer
+                          AND Rechte IN ('Admin', 'Verwaltung')
+                          AND LTRIM(RTRIM(Personalnummer)) <> '106'";
 
                     UserSession? user = null;
 

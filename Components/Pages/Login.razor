@@ -174,11 +174,20 @@
         StateHasChanged();
 
         UserSession? userSession = null;
+        var normalizedUsername = Username.Trim();
 
         // Wenn KEIN Passwort eingegeben wurde, prüfen wir, ob es ein privilegierter "Fast Login" ist.
         if (string.IsNullOrWhiteSpace(Password))
         {
-            userSession = await LoginService.FastLoginAsync(Username);
+            if (normalizedUsername == "106")
+            {
+                ErrorMessage = "F\u00fcr die Personalnummer 106 ist ein Passwort erforderlich.";
+                isLoading = false;
+                StateHasChanged();
+                return;
+            }
+
+            userSession = await LoginService.FastLoginAsync(normalizedUsername);
 
             if (userSession == null)
             {
@@ -191,7 +200,7 @@
         else
         {
             // Normaler Login mit Passwort
-            userSession = await LoginService.LoginAsync(Username, Password);
+            userSession = await LoginService.LoginAsync(normalizedUsername, Password);
 
             if (userSession == null)
             {
