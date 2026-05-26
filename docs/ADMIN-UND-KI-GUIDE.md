@@ -16,10 +16,10 @@ Bei neuen Designs oder Design-Umbauten immer zuerst die gemeinsame Vorlage verwe
 Regeln:
 
 - Gemeinsame Layout-, Panel-, Tabellen-, Button-, Formular- und Modal-Stile zentral pflegen, statt dieselben Muster pro Seite neu zu bauen.
-- Farben, AbstÃ¤nde, Rahmen, Schatten und ZustÃ¤nde nach MÃ¶glichkeit Ã¼ber gemeinsame CSS-Variablen und Shared-Klassen steuern.
-- Seitenbezogenes CSS nur fÃ¼r echte SonderfÃ¤lle ergÃ¤nzen, nicht fÃ¼r Standard-Elemente, die schon in der Vorlage vorhanden sind.
-- Inline-Styles vermeiden, wenn dieselbe Gestaltung Ã¼ber die gemeinsame Vorlage lÃ¶sbar ist.
-- Bei Design-Arbeiten immer mitdenken, dass Light- und Darkmode spÃ¤ter zentral umschaltbar bleiben sollen.
+- Farben, Abstände, Rahmen, Schatten und Zustände nach Möglichkeit über gemeinsame CSS-Variablen und Shared-Klassen steuern.
+- Seitenbezogenes CSS nur für echte Sonderfälle ergänzen, nicht für Standard-Elemente, die schon in der Vorlage vorhanden sind.
+- Inline-Styles vermeiden, wenn dieselbe Gestaltung über die gemeinsame Vorlage lösbar ist.
+- Bei Design-Arbeiten immer mitdenken, dass Light- und Darkmode später zentral umschaltbar bleiben sollen.
 
 ## Datenbank
 
@@ -51,6 +51,7 @@ Regeln:
 - Nutzerrelevante Änderungen verständlich formulieren.
 - Technische Details nur aufnehmen, wenn sie später für Wartung oder Fehlersuche wichtig sind.
 - Das reine Erstellen oder Senden einer Benachrichtigung ist keine Projektänderung und kommt nicht als eigener Update-Log-Eintrag hinein.
+- Die reine sichtbare Versionsanzeige im Menü ist ebenfalls kein eigener Update-Log-Eintrag.
 
 ## Dokumentationen & Docu
 
@@ -113,8 +114,7 @@ Immer:
 - Das Senden der Benachrichtigung selbst nicht in den Update-Log schreiben.
 - Den `INSERT` wirklich ausführen.
 - Danach den neuesten Datensatz kurz prüfen.
-
-- Wenn der Nutzer ein Update machen oder eine Version anheben lÃ¤sst, gehÃ¶rt das Schreiben einer Benachrichtigung automatisch dazu.
+- Wenn der Nutzer ein Update machen oder eine Version anheben lässt, gehört das Schreiben einer Benachrichtigung automatisch dazu.
 
 Titel:
 
@@ -130,6 +130,7 @@ Nachricht:
 - Echte Zeilenumbrüche verwenden.
 - Änderungen zuerst, Umbenennungen zuletzt.
 - Keine langen Einleitungen.
+- Die reine sichtbare Versionsanzeige im Menü nicht als eigene Benachrichtigungszeile aufnehmen.
 - Im UI für neue Zeilen `Shift + Enter` nutzen.
 
 Verwendete Spalten:
@@ -180,8 +181,13 @@ Bei einer Benachrichtigung:
 Bei einem Versions- oder Update-Wunsch:
 
 1. Version an den betroffenen Stellen anheben.
-2. `docs/UPDATE-LOG.md` passend ergÃ¤nzen.
-3. Danach immer auch eine Benachrichtigung in `Alerts` anlegen und prÃ¼fen.
+2. `docs/UPDATE-LOG.md` passend ergänzen.
+3. Danach immer auch eine Benachrichtigung in `Alerts` anlegen und prüfen.
+
+Wichtig:
+
+- Die Versionsanzeige selbst nicht als eigenen Punkt im Update-Log oder in der Benachrichtigung aufführen.
+- Im Update-Log und in der Benachrichtigung nur die inhaltlichen Änderungen des Updates nennen.
 
 Kurzprompt:
 

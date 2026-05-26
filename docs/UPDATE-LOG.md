@@ -4,6 +4,8 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.6
+- Schichtplan: Der Arbeitsplatz `005319` im SQL-Seed heißt jetzt `Helmerding` statt der zuvor falschen Stanzen-Bezeichnung.
+- Schichtplan: Dashboard- und Monitoransicht verwenden für den automatischen Plantag jetzt deutsche Zeit mit Tageswechsel ab `21:45 Uhr` statt erst um Mitternacht.
 - Thermoformung: Der kleine Bereichshinweis im Kopf der Seite wurde entfernt, damit die Auftragsinfos kompakter wirken.
 - Thermoformung: Die Auftragsinfos zeigen die Fertigungsmenge jetzt hervorgehoben in einer kompakten Zeile mit den übrigen Auftragsdetails.
 - Thermoformung: Die Materialanzeige zeigt dem Werker jetzt nur noch die lesbare Materialbeschreibung ohne Materialnummer und Zusätze nach Komma oder Schrägstrich.

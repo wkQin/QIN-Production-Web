@@ -494,7 +494,7 @@ BEGIN TRY
 
             (30, N'Stanzen', 10, N'005317', N'Handstanze'),
             (30, N'Stanzen', 20, N'005318', N'Hydraulikstanze'),
-            (30, N'Stanzen', 30, N'005319', N'Hydraulikstanze'),
+            (30, N'Stanzen', 30, N'005319', N'Helmerding'),
             (30, N'Stanzen', 40, N'005320', N'Hydraulikstanze'),
             (30, N'Stanzen', 50, N'005321', N'Hydraulikstanze'),
             (30, N'Stanzen', 60, N'005322', N'Hydraulikstanze'),

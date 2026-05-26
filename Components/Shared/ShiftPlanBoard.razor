@@ -208,15 +208,17 @@
         new(SchichtplanKonstanten.Spätschicht)
     ];
     private static readonly TimeSpan MonitorAutoRefreshInterval = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan PlanDateRolloverTime = new(21, 45, 0);
+    private static readonly TimeZoneInfo PlanTimeZone = ResolvePlanTimeZone();
 
     private SchichtplanBoardModel board = new()
     {
-        PlanDatum = DateTime.Today,
-        Kalenderwoche = SchichtplanKonstanten.Kalenderwoche(DateTime.Today)
+        PlanDatum = GetAutomaticPlanDate(),
+        Kalenderwoche = SchichtplanKonstanten.Kalenderwoche(GetAutomaticPlanDate())
     };
 
     private DateTime? lastLoadedDate;
-    private DateTime selectedBoardDate = DateTime.Today;
+    private DateTime selectedBoardDate = GetAutomaticPlanDate();
     private DateTime? previousPlanDateParameter;
     private bool hasManualDateSelection;
     private bool isLoading = true;
@@ -236,7 +238,7 @@
         selectedBoardDate.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     private bool isTodaySelected =>
-        selectedBoardDate.Date == DateTime.Today;
+        selectedBoardDate.Date == GetAutomaticPlanDate();
 
     private bool isTodayButtonDisabled =>
         isTodaySelected && !hasManualDateSelection;
@@ -266,7 +268,7 @@
     private DateTime ResolveRequestedDate() =>
         PlanDate.HasValue || hasManualDateSelection
             ? selectedBoardDate.Date
-            : DateTime.Today;
+            : GetAutomaticPlanDate();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -278,7 +280,7 @@
         }
         else if (!parameterDate.HasValue && !hasManualDateSelection)
         {
-            selectedBoardDate = DateTime.Today;
+            selectedBoardDate = GetAutomaticPlanDate();
         }
 
         previousPlanDateParameter = parameterDate;
@@ -354,7 +356,7 @@
     private async Task SelectTodayAsync()
     {
         hasManualDateSelection = false;
-        await SelectBoardDateAsync(DateTime.Today, false);
+        await SelectBoardDateAsync(GetAutomaticPlanDate(), false);
     }
 
     private async Task SelectBoardDateAsync(DateTime requestedDate, bool markAsManualSelection)
@@ -523,6 +525,36 @@
 
     private static bool HasAssignedUsers(SchichtplanWorkplaceModel workplace) =>
         workplace.Shifts.Any(cell => cell.AssignedUsers.Count > 0);
+
+    private static DateTime GetAutomaticPlanDate()
+    {
+        var now = TimeZoneInfo.ConvertTime(DateTime.UtcNow, PlanTimeZone);
+        var planDate = now.TimeOfDay >= PlanDateRolloverTime
+            ? now.Date.AddDays(1)
+            : now.Date;
+
+        return planDate;
+    }
+
+    private static TimeZoneInfo ResolvePlanTimeZone()
+    {
+        // Support both Linux and Windows timezone identifiers.
+        foreach (var timeZoneId in new[] { "Europe/Berlin", "W. Europe Standard Time" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        return TimeZoneInfo.Local;
+    }
 
     private bool ApplyTheme(string? theme)
     {
