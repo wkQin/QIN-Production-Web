@@ -254,6 +254,110 @@
             };
         })();
 
+        window.schichtplanUserPool = (() => {
+            let session = null;
+
+            const getPoolState = () => {
+                const card = document.querySelector('.users-card');
+                const scrollContainer = card?.closest('.content-scrollable') || document.scrollingElement || document.documentElement;
+
+                if (!(card instanceof Element) || !(scrollContainer instanceof Element)) {
+                    return null;
+                }
+
+                return { card, scrollContainer };
+            };
+
+            const syncCard = () => {
+                const state = getPoolState();
+                if (!state) {
+                    return;
+                }
+
+                const { card, scrollContainer } = state;
+
+                if (window.innerWidth < 1200) {
+                    card.classList.remove('is-compact');
+                    return;
+                }
+
+                card.classList.toggle('is-compact', scrollContainer.scrollTop > 0);
+            };
+
+            const teardownSession = () => {
+                if (!session) {
+                    return;
+                }
+
+                if (session.frameId) {
+                    window.cancelAnimationFrame(session.frameId);
+                }
+
+                session.scrollTarget.removeEventListener('scroll', session.scrollHandler);
+                window.removeEventListener('resize', session.resizeHandler);
+                if (window.visualViewport) {
+                    window.visualViewport.removeEventListener('resize', session.resizeHandler);
+                }
+
+                const card = document.querySelector('.users-card');
+                if (card instanceof Element) {
+                    card.classList.remove('is-compact');
+                }
+
+                session = null;
+            };
+
+            return {
+                activate: () => {
+                    const state = getPoolState();
+                    if (!state) {
+                        return;
+                    }
+
+                    if (session && session.scrollTarget === state.scrollContainer) {
+                        session.queueSync();
+                        return;
+                    }
+
+                    teardownSession();
+
+                    const queueSync = () => {
+                        if (session?.frameId) {
+                            return;
+                        }
+
+                        const activeSession = session;
+                        if (!activeSession) {
+                            return;
+                        }
+
+                        activeSession.frameId = window.requestAnimationFrame(() => {
+                            if (session) {
+                                session.frameId = 0;
+                            }
+                            syncCard();
+                        });
+                    };
+
+                    const scrollHandler = () => queueSync();
+                    const resizeHandler = () => queueSync();
+
+                    state.scrollContainer.addEventListener('scroll', scrollHandler, { passive: true });
+                    window.addEventListener('resize', resizeHandler);
+                    if (window.visualViewport) {
+                        window.visualViewport.addEventListener('resize', resizeHandler);
+                    }
+
+                    session = { scrollHandler, resizeHandler, queueSync, frameId: 0, scrollTarget: state.scrollContainer };
+                    queueSync();
+                },
+
+                deactivate: () => {
+                    teardownSession();
+                }
+            };
+        })();
+
         window.shiftPlanBoard = (() => {
             const sessions = new Map();
 

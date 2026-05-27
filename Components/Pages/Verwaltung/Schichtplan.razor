@@ -78,6 +78,8 @@
     }
     else
     {
+        <div class="users-card-sentinel"></div>
+
         <section class="schichtplan-pool-card users-card">
             <div class="schichtplan-pool-header">
                 <div>
@@ -453,19 +455,25 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender)
+        if (firstRender)
         {
+            ThemeReference = DotNetObjectReference.Create(this);
+            ThemeSubscriptionId = await JS.InvokeAsync<string>("qinTheme.subscribe", ThemeReference);
+
+            var theme = await JS.InvokeAsync<string>("qinTheme.getCurrent");
+            if (ApplyTheme(theme))
+            {
+                StateHasChanged();
+            }
+        }
+
+        if (IsLoading || !string.IsNullOrWhiteSpace(LoadError))
+        {
+            await JS.InvokeVoidAsync("schichtplanUserPool.deactivate");
             return;
         }
 
-        ThemeReference = DotNetObjectReference.Create(this);
-        ThemeSubscriptionId = await JS.InvokeAsync<string>("qinTheme.subscribe", ThemeReference);
-
-        var theme = await JS.InvokeAsync<string>("qinTheme.getCurrent");
-        if (ApplyTheme(theme))
-        {
-            StateHasChanged();
-        }
+        await JS.InvokeVoidAsync("schichtplanUserPool.activate");
     }
 
     [JSInvokable]
@@ -484,6 +492,14 @@
         try
         {
             await JS.InvokeVoidAsync("schichtplanDragScroll.deactivate");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("schichtplanUserPool.deactivate");
         }
         catch (JSDisconnectedException)
         {

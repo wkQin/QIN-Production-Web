@@ -3,6 +3,10 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.2.7
+- Schichtplan: Die Benutzerbox in der Verwaltung bleibt jetzt oben sichtbar, während die Planung darunter gescrollt wird.
+- Schichtplan: Die feste Benutzerbox wird beim Scrollen jetzt kompakter, blendet Eingaben aus und lässt rechts mehr Platz für die Materialliste.
+
 ## Update 3.2.6
 - Schichtplan: Der Arbeitsplatz `005319` im SQL-Seed heißt jetzt `Helmerding` statt der zuvor falschen Stanzen-Bezeichnung.
 - Schichtplan: Dashboard- und Monitoransicht verwenden für den automatischen Plantag jetzt deutsche Zeit mit Tageswechsel ab `21:45 Uhr` statt erst um Mitternacht.
