@@ -4,6 +4,9 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.7
+- Schichtplan: Die Monitoransicht merkt sich ihren Zustand jetzt im Browser und stellt sich nach einem Reload oder Blazor-Reconnect automatisch wieder her, statt still auf die normale Dashboardansicht zurückzufallen.
+- Schichtplan: Datumswechsel in Dashboard und Verwaltung sowie das Ein- und Ausschalten der Monitoransicht werden jetzt in `dbo.Logs` protokolliert.
+- Schichtplan: Für Tests wurde ein einfacher Schichtplan-Benutzer in `dbo.LoginDaten` vorbereitet.
 - Schichtplan: Die Benutzerbox in der Verwaltung bleibt jetzt oben sichtbar, während die Planung darunter gescrollt wird.
 - Schichtplan: Die feste Benutzerbox wird beim Scrollen jetzt kompakter, blendet Eingaben aus und lässt rechts mehr Platz für die Materialliste.
 

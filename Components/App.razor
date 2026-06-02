@@ -358,6 +358,40 @@
             };
         })();
 
+        window.shiftPlanMonitorState = (() => {
+            const storageKey = 'qin_shiftplan_monitor_state';
+
+            return {
+                load: () => {
+                    try {
+                        const raw = window.sessionStorage.getItem(storageKey);
+                        return raw ? JSON.parse(raw) : null;
+                    } catch {
+                        return null;
+                    }
+                },
+
+                save: (state) => {
+                    try {
+                        if (!state) {
+                            window.sessionStorage.removeItem(storageKey);
+                            return;
+                        }
+
+                        window.sessionStorage.setItem(storageKey, JSON.stringify(state));
+                    } catch {
+                    }
+                },
+
+                clear: () => {
+                    try {
+                        window.sessionStorage.removeItem(storageKey);
+                    } catch {
+                    }
+                }
+            };
+        })();
+
         window.shiftPlanBoard = (() => {
             const sessions = new Map();
 

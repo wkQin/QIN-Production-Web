@@ -1,8 +1,10 @@
 @using System.Globalization
 @using System.Threading
+@using Microsoft.AspNetCore.Components.Authorization
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @inject SchichtplanService SchichtplanService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <section id="@shellId" class="@($"shiftplan-shell {(isFullscreen ? "is-fullscreen" : string.Empty)} {(CurrentTheme == "light" ? "theme-light" : "theme-dark")}")">
     @if (isLoading)
@@ -227,6 +229,7 @@
     private bool activateMonitorView;
     private bool isBackgroundRefreshing;
     private CancellationTokenSource? monitorRefreshCts;
+    private string CurrentUserName { get; set; } = "Dashboard";
     private string CurrentTheme { get; set; } = "dark";
     private DotNetObjectReference<ShiftPlanBoard>? ThemeReference { get; set; }
     private string? ThemeSubscriptionId { get; set; }
@@ -269,6 +272,12 @@
         PlanDate.HasValue || hasManualDateSelection
             ? selectedBoardDate.Date
             : GetAutomaticPlanDate();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        CurrentUserName = authState.User.Identity?.Name ?? "Dashboard";
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -362,6 +371,7 @@
     private async Task SelectBoardDateAsync(DateTime requestedDate, bool markAsManualSelection)
     {
         var date = requestedDate.Date;
+        var previousDate = selectedBoardDate.Date;
         if (markAsManualSelection)
         {
             hasManualDateSelection = true;
@@ -373,6 +383,12 @@
         }
 
         await LoadBoardAsync(date);
+        await PersistClientStateAsync();
+
+        if (previousDate != date)
+        {
+            await SchichtplanService.LogViewedDateChangeAsync(date, CurrentUserName, "Dashboard");
+        }
     }
 
     private async Task ToggleFullscreenAsync()
@@ -386,6 +402,8 @@
         isFullscreen = true;
         activateMonitorView = true;
         StartMonitorAutoRefresh();
+        await PersistClientStateAsync();
+        await SchichtplanService.LogMonitorViewToggleAsync(selectedBoardDate.Date, true, CurrentUserName, "Dashboard");
     }
 
     private async Task CloseFullscreenAsync()
@@ -399,6 +417,8 @@
 
         isFullscreen = false;
         activateMonitorView = false;
+        await PersistClientStateAsync();
+        await SchichtplanService.LogMonitorViewToggleAsync(selectedBoardDate.Date, false, CurrentUserName, "Dashboard");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -413,6 +433,8 @@
             {
                 StateHasChanged();
             }
+
+            await RestoreClientStateAsync();
         }
 
         if (!activateMonitorView)
@@ -513,6 +535,72 @@
         }
     }
 
+    private async Task RestoreClientStateAsync()
+    {
+        ShiftPlanMonitorClientState? savedState;
+
+        try
+        {
+            savedState = await JS.InvokeAsync<ShiftPlanMonitorClientState?>("shiftPlanMonitorState.load");
+        }
+        catch (JSDisconnectedException)
+        {
+            return;
+        }
+
+        if (savedState is null)
+        {
+            return;
+        }
+
+        var restoredDate = savedState.HasManualDateSelection
+            ? savedState.SelectedDate.Date
+            : GetAutomaticPlanDate();
+        var shouldRestoreFullscreen = savedState.IsFullscreen && !isFullscreen;
+        var shouldReloadDate = restoredDate != selectedBoardDate.Date || lastLoadedDate != restoredDate;
+
+        selectedBoardDate = restoredDate;
+        hasManualDateSelection = savedState.HasManualDateSelection;
+
+        if (shouldRestoreFullscreen)
+        {
+            isFullscreen = true;
+            activateMonitorView = true;
+            StartMonitorAutoRefresh();
+        }
+
+        if (shouldReloadDate)
+        {
+            await LoadBoardAsync(restoredDate);
+        }
+
+        if (shouldRestoreFullscreen)
+        {
+            await SchichtplanService.LogMonitorViewRestoreAsync(restoredDate, CurrentUserName, "Dashboard");
+        }
+
+        await PersistClientStateAsync();
+        StateHasChanged();
+    }
+
+    private async Task PersistClientStateAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "shiftPlanMonitorState.save",
+                new ShiftPlanMonitorClientState
+                {
+                    IsFullscreen = isFullscreen,
+                    SelectedDate = selectedBoardDate.Date,
+                    HasManualDateSelection = hasManualDateSelection
+                });
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+
     private static string GetPeopleCountLabel(int count) => count switch
     {
         0 => "offen",
@@ -566,6 +654,13 @@
 
         CurrentTheme = normalizedTheme;
         return true;
+    }
+
+    private sealed class ShiftPlanMonitorClientState
+    {
+        public bool IsFullscreen { get; set; }
+        public DateTime SelectedDate { get; set; }
+        public bool HasManualDateSelection { get; set; }
     }
 
     private sealed record ShiftHeader(string Label);

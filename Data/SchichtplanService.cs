@@ -821,6 +821,32 @@ END;",
         transaction.Commit();
     }
 
+    public async Task LogViewedDateChangeAsync(DateTime planDate, string changedBy, string context)
+    {
+        var normalizedContext = NormalizeNullable(context) ?? "Ansicht";
+        await ActivityLogService.InsertLogAsync(
+            NormalizeAuditName(changedBy),
+            $"[Schichtplan] {normalizedContext}: Plan-Datum auf {planDate:dd.MM.yyyy} gewechselt.");
+    }
+
+    public async Task LogMonitorViewToggleAsync(DateTime planDate, bool enabled, string changedBy, string context)
+    {
+        var normalizedContext = NormalizeNullable(context) ?? "Monitor";
+        var actionText = enabled ? "eingeschaltet" : "ausgeschaltet";
+
+        await ActivityLogService.InsertLogAsync(
+            NormalizeAuditName(changedBy),
+            $"[Schichtplan] {normalizedContext}: Monitoransicht {actionText} (Plan-Datum {planDate:dd.MM.yyyy}).");
+    }
+
+    public async Task LogMonitorViewRestoreAsync(DateTime planDate, string changedBy, string context)
+    {
+        var normalizedContext = NormalizeNullable(context) ?? "Monitor";
+        await ActivityLogService.InsertLogAsync(
+            NormalizeAuditName(changedBy),
+            $"[Schichtplan] {normalizedContext}: Monitoransicht nach Reload oder Reconnect automatisch wiederhergestellt (Plan-Datum {planDate:dd.MM.yyyy}).");
+    }
+
     private async Task<List<SchichtplanAvailableUserModel>> GetAvailableUsersAsync()
     {
         List<SchichtplanAvailableUserModel> loginUsers;

@@ -592,8 +592,15 @@
     {
         if (DateTime.TryParse(args.Value?.ToString(), out var parsedDate))
         {
-            SelectedDate = parsedDate.Date;
+            var newDate = parsedDate.Date;
+            var previousDate = SelectedDate.Date;
+            SelectedDate = newDate;
             await LoadAsync();
+
+            if (previousDate != newDate)
+            {
+                await SchichtplanService.LogViewedDateChangeAsync(newDate, CurrentUserName, "Verwaltung");
+            }
         }
     }
 
