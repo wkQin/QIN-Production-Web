@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -53,6 +52,14 @@ namespace QIN_Production_Web.Data
         public string Karte { get; set; } = "";
         public double? Anzahl { get; set; }
         public double? Prozent { get; set; }
+    }
+
+    public class FehleranalyseExportResult
+    {
+        public byte[] Content { get; set; } = Array.Empty<byte>();
+        public string FileName { get; set; } = "";
+        public string? ErrorMessage { get; set; }
+        public bool Success => Content.Length > 0 && string.IsNullOrWhiteSpace(ErrorMessage);
     }
 
     public class FehleranalyseService
@@ -199,23 +206,19 @@ namespace QIN_Production_Web.Data
             return daten;
         }
 
-        public async Task<string> ExportToExcelAsync(List<FehlerRow> fehlerListe)
+        public Task<FehleranalyseExportResult> ExportToExcelAsync(List<FehlerRow> fehlerListe)
         {
             if (fehlerListe == null || !fehlerListe.Any())
-                return "Keine Daten vorhanden";
-
-            var now = DateTime.Now;
-            string exportDirectory = @"N:\tmp";
-            if (!Directory.Exists(exportDirectory))
             {
-                try { Directory.CreateDirectory(exportDirectory); }
-                catch { exportDirectory = Path.GetTempPath(); } // Fallback to local temp if N: is missing
+                return Task.FromResult(new FehleranalyseExportResult
+                {
+                    ErrorMessage = "Keine Daten vorhanden."
+                });
             }
-
-            string filePath = Path.Combine(exportDirectory, $"Auswertung_{now:yyyy-MM-dd}.xlsx");
 
             try
             {
+                var now = DateTime.Now;
                 using var workbook = new XLWorkbook();
                 var ws = workbook.Worksheets.Add("Auswertung");
 
@@ -272,13 +275,22 @@ namespace QIN_Production_Web.Data
 
                 ws.Columns().AdjustToContents();
                 ws.Range(2, 1, row - 1, headers.Length).SetAutoFilter();
-                
-                workbook.SaveAs(filePath);
-                return $"Erfolgreich gespeichert unter: {filePath}";
+
+                using var stream = new MemoryStream();
+                workbook.SaveAs(stream);
+
+                return Task.FromResult(new FehleranalyseExportResult
+                {
+                    Content = stream.ToArray(),
+                    FileName = $"Auswertung_{now:yyyy-MM-dd}.xlsx"
+                });
             }
             catch (Exception ex)
             {
-                return $"Fehler beim Export: {ex.Message}";
+                return Task.FromResult(new FehleranalyseExportResult
+                {
+                    ErrorMessage = $"Fehler beim Export: {ex.Message}"
+                });
             }
         }
     }

@@ -2,6 +2,7 @@
 @rendermode InteractiveServer
 @implements IAsyncDisposable
 @using ApexCharts
+@using System.IO
 @using Microsoft.JSInterop
 @using QIN_Production_Web.Data
 @inject FehleranalyseService AnalyseService
@@ -614,7 +615,14 @@
         IsLoading = false;
         StateHasChanged();
 
-        await JS.InvokeVoidAsync("alert", result);
+        if (!result.Success)
+        {
+            await JS.InvokeVoidAsync("alert", result.ErrorMessage ?? "Der Export konnte nicht erstellt werden.");
+            return;
+        }
+
+        using var streamRef = new DotNetStreamReference(stream: new MemoryStream(result.Content));
+        await JS.InvokeVoidAsync("downloadFileFromStream", result.FileName, streamRef);
     }
 
     private IEnumerable<FehlerRow> SortString(Func<FehlerRow, string> selector)

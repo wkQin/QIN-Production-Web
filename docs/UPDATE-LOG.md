@@ -3,7 +3,10 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.2.8
+
 ## Update 3.2.7
+- Fehleranalyse: Der Excel-Export lädt die Datei jetzt wieder direkt im Browser herunter, statt sie nur in einem Server- oder Temp-Ordner abzulegen.
 - Schichtplan: Die Monitoransicht merkt sich ihren Zustand jetzt im Browser und stellt sich nach einem Reload oder Blazor-Reconnect automatisch wieder her, statt still auf die normale Dashboardansicht zurückzufallen.
 - Schichtplan: Datumswechsel in Dashboard und Verwaltung sowie das Ein- und Ausschalten der Monitoransicht werden jetzt in `dbo.Logs` protokolliert.
 - Schichtplan: Für Tests wurde ein einfacher Schichtplan-Benutzer in `dbo.LoginDaten` vorbereitet.
