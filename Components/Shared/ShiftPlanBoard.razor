@@ -371,7 +371,6 @@
     private async Task SelectBoardDateAsync(DateTime requestedDate, bool markAsManualSelection)
     {
         var date = requestedDate.Date;
-        var previousDate = selectedBoardDate.Date;
         if (markAsManualSelection)
         {
             hasManualDateSelection = true;
@@ -384,11 +383,6 @@
 
         await LoadBoardAsync(date);
         await PersistClientStateAsync();
-
-        if (previousDate != date)
-        {
-            await SchichtplanService.LogViewedDateChangeAsync(date, CurrentUserName, "Dashboard");
-        }
     }
 
     private async Task ToggleFullscreenAsync()
@@ -403,7 +397,6 @@
         activateMonitorView = true;
         StartMonitorAutoRefresh();
         await PersistClientStateAsync();
-        await SchichtplanService.LogMonitorViewToggleAsync(selectedBoardDate.Date, true, CurrentUserName, "Dashboard");
     }
 
     private async Task CloseFullscreenAsync()
@@ -418,7 +411,6 @@
         isFullscreen = false;
         activateMonitorView = false;
         await PersistClientStateAsync();
-        await SchichtplanService.LogMonitorViewToggleAsync(selectedBoardDate.Date, false, CurrentUserName, "Dashboard");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -572,11 +564,6 @@
         if (shouldReloadDate)
         {
             await LoadBoardAsync(restoredDate);
-        }
-
-        if (shouldRestoreFullscreen)
-        {
-            await SchichtplanService.LogMonitorViewRestoreAsync(restoredDate, CurrentUserName, "Dashboard");
         }
 
         await PersistClientStateAsync();

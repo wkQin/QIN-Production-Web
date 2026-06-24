@@ -65,9 +65,8 @@ public class VerwaltungWareneingangService
 
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         int rows = await connection.ExecuteAsync(query, row);
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[WE-Verwaltung] Wareneingang ID {row.ID} aktualisiert (Material: {row.Artikel ?? "Unbekannt"}).");
         return rows > 0;
     }
 
@@ -75,14 +74,13 @@ public class VerwaltungWareneingangService
     {
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         // In SQL Server, deleting Wareneingang might leave orphaned Chargen if there's no ON DELETE CASCADE.
         // We will explicitly delete attached Chargen first as a safety measure.
         await connection.ExecuteAsync("DELETE FROM Chargen WHERE Wareneingang_ID = @ID", new { ID = id });
-        
+
         string query = "DELETE FROM Wareneingang WHERE ID = @ID";
         int rows = await connection.ExecuteAsync(query, new { ID = id });
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[WE-Verwaltung] Wareneingang ID {id} (inkl. eventueller Chargen) gelöscht.");
         return rows > 0;
     }
 
@@ -108,7 +106,6 @@ public class VerwaltungWareneingangService
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
         int rows = await connection.ExecuteAsync(query, charge);
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[WE-Verwaltung] Charge ID {charge.ID} / {charge.Charge} (Menge: {charge.Echte_Menge}) aktualisiert.");
         return rows > 0;
     }
 
@@ -119,7 +116,6 @@ public class VerwaltungWareneingangService
 
         string query = "DELETE FROM Chargen WHERE ID = @ID";
         int rows = await connection.ExecuteAsync(query, new { ID = id });
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[WE-Verwaltung] Charge ID {id} gelöscht.");
         return rows > 0;
     }
 
@@ -131,7 +127,6 @@ public class VerwaltungWareneingangService
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
         int rows = await connection.ExecuteAsync(query, charge);
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[WE-Verwaltung] Neue Charge {charge.Charge} zur WE-ID {charge.Wareneingang_ID} (Menge: {charge.Echte_Menge}) hinzugefügt.");
         return rows > 0;
     }
 }

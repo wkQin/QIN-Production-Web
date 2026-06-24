@@ -211,9 +211,6 @@ WHERE source.SchichtplanPlanID = @SourcePlanId;",
         await TouchPlanAsync(connection, transaction, targetPlanId, normalizedTargetDate, changedBy);
         transaction.Commit();
 
-        await ActivityLogService.InsertLogAsync(
-            NormalizeAuditName(changedBy),
-            $"[Schichtplan] Plan vom {normalizedSourceDate:dd.MM.yyyy} auf {normalizedTargetDate:dd.MM.yyyy} übernommen.");
 
         return sourceEntryCount;
     }
@@ -260,9 +257,6 @@ WHERE source.SchichtplanPlanID = @SourcePlanId;",
 
         transaction.Commit();
 
-        await ActivityLogService.InsertLogAsync(
-            NormalizeAuditName(changedBy),
-            $"[Schichtplan] Plan vom {normalizedDate:dd.MM.yyyy} komplett gel\u00F6scht.");
 
         return deletedEntryCount;
     }
@@ -328,7 +322,6 @@ END;",
                 ChangedBy = NormalizeAuditName(changedBy)
             });
 
-        await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Manuellen Mitarbeiter '{normalizedName}' angelegt oder reaktiviert.");
         return user;
     }
 
@@ -392,7 +385,6 @@ END;",
                 ChangedBy = NormalizeAuditName(changedBy)
             });
 
-        await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Material '{normalizedMaterial}' angelegt oder reaktiviert.");
         return material;
     }
 
@@ -426,11 +418,6 @@ END;",
                 AND Aktiv = 1;",
             new { Id = userId });
 
-        if (rows > 0)
-        {
-            await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Manuellen Mitarbeiter '{userName}' deaktiviert.");
-        }
-
         return rows > 0;
     }
 
@@ -458,11 +445,6 @@ END;",
               WHERE ID = @Id
                 AND Aktiv = 1;",
             new { Id = materialId });
-
-        if (rows > 0)
-        {
-            await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Material '{material.Material}' deaktiviert.");
-        }
 
         return rows > 0;
     }
@@ -575,7 +557,6 @@ END;",
         await TouchPlanAsync(connection, transaction, planId, planDate.Date, changedBy);
         transaction.Commit();
 
-        await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Mitarbeiter '{user.DisplayName}' zu {shift} am Arbeitsplatz {workplaceId} zugeordnet.");
         return true;
     }
 
@@ -613,7 +594,6 @@ END;",
         await TouchPlanAsync(connection, transaction, assignment.SchichtplanPlanID, assignment.PlanDatum, changedBy);
         transaction.Commit();
 
-        await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Mitarbeiter '{assignment.Benutzer}' aus dem Plan entfernt.");
     }
 
     public async Task<SchichtplanMaterialAssignResult> AssignMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialId, string changedBy)
@@ -699,7 +679,6 @@ END;",
         await TouchPlanAsync(connection, transaction, planId, planDate.Date, changedBy);
         transaction.Commit();
 
-        await ActivityLogService.InsertLogAsync(NormalizeAuditName(changedBy), $"[Schichtplan] Material '{material.Material}' für {shift} am Arbeitsplatz {workplaceId} gesetzt.");
         return result;
     }
 
@@ -819,32 +798,6 @@ END;",
         await CleanupEntryIfEmptyAsync(connection, transaction, ensuredEntryId);
         await TouchPlanAsync(connection, transaction, planId, planDate.Date, changedBy);
         transaction.Commit();
-    }
-
-    public async Task LogViewedDateChangeAsync(DateTime planDate, string changedBy, string context)
-    {
-        var normalizedContext = NormalizeNullable(context) ?? "Ansicht";
-        await ActivityLogService.InsertLogAsync(
-            NormalizeAuditName(changedBy),
-            $"[Schichtplan] {normalizedContext}: Plan-Datum auf {planDate:dd.MM.yyyy} gewechselt.");
-    }
-
-    public async Task LogMonitorViewToggleAsync(DateTime planDate, bool enabled, string changedBy, string context)
-    {
-        var normalizedContext = NormalizeNullable(context) ?? "Monitor";
-        var actionText = enabled ? "eingeschaltet" : "ausgeschaltet";
-
-        await ActivityLogService.InsertLogAsync(
-            NormalizeAuditName(changedBy),
-            $"[Schichtplan] {normalizedContext}: Monitoransicht {actionText} (Plan-Datum {planDate:dd.MM.yyyy}).");
-    }
-
-    public async Task LogMonitorViewRestoreAsync(DateTime planDate, string changedBy, string context)
-    {
-        var normalizedContext = NormalizeNullable(context) ?? "Monitor";
-        await ActivityLogService.InsertLogAsync(
-            NormalizeAuditName(changedBy),
-            $"[Schichtplan] {normalizedContext}: Monitoransicht nach Reload oder Reconnect automatisch wiederhergestellt (Plan-Datum {planDate:dd.MM.yyyy}).");
     }
 
     private async Task<List<SchichtplanAvailableUserModel>> GetAvailableUsersAsync()

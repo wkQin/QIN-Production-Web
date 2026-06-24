@@ -65,13 +65,14 @@ public class FertigungsauftraegeService
             }
 
             setClauses.Add($"[{kvp.Key}] = @{kvp.Key}");
-            
+
             // Dapper doesn't like System.DBNull as a parameter value, it prefers C# null
             object? val = kvp.Value;
-            if (val is DBNull || string.Empty.Equals(val)) 
+            if (val is DBNull || string.Empty.Equals(val))
             {
                 val = null;
             }
+
             parameters.Add($"@{kvp.Key}", val);
         }
 
@@ -81,15 +82,8 @@ public class FertigungsauftraegeService
 
         using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync();
-        
+
         int rows = await connection.ExecuteAsync(query, parameters);
-        
-        if (rows > 0)
-        {
-            var keys = string.Join(", ", setClauses.Select(s => s.Split('=')[0].Trim('[', ']', ' ')));
-            await ActivityLogService.InsertLogAsync(userName, $"[Fertigungsaufträge] Auftrag ID {id} in {tableType} aktualisiert. Betroffene Felder: {keys}");
-        }
-        
         return rows > 0;
     }
 
@@ -103,7 +97,6 @@ public class FertigungsauftraegeService
 
         string query = $"DELETE FROM {tableName} WHERE ID = @ID";
         int rows = await connection.ExecuteAsync(query, new { ID = id });
-        if (rows > 0) await ActivityLogService.InsertLogAsync(userName, $"[Fertigungsaufträge] Auftrag ID {id} aus {tableType} gelöscht.");
         return rows > 0;
     }
 
