@@ -7,6 +7,8 @@ public class SchichtplanService
 {
     private readonly string _fertigungConnectionString = SqlManager.FertigungConnectionString;
     private readonly string _mainConnectionString = SqlManager.connectionString;
+    private static readonly TimeSpan PlanDateRolloverTime = new(21, 45, 0);
+    private static readonly TimeZoneInfo PlanTimeZone = ResolvePlanTimeZone();
 
     public async Task<SchichtplanBoardModel> GetBoardAsync(DateTime planDate)
     {
@@ -28,9 +30,23 @@ public class SchichtplanService
               ORDER BY BereichSortierung, ArbeitsplatzSortierung, ArbeitsplatzName;")).ToList();
 
         var entries = (await connection.QueryAsync<EntryRow>(
-            @"SELECT e.ID, e.ArbeitsplatzID, e.Schicht, e.MaterialStammID, e.Material, e.MaterialStammID2, e.Material2, e.FA_Nr, e.Bemerkung, e.ZuletztGeaendertAm
+            @"SELECT
+                    e.ID,
+                    e.ArbeitsplatzID,
+                    e.Schicht,
+                    e.MaterialStammID,
+                    COALESCE(m1.Material, e.Material) AS Material,
+                    m1.TagesMenge AS MaterialTagesMenge,
+                    e.MaterialStammID2,
+                    COALESCE(m2.Material, e.Material2) AS Material2,
+                    m2.TagesMenge AS Material2TagesMenge,
+                    e.FA_Nr,
+                    e.Bemerkung,
+                    e.ZuletztGeaendertAm
               FROM dbo.SchichtplanEintrag e
               INNER JOIN dbo.SchichtplanPlan p ON p.ID = e.SchichtplanPlanID
+              LEFT JOIN dbo.SchichtplanMaterialStamm m1 ON m1.ID = e.MaterialStammID
+              LEFT JOIN dbo.SchichtplanMaterialStamm m2 ON m2.ID = e.MaterialStammID2
               WHERE p.PlanDatum = @PlanDatum;",
             new { PlanDatum = normalizedDate })).ToList();
 
@@ -351,7 +367,7 @@ BEGIN
         UpdatedAt = SYSDATETIME()
     WHERE ID = @ExistingId;
 
-    SELECT ID, Material, Sortierung, IstStandard
+    SELECT ID, Material, TagesMenge, Sortierung, IstStandard
     FROM dbo.SchichtplanMaterialStamm
     WHERE ID = @ExistingId;
 END
@@ -361,22 +377,24 @@ BEGIN
     (
         ID INT,
         Material NVARCHAR(200),
+        TagesMenge INT NULL,
         Sortierung INT,
         IstStandard BIT
     );
 
-    INSERT INTO dbo.SchichtplanMaterialStamm (Material, Sortierung, IstStandard, Aktiv, CreatedBy)
-    OUTPUT INSERTED.ID, INSERTED.Material, INSERTED.Sortierung, INSERTED.IstStandard
-        INTO @Inserted (ID, Material, Sortierung, IstStandard)
+    INSERT INTO dbo.SchichtplanMaterialStamm (Material, TagesMenge, Sortierung, IstStandard, Aktiv, CreatedBy)
+    OUTPUT INSERTED.ID, INSERTED.Material, INSERTED.TagesMenge, INSERTED.Sortierung, INSERTED.IstStandard
+        INTO @Inserted (ID, Material, TagesMenge, Sortierung, IstStandard)
     VALUES (
         @Material,
+        NULL,
         ISNULL((SELECT MAX(Sortierung) + 10 FROM dbo.SchichtplanMaterialStamm), 10),
         0,
         1,
         @ChangedBy
     );
 
-    SELECT ID, Material, Sortierung, IstStandard
+    SELECT ID, Material, TagesMenge, Sortierung, IstStandard
     FROM @Inserted;
 END;",
             new
@@ -386,6 +404,53 @@ END;",
             });
 
         return material;
+    }
+
+    public async Task<SchichtplanMaterialModel?> UpdateMaterialAsync(int materialId, string materialName, int? tagesMenge, string changedBy)
+    {
+        var normalizedMaterial = NormalizeNullable(materialName);
+        if (normalizedMaterial is null)
+        {
+            return null;
+        }
+
+        using var connection = new SqlConnection(_fertigungConnectionString);
+        await connection.OpenAsync();
+
+        var updated = await connection.QuerySingleOrDefaultAsync<SchichtplanMaterialModel>(
+            @"
+IF EXISTS
+(
+    SELECT 1
+    FROM dbo.SchichtplanMaterialStamm
+    WHERE ID <> @Id
+      AND Aktiv = 1
+      AND Material = @Material
+)
+BEGIN
+    THROW 51000, N'Ein Material mit diesem Namen existiert bereits.', 1;
+END;
+
+UPDATE dbo.SchichtplanMaterialStamm
+SET Material = @Material,
+    TagesMenge = @TagesMenge,
+    UpdatedAt = SYSDATETIME()
+WHERE ID = @Id
+  AND Aktiv = 1;
+
+SELECT ID, Material, TagesMenge, Sortierung, IstStandard
+FROM dbo.SchichtplanMaterialStamm
+WHERE ID = @Id
+  AND Aktiv = 1;",
+            new
+            {
+                Id = materialId,
+                Material = normalizedMaterial,
+                TagesMenge = tagesMenge,
+                ChangedBy = NormalizeAuditName(changedBy)
+            });
+
+        return updated;
     }
 
     public async Task<bool> DeleteManualUserAsync(string? userKey, string changedBy)
@@ -427,7 +492,7 @@ END;",
         await connection.OpenAsync();
 
         var material = await connection.QuerySingleOrDefaultAsync<SchichtplanMaterialModel>(
-            @"SELECT TOP (1) ID, Material, Sortierung, IstStandard
+            @"SELECT TOP (1) ID, Material, TagesMenge, Sortierung, IstStandard
               FROM dbo.SchichtplanMaterialStamm
               WHERE ID = @Id
                 AND Aktiv = 1;",
@@ -861,10 +926,230 @@ END;",
         await connection.OpenAsync();
 
         return (await connection.QueryAsync<SchichtplanMaterialModel>(
-            @"SELECT ID, Material, Sortierung, IstStandard
+            @"SELECT ID, Material, TagesMenge, Sortierung, IstStandard
               FROM dbo.SchichtplanMaterialStamm
               WHERE Aktiv = 1
               ORDER BY Material;")).ToList();
+    }
+
+    public async Task<List<SchichtplanSauberraumProgressModel>> GetSauberraumProgressForUserAsync(string? personalnummer, string? displayName, DateTime? planDate = null)
+    {
+        var normalizedPersonalnummer = NormalizeNullable(personalnummer);
+        var normalizedDisplayName = NormalizeNullable(displayName);
+        var normalizedPlanDate = (planDate ?? GetAutomaticPlanDate()).Date;
+
+        using var fertigungConnection = new SqlConnection(_fertigungConnectionString);
+        await fertigungConnection.OpenAsync();
+
+        var assignedMaterials = (await fertigungConnection.QueryAsync<SauberraumAssignedMaterialRow>(
+            @"
+WITH AssignedMaterials AS
+(
+    SELECT
+        e.MaterialStammID AS MaterialId,
+        COALESCE(m1.Material, e.Material) AS Material,
+        m1.TagesMenge AS ZielMenge
+    FROM dbo.SchichtplanPlan p
+    INNER JOIN dbo.SchichtplanEintrag e
+        ON e.SchichtplanPlanID = p.ID
+    INNER JOIN dbo.SchichtplanEintragBenutzer ben
+        ON ben.SchichtplanEintragID = e.ID
+    INNER JOIN dbo.SchichtplanArbeitsplatz ap
+        ON ap.ID = e.ArbeitsplatzID
+    LEFT JOIN dbo.SchichtplanMaterialStamm m1
+        ON m1.ID = e.MaterialStammID
+    WHERE p.PlanDatum = @PlanDatum
+      AND ap.Bereich = N'Sauberraum'
+      AND ISNULL(LTRIM(RTRIM(COALESCE(m1.Material, e.Material))), N'') <> N''
+      AND
+      (
+          (@Personalnummer IS NOT NULL AND LTRIM(RTRIM(ISNULL(ben.Personalnummer, N''))) = @Personalnummer)
+          OR (@DisplayName IS NOT NULL AND LTRIM(RTRIM(ISNULL(ben.Benutzer, N''))) = @DisplayName)
+      )
+
+    UNION ALL
+
+    SELECT
+        e.MaterialStammID2 AS MaterialId,
+        COALESCE(m2.Material, e.Material2) AS Material,
+        m2.TagesMenge AS ZielMenge
+    FROM dbo.SchichtplanPlan p
+    INNER JOIN dbo.SchichtplanEintrag e
+        ON e.SchichtplanPlanID = p.ID
+    INNER JOIN dbo.SchichtplanEintragBenutzer ben
+        ON ben.SchichtplanEintragID = e.ID
+    INNER JOIN dbo.SchichtplanArbeitsplatz ap
+        ON ap.ID = e.ArbeitsplatzID
+    LEFT JOIN dbo.SchichtplanMaterialStamm m2
+        ON m2.ID = e.MaterialStammID2
+    WHERE p.PlanDatum = @PlanDatum
+      AND ap.Bereich = N'Sauberraum'
+      AND ISNULL(LTRIM(RTRIM(COALESCE(m2.Material, e.Material2))), N'') <> N''
+      AND
+      (
+          (@Personalnummer IS NOT NULL AND LTRIM(RTRIM(ISNULL(ben.Personalnummer, N''))) = @Personalnummer)
+          OR (@DisplayName IS NOT NULL AND LTRIM(RTRIM(ISNULL(ben.Benutzer, N''))) = @DisplayName)
+      )
+)
+SELECT
+    MaterialId,
+    Material,
+    MAX(ZielMenge) AS ZielMenge
+FROM AssignedMaterials
+GROUP BY MaterialId, Material
+ORDER BY Material;",
+            new
+            {
+                PlanDatum = normalizedPlanDate,
+                Personalnummer = normalizedPersonalnummer,
+                DisplayName = normalizedDisplayName
+            })).ToList();
+
+        if (assignedMaterials.Count == 0)
+        {
+            return [];
+        }
+
+        List<ProducedMaterialRow> producedRows = [];
+        var totalProducedToday = 0;
+
+        if (normalizedPersonalnummer is not null)
+        {
+            using var mainConnection = new SqlConnection(_mainConnectionString);
+            await mainConnection.OpenAsync();
+
+            producedRows = (await mainConnection.QueryAsync<ProducedMaterialRow>(
+                @"
+SELECT
+    LTRIM(RTRIM(Artikel)) AS Material,
+    ISNULL(SUM(Gutteile), 0) AS GemachteMenge
+FROM dbo.Table1
+WHERE CAST(FSKdate AS date) = @PlanDatum
+  AND LTRIM(RTRIM(ISNULL(Personalnummer, N''))) = @Personalnummer
+  AND ISNULL(LTRIM(RTRIM(Artikel)), N'') <> N''
+GROUP BY LTRIM(RTRIM(Artikel));",
+                new
+                {
+                    PlanDatum = normalizedPlanDate,
+                    Personalnummer = normalizedPersonalnummer
+                }))
+                .ToList();
+
+            totalProducedToday = producedRows.Sum(row => row.GemachteMenge);
+        }
+
+        if (assignedMaterials.Count == 1)
+        {
+            var material = assignedMaterials[0];
+            return
+            [
+                new SchichtplanSauberraumProgressModel
+                {
+                    MaterialId = material.MaterialId,
+                    Material = material.Material,
+                    ZielMenge = material.ZielMenge,
+                    GemachteMenge = totalProducedToday
+                }
+            ];
+        }
+
+        var producedByAssignedMaterial = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var producedRow in producedRows)
+        {
+            var matchedMaterial = MatchAssignedMaterial(assignedMaterials, producedRow.Material);
+            if (matchedMaterial is null)
+            {
+                continue;
+            }
+
+            producedByAssignedMaterial[matchedMaterial.Material] =
+                producedByAssignedMaterial.GetValueOrDefault(matchedMaterial.Material) + producedRow.GemachteMenge;
+        }
+
+        return assignedMaterials
+            .Select(material => new SchichtplanSauberraumProgressModel
+            {
+                MaterialId = material.MaterialId,
+                Material = material.Material,
+                ZielMenge = material.ZielMenge,
+                GemachteMenge = producedByAssignedMaterial.TryGetValue(material.Material, out var gemachteMenge) ? gemachteMenge : 0
+            })
+            .OrderBy(material => material.Material, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))
+            .ToList();
+    }
+
+    private static SauberraumAssignedMaterialRow? MatchAssignedMaterial(
+        List<SauberraumAssignedMaterialRow> assignedMaterials,
+        string producedMaterial)
+    {
+        SauberraumAssignedMaterialRow? bestMatch = null;
+        var bestScore = 0;
+
+        foreach (var assignedMaterial in assignedMaterials)
+        {
+            var score = ScoreMaterialMatch(assignedMaterial.Material, producedMaterial);
+            if (score > bestScore)
+            {
+                bestScore = score;
+                bestMatch = assignedMaterial;
+            }
+        }
+
+        return bestScore >= 2 ? bestMatch : null;
+    }
+
+    private static int ScoreMaterialMatch(string assignedMaterial, string producedMaterial)
+    {
+        var assignedTokens = TokenizeMaterialName(assignedMaterial);
+        var producedTokens = TokenizeMaterialName(producedMaterial);
+
+        if (assignedTokens.Count == 0 || producedTokens.Count == 0)
+        {
+            return 0;
+        }
+
+        var commonTokens = assignedTokens.Intersect(producedTokens, StringComparer.OrdinalIgnoreCase).ToList();
+        var assignedCompact = string.Concat(assignedTokens);
+        var producedCompact = string.Concat(producedTokens);
+
+        var score = commonTokens.Count;
+
+        if (!string.IsNullOrWhiteSpace(assignedCompact) &&
+            !string.IsNullOrWhiteSpace(producedCompact) &&
+            (producedCompact.Contains(assignedCompact, StringComparison.OrdinalIgnoreCase) ||
+             assignedCompact.Contains(producedCompact, StringComparison.OrdinalIgnoreCase)))
+        {
+            score += 2;
+        }
+
+        if (assignedTokens.Count <= 3 && commonTokens.Count == assignedTokens.Count)
+        {
+            score += 1;
+        }
+
+        return score;
+    }
+
+    private static List<string> TokenizeMaterialName(string? material)
+    {
+        if (string.IsNullOrWhiteSpace(material))
+        {
+            return [];
+        }
+
+        var cleaned = new string(
+            material
+                .ToUpperInvariant()
+                .Select(ch => char.IsLetterOrDigit(ch) ? ch : ' ')
+                .ToArray());
+
+        return cleaned
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(token => token.Length > 1)
+            .Where(token => token is not "BLENDE" and not "TEIL" and not "SATZ" and not "SET")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private static SchichtplanBoardModel BuildBoard(
@@ -928,8 +1213,10 @@ END;",
                                     Shift = shift,
                                     MaterialStammId = entry?.MaterialStammID,
                                     Material = NormalizeNullable(entry?.Material),
+                                    MaterialTagesMenge = entry?.MaterialTagesMenge,
                                     MaterialStammId2 = entry?.MaterialStammID2,
                                     Material2 = NormalizeNullable(entry?.Material2),
+                                    Material2TagesMenge = entry?.Material2TagesMenge,
                                     FANr = NormalizeNullable(entry?.FA_Nr),
                                     Bemerkung = NormalizeNullable(entry?.Bemerkung),
                                     LastUpdatedAt = entry?.ZuletztGeaendertAm,
@@ -1046,6 +1333,33 @@ END;",
         }
 
         return value.Trim();
+    }
+
+    private static DateTime GetAutomaticPlanDate()
+    {
+        var now = TimeZoneInfo.ConvertTime(DateTime.UtcNow, PlanTimeZone);
+        return now.TimeOfDay >= PlanDateRolloverTime
+            ? now.Date.AddDays(1)
+            : now.Date;
+    }
+
+    private static TimeZoneInfo ResolvePlanTimeZone()
+    {
+        foreach (var timeZoneId in new[] { "Europe/Berlin", "W. Europe Standard Time" })
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        return TimeZoneInfo.Local;
     }
 
     private async Task<int> EnsurePlanAsync(SqlConnection connection, SqlTransaction transaction, DateTime planDate, string changedBy)
@@ -1221,8 +1535,10 @@ END;",
         public string Schicht { get; set; } = string.Empty;
         public int? MaterialStammID { get; set; }
         public string? Material { get; set; }
+        public int? MaterialTagesMenge { get; set; }
         public int? MaterialStammID2 { get; set; }
         public string? Material2 { get; set; }
+        public int? Material2TagesMenge { get; set; }
         public string? FA_Nr { get; set; }
         public string? Bemerkung { get; set; }
         public DateTime? ZuletztGeaendertAm { get; set; }
@@ -1252,5 +1568,19 @@ END;",
     {
         public int Id { get; set; }
         public string Material { get; set; } = string.Empty;
+        public int? TagesMenge { get; set; }
+    }
+
+    private sealed class SauberraumAssignedMaterialRow
+    {
+        public int? MaterialId { get; set; }
+        public string Material { get; set; } = string.Empty;
+        public int? ZielMenge { get; set; }
+    }
+
+    private sealed class ProducedMaterialRow
+    {
+        public string Material { get; set; } = string.Empty;
+        public int GemachteMenge { get; set; }
     }
 }

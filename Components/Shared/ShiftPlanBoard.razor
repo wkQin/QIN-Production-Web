@@ -152,7 +152,13 @@
                                                             {
                                                                 @foreach (var material in cell.Materials)
                                                                 {
-                                                                    <div class="shiftplan-task-material">@material.Material</div>
+                                                                    <div class="shiftplan-task-material">
+                                                                        <span>@material.Material</span>
+                                                                        @if (string.Equals(group.Name, "Sauberraum", StringComparison.OrdinalIgnoreCase) && material.TagesMenge.HasValue)
+                                                                        {
+                                                                            <strong class="shiftplan-task-material-quantity">@material.TagesMenge.Value Stk</strong>
+                                                                        }
+                                                                    </div>
                                                                 }
                                                             }
                                                         </div>

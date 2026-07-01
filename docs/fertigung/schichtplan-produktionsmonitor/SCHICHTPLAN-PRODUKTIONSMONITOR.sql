@@ -59,6 +59,7 @@ BEGIN TRY
             ID          INT IDENTITY(1,1) NOT NULL
                 CONSTRAINT PK_SchichtplanMaterialStamm PRIMARY KEY,
             Material    NVARCHAR(200) NOT NULL,
+            TagesMenge  INT NULL,
             Sortierung  INT NOT NULL
                 CONSTRAINT DF_SchichtplanMaterialStamm_Sortierung DEFAULT (0),
             IstStandard BIT NOT NULL
@@ -72,6 +73,12 @@ BEGIN TRY
 
             CONSTRAINT UQ_SchichtplanMaterialStamm_Material UNIQUE (Material)
         );
+    END;
+
+    IF COL_LENGTH(N'dbo.SchichtplanMaterialStamm', N'TagesMenge') IS NULL
+    BEGIN
+        ALTER TABLE dbo.SchichtplanMaterialStamm
+            ADD TagesMenge INT NULL;
     END;
 
     IF OBJECT_ID(N'dbo.SchichtplanZusatzBenutzer', N'U') IS NULL

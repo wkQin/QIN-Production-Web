@@ -723,6 +723,29 @@
     font-size: 0.84rem;
     font-weight: 800;
     line-height: 1.22;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.55rem;
+}
+
+.shiftplan-task-material span {
+    min-width: 0;
+    word-break: break-word;
+}
+
+.shiftplan-task-material-quantity {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.14rem 0.42rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.32);
+    color: #86efac;
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.02em;
 }
 
 .shiftplan-task-count {

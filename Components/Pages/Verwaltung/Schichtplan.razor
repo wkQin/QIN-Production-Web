@@ -242,6 +242,10 @@
                                                                 <div class="schichtplan-material-card-copy">
                                                                     <span class="schichtplan-material-card-slot">Material @materialSlot.Slot</span>
                                                                     <strong>@materialSlot.Material</strong>
+                                                                    @if (string.Equals(boardSection.Name, "Sauberraum", StringComparison.OrdinalIgnoreCase) && materialSlot.TagesMenge.HasValue)
+                                                                    {
+                                                                        <span class="schichtplan-material-card-quantity">@materialSlot.TagesMenge.Value Stk Ziel</span>
+                                                                    }
                                                                 </div>
                                                                 <button type="button" class="schichtplan-clear-btn" @onclick="() => ClearMaterialAsync(workplace.ArbeitsplatzId, cell.Shift, materialSlot.Slot)">
                                                                     <i class="fa-solid fa-xmark"></i>
@@ -296,6 +300,7 @@
                     <div class="schichtplan-pool-header">
                         <div>
                             <h3>Materialliste</h3>
+                            <p>Doppelklick fuer Bearbeitung Name/Menge</p>
                         </div>
                     </div>
 
@@ -331,10 +336,12 @@
                                 {
                                     <div class="schichtplan-material-row"
                                          draggable="true"
+                                         @ondblclick="() => OpenMaterialEditDialog(material)"
                                          @ondragstart="() => BeginMaterialDragAsync(material)"
                                          @ondragend="EndDragAsync">
                                         <div class="schichtplan-material-row-main">
                                             <span class="schichtplan-material-name">@material.Material</span>
+                                            <span class="schichtplan-material-meta">Ziel heute: @(material.TagesMenge?.ToString() ?? "-")</span>
                                         </div>
 
                                         <button type="button"
@@ -355,6 +362,48 @@
         </div>
     }
 </div>
+
+@if (IsMaterialEditOpen)
+{
+    <div class="schichtplan-modal-backdrop" @onclick="CloseMaterialEditDialog">
+        <div class="schichtplan-modal-card" @onclick:stopPropagation="true">
+            <div class="schichtplan-modal-head">
+                <div>
+                    <h3>Material bearbeiten</h3>
+                    <p>Name und heutige Zielmenge fuer dieses Material anpassen.</p>
+                </div>
+                <button type="button" class="schichtplan-modal-close" @onclick="CloseMaterialEditDialog" aria-label="Popup schliessen">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="schichtplan-modal-body">
+                <label class="schichtplan-modal-field">
+                    <span>Materialname</span>
+                    <input type="text"
+                           class="form-control form-control-lg bg-dark text-white border-secondary"
+                           @bind="EditingMaterialName"
+                           @bind:event="oninput" />
+                </label>
+
+                <label class="schichtplan-modal-field">
+                    <span>Heutige Materialmenge</span>
+                    <input type="number"
+                           min="0"
+                           step="1"
+                           class="form-control form-control-lg bg-dark text-white border-secondary"
+                           @bind="EditingMaterialTagesMenge"
+                           @bind:event="oninput" />
+                </label>
+            </div>
+
+            <div class="schichtplan-modal-actions">
+                <button type="button" class="btn btn-outline-light" @onclick="CloseMaterialEditDialog">Abbrechen</button>
+                <button type="button" class="btn btn-primary fw-bold" @onclick="SaveMaterialEditAsync">Speichern</button>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     private const string AllAreasFilter = "__ALLE__";
@@ -385,11 +434,15 @@
     private string CurrentUserName { get; set; } = "Verwaltung";
     private string NewManualUserName { get; set; } = string.Empty;
     private string NewMaterialName { get; set; } = string.Empty;
+    private string EditingMaterialName { get; set; } = string.Empty;
+    private string EditingMaterialTagesMenge { get; set; } = string.Empty;
     private string MaterialSearchTerm { get; set; } = string.Empty;
     private string UserSearchTerm { get; set; } = string.Empty;
     private bool AllowMultipleAssignments { get; set; }
     private bool IsCopyingPreviousDay { get; set; }
     private bool IsClearingPlan { get; set; }
+    private bool IsMaterialEditOpen { get; set; }
+    private int? EditingMaterialId { get; set; }
     private string SelectedAreaFilter { get; set; } = AllAreasFilter;
     private DragItem? CurrentDrag { get; set; }
     private DotNetObjectReference<Schichtplan>? ThemeReference { get; set; }
@@ -860,6 +913,69 @@
         {
             SetStatus(ex.Message, false);
         }
+    }
+
+    private void OpenMaterialEditDialog(SchichtplanMaterialModel material)
+    {
+        EditingMaterialId = material.Id;
+        EditingMaterialName = material.Material;
+        EditingMaterialTagesMenge = material.TagesMenge?.ToString() ?? string.Empty;
+        IsMaterialEditOpen = true;
+    }
+
+    private void CloseMaterialEditDialog()
+    {
+        IsMaterialEditOpen = false;
+        EditingMaterialId = null;
+        EditingMaterialName = string.Empty;
+        EditingMaterialTagesMenge = string.Empty;
+    }
+
+    private async Task SaveMaterialEditAsync()
+    {
+        if (!EditingMaterialId.HasValue)
+        {
+            CloseMaterialEditDialog();
+            return;
+        }
+
+        try
+        {
+            var updated = await SchichtplanService.UpdateMaterialAsync(
+                EditingMaterialId.Value,
+                EditingMaterialName,
+                ParseEditableMaterialTagesMenge(),
+                CurrentUserName);
+
+            if (updated is null)
+            {
+                SetStatus("Bitte einen Materialnamen eingeben.", false);
+                return;
+            }
+
+            await LoadAsync();
+            CloseMaterialEditDialog();
+            SetStatus($"Material '{updated.Material}' wurde aktualisiert.", true);
+        }
+        catch (Exception ex)
+        {
+            SetStatus(ex.Message, false);
+        }
+    }
+
+    private int? ParseEditableMaterialTagesMenge()
+    {
+        if (string.IsNullOrWhiteSpace(EditingMaterialTagesMenge))
+        {
+            return null;
+        }
+
+        if (!int.TryParse(EditingMaterialTagesMenge, out var parsedTagesMenge) || parsedTagesMenge < 0)
+        {
+            throw new InvalidOperationException("Bitte eine gueltige Materialmenge groesser oder gleich 0 eingeben.");
+        }
+
+        return parsedTagesMenge;
     }
 
     private void SetStatus(string message, bool isSuccess)

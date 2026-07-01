@@ -50,8 +50,10 @@ public sealed class SchichtplanCellModel
     public string Shift { get; set; } = string.Empty;
     public int? MaterialStammId { get; set; }
     public string? Material { get; set; }
+    public int? MaterialTagesMenge { get; set; }
     public int? MaterialStammId2 { get; set; }
     public string? Material2 { get; set; }
+    public int? Material2TagesMenge { get; set; }
     public string? FANr { get; set; }
     public string? Bemerkung { get; set; }
     public DateTime? LastUpdatedAt { get; set; }
@@ -69,7 +71,8 @@ public sealed class SchichtplanCellModel
                 {
                     Slot = 1,
                     MaterialStammId = MaterialStammId,
-                    Material = Material
+                    Material = Material,
+                    TagesMenge = MaterialTagesMenge
                 });
             }
 
@@ -79,7 +82,8 @@ public sealed class SchichtplanCellModel
                 {
                     Slot = 2,
                     MaterialStammId = MaterialStammId2,
-                    Material = Material2
+                    Material = Material2,
+                    TagesMenge = Material2TagesMenge
                 });
             }
 
@@ -100,6 +104,7 @@ public sealed class SchichtplanCellMaterialModel
     public int Slot { get; set; }
     public int? MaterialStammId { get; set; }
     public string Material { get; set; } = string.Empty;
+    public int? TagesMenge { get; set; }
 }
 
 public sealed class SchichtplanAssignedUserModel
@@ -126,8 +131,17 @@ public sealed class SchichtplanMaterialModel
 {
     public int Id { get; set; }
     public string Material { get; set; } = string.Empty;
+    public int? TagesMenge { get; set; }
     public int Sortierung { get; set; }
     public bool IstStandard { get; set; }
+}
+
+public sealed class SchichtplanSauberraumProgressModel
+{
+    public int? MaterialId { get; set; }
+    public string Material { get; set; } = string.Empty;
+    public int GemachteMenge { get; set; }
+    public int? ZielMenge { get; set; }
 }
 
 public enum SchichtplanMaterialAssignResult

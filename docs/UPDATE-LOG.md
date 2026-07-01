@@ -4,6 +4,10 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.8
+- Schichtplan: In der Verwaltung koennen Materialien jetzt per Doppelklick bearbeitet werden, inklusive Materialname und heutiger Zielmenge.
+- Schichtplan: Im Sauberraum zeigt der Schichtplan Materialien jetzt direkt mit gruener Zielmenge an, auch wenn einer Person mehrere Materialien zugeordnet sind.
+- Endkontrolle Sauberraum: Oben steht jetzt eine kompaktere Fortschrittsuebersicht mit Material, gemachter Menge und Zielmenge aus dem heutigen Schichtplan, die sich nach Speichern und Neu-Laden aktualisiert.
+- Endkontrolle Sauberraum: Die gemachte Menge wird jetzt bei einem einzigen heutigen Schichtplan-Material direkt ueber alle Gutteile des Tages gebildet und bei mehreren Materialien ueber eine einfache Aehnlichkeitslogik zugeordnet.
 - Schichtplan: Die Monitoransicht richtet den Produktionsplan nach Datumswechseln jetzt stabil neu aus und nutzt die volle Planbreite wieder sauber, damit die Tagesnavigation nicht mehr zu falscher Skalierung, rechter Leerfläche oder einer verschobenen Ansicht führt.
 - Verwaltung: Schichtplan, Fertigungsaufträge und Wareneingang-Verwaltung schreiben bei Änderungen und Datumswechseln keine Aktivitätslogs mehr, damit die Verwaltungsabläufe wieder flüssiger laufen.
 - Schichtplan: Dashboard und Monitoransicht schreiben beim Datumswechsel sowie beim Ein- und Ausschalten der Monitoransicht ebenfalls keine Aktivitätslogs mehr.

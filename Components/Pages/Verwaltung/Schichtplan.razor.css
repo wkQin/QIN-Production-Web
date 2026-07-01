@@ -417,6 +417,8 @@
 
 .schichtplan-material-row-main {
     min-width: 0;
+    display: grid;
+    gap: 0.16rem;
 }
 
 .schichtplan-material-name {
@@ -426,6 +428,13 @@
     line-height: 1.22;
     font-size: 0.9rem;
     word-break: break-word;
+}
+
+.schichtplan-material-meta {
+    display: block;
+    color: var(--sch-text-secondary);
+    font-size: 0.74rem;
+    font-weight: 700;
 }
 
 .schichtplan-material-delete {
@@ -832,6 +841,101 @@
     line-height: 1.42;
     color: var(--sch-text-primary);
     word-break: break-word;
+}
+
+.schichtplan-material-card-quantity {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.34rem;
+    padding: 0.16rem 0.48rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.16);
+    border: 1px solid rgba(34, 197, 94, 0.32);
+    color: #86efac;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+}
+
+.schichtplan-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem;
+    background: rgba(2, 6, 23, 0.68);
+    backdrop-filter: blur(6px);
+}
+
+.schichtplan-modal-card {
+    width: min(100%, 34rem);
+    border: 1px solid var(--sch-border-strong);
+    border-radius: 1.35rem;
+    background: var(--sch-panel-bg);
+    box-shadow: var(--sch-shadow-hero);
+    overflow: hidden;
+}
+
+.schichtplan-modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.2rem 1.25rem 1rem;
+    border-bottom: 1px solid var(--sch-border);
+}
+
+.schichtplan-modal-head h3 {
+    margin: 0;
+    font-size: 1.16rem;
+    font-weight: 800;
+    color: var(--sch-text-primary);
+}
+
+.schichtplan-modal-head p {
+    margin: 0.3rem 0 0;
+    color: var(--sch-text-secondary);
+    line-height: 1.45;
+}
+
+.schichtplan-modal-close {
+    width: 2.1rem;
+    height: 2.1rem;
+    border: 0;
+    border-radius: 999px;
+    background: var(--sch-action-bg);
+    color: var(--sch-text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.schichtplan-modal-body {
+    display: grid;
+    gap: 1rem;
+    padding: 1.15rem 1.25rem;
+}
+
+.schichtplan-modal-field {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.schichtplan-modal-field span {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--sch-text-accent);
+}
+
+.schichtplan-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.7rem;
+    padding: 0 1.25rem 1.2rem;
 }
 
 .schichtplan-material-card.is-empty {
