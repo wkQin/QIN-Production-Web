@@ -4,6 +4,7 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.8
+- Schichtplan: Die Monitoransicht richtet den Produktionsplan nach Datumswechseln jetzt stabil neu aus und nutzt die volle Planbreite wieder sauber, damit die Tagesnavigation nicht mehr zu falscher Skalierung, rechter Leerfläche oder einer verschobenen Ansicht führt.
 - Verwaltung: Schichtplan, Fertigungsaufträge und Wareneingang-Verwaltung schreiben bei Änderungen und Datumswechseln keine Aktivitätslogs mehr, damit die Verwaltungsabläufe wieder flüssiger laufen.
 - Schichtplan: Dashboard und Monitoransicht schreiben beim Datumswechsel sowie beim Ein- und Ausschalten der Monitoransicht ebenfalls keine Aktivitätslogs mehr.
 

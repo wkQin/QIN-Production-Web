@@ -1,5 +1,12 @@
 .shiftplan-shell {
-    --shiftplan-grid: 18rem 15.4rem 15.4rem 15.4rem;
+    --shiftplan-stage-width: 64.2rem;
+    --shiftplan-machine-column: 18rem;
+    --shiftplan-shift-column: calc((var(--shiftplan-stage-width) - var(--shiftplan-machine-column)) / 3);
+    --shiftplan-grid:
+        var(--shiftplan-machine-column)
+        var(--shiftplan-shift-column)
+        var(--shiftplan-shift-column)
+        var(--shiftplan-shift-column);
     position: relative;
     display: flex;
     flex-direction: column;
@@ -12,7 +19,7 @@
 }
 
 .shiftplan-shell.is-fullscreen {
-    --shiftplan-grid: 16.4rem 13.9rem 13.9rem 13.9rem;
+    --shiftplan-machine-column: 16.4rem;
     position: fixed;
     inset: 0;
     z-index: 1090;
@@ -159,7 +166,7 @@
 }
 
 .shiftplan-stage.is-monitor-stage {
-    min-width: 64.2rem;
+    min-width: var(--shiftplan-stage-width);
     position: absolute;
     top: 0;
     left: 50%;

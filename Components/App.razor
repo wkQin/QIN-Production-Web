@@ -395,6 +395,39 @@
         window.shiftPlanBoard = (() => {
             const sessions = new Map();
 
+            const scheduleFit = (shellId) => {
+                const session = sessions.get(shellId);
+                if (!session) return;
+
+                if (session.rafId) {
+                    cancelAnimationFrame(session.rafId);
+                }
+
+                session.rafId = requestAnimationFrame(() => {
+                    session.rafId = 0;
+                    fitStage(shellId);
+                });
+            };
+
+            const scheduleFitBurst = (shellId) => {
+                const session = sessions.get(shellId);
+                if (!session) return;
+
+                scheduleFit(shellId);
+
+                window.setTimeout(() => {
+                    if (sessions.has(shellId)) {
+                        scheduleFit(shellId);
+                    }
+                }, 40);
+
+                window.setTimeout(() => {
+                    if (sessions.has(shellId)) {
+                        scheduleFit(shellId);
+                    }
+                }, 140);
+            };
+
             const measureStage = (stage) => {
                 const previousPosition = stage.style.position;
                 const previousLeft = stage.style.left;
@@ -442,12 +475,16 @@
                 shell.style.setProperty('--shiftplan-fit-scale-y', scaleY.toString());
                 shell.style.setProperty('--shiftplan-fit-controls', `${controlsHeight}px`);
                 stage.style.top = `${Math.floor(topOffset)}px`;
-                stage.style.transform = `translateX(-50%) scale(${scaleX}, ${scaleY})`;
+                stage.style.transform = `scale(${scaleX}, ${scaleY}) translateX(-50%)`;
             };
 
             const removeSession = (shellId, stageShellId, stageId) => {
                 const session = sessions.get(shellId);
                 if (session) {
+                    if (session.rafId) {
+                        cancelAnimationFrame(session.rafId);
+                    }
+
                     window.removeEventListener('resize', session.resizeHandler);
                     if (window.visualViewport) {
                         window.visualViewport.removeEventListener('resize', session.resizeHandler);
@@ -455,6 +492,10 @@
 
                     if (session.resizeObserver) {
                         session.resizeObserver.disconnect();
+                    }
+
+                    if (session.mutationObserver) {
+                        session.mutationObserver.disconnect();
                     }
 
                     sessions.delete(shellId);
@@ -498,12 +539,24 @@
                         return;
                     }
 
-                    const resizeHandler = () => requestAnimationFrame(() => fitStage(shellId));
+                    const resizeHandler = () => scheduleFitBurst(shellId);
                     const resizeObserver = typeof ResizeObserver === 'function'
-                        ? new ResizeObserver(() => requestAnimationFrame(() => fitStage(shellId)))
+                        ? new ResizeObserver(() => scheduleFitBurst(shellId))
+                        : null;
+                    const mutationObserver = typeof MutationObserver === 'function'
+                        ? new MutationObserver(() => scheduleFitBurst(shellId))
                         : null;
 
-                    sessions.set(shellId, { shell, controls, stageShell, stage, resizeHandler, resizeObserver });
+                    sessions.set(shellId, {
+                        shell,
+                        controls,
+                        stageShell,
+                        stage,
+                        resizeHandler,
+                        resizeObserver,
+                        mutationObserver,
+                        rafId: 0
+                    });
 
                     window.addEventListener('resize', resizeHandler);
                     if (window.visualViewport) {
@@ -515,12 +568,21 @@
                         if (controls) {
                             resizeObserver.observe(controls);
                         }
+                        resizeObserver.observe(stage);
+                    }
+
+                    if (mutationObserver) {
+                        mutationObserver.observe(stage, {
+                            childList: true,
+                            subtree: true,
+                            characterData: true
+                        });
                     }
 
                     document.documentElement.style.overflow = 'hidden';
                     document.body.style.overflow = 'hidden';
 
-                    requestAnimationFrame(() => fitStage(shellId));
+                    scheduleFitBurst(shellId);
                 },
 
                 deactivate: (shellId, stageShellId, stageId) => {
