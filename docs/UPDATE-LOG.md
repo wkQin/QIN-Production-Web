@@ -4,6 +4,7 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.8
+- Schichtplan Verwaltung: Die Planungsseite wurde optisch klarer gegliedert mit Arbeitsmodus-Leiste, ruhigeren Werkzeugkarten und direkteren Bedienhinweisen fuer Material, Benutzer und Schichtkarten.
 - Schichtplan: In der Verwaltung koennen Materialien jetzt per Doppelklick bearbeitet werden, inklusive Materialname und heutiger Zielmenge.
 - Schichtplan: Im Sauberraum zeigt der Schichtplan Materialien jetzt direkt mit gruener Zielmenge an, auch wenn einer Person mehrere Materialien zugeordnet sind.
 - Endkontrolle Sauberraum: Oben steht jetzt eine kompaktere Fortschrittsuebersicht mit Material, gemachter Menge und Zielmenge aus dem heutigen Schichtplan, die sich nach Speichern und Neu-Laden aktualisiert.

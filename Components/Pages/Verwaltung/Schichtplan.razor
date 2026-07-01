@@ -84,6 +84,7 @@
             <div class="schichtplan-pool-header">
                 <div>
                     <h3>Benutzer</h3>
+                    <p>Werkzeugbereich fuer Mitarbeiter. Freie Benutzer bleiben oben sichtbar, eingeplante verschwinden auf Wunsch automatisch.</p>
                 </div>
                 <div class="schichtplan-pool-meta">
                     <span class="schichtplan-toolbar-pill">@VisibleUsers.Count Benutzer sichtbar</span>
@@ -452,6 +453,21 @@
         ViewModel.Board.LastUpdatedAt.HasValue
             ? $"Zuletzt geändert: {ViewModel.Board.LastUpdatedAt:dd.MM.yyyy HH:mm}"
             : "Noch keine Änderungen";
+
+    private string SelectedAreaSummary =>
+        SelectedAreaFilter == AllAreasFilter ? "Alle Bereiche sichtbar" : $"Fokus auf {SelectedAreaFilter}";
+
+    private string AssignmentModeSummary =>
+        AllowMultipleAssignments
+            ? "Mehrfachzuordnung erlaubt"
+            : "Ein Mitarbeiter nur einmal pro Tag";
+
+    private string CurrentDragSummary =>
+        CurrentDrag is null
+            ? "Noch nichts ausgewaehlt"
+            : CurrentDrag.Type == "material"
+                ? $"Material: {CurrentDrag.DisplayLabel}"
+                : $"Benutzer: {CurrentDrag.DisplayLabel}";
 
     private List<string> AreaOptions =>
         ViewModel.Board.Sections
