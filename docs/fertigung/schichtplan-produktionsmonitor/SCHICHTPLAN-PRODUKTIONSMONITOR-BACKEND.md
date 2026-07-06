@@ -63,6 +63,11 @@ Der aktuelle Stand umfasst:
 - farbliche Trennung der Abteilungen
 - Anzeige von `KW`, Datum und `Zuletzt aktualisiert`
 
+Aktueller Sichtbarkeitshinweis:
+
+- Die im Materialstamm gepflegte Tages- bzw. Fertigungsmenge wird im Dashboard und in der Monitoransicht aktuell bewusst nicht angezeigt.
+- Sichtbar bleibt diese Menge nur in der Schichtplan-Verwaltung und in der Endkontrolle.
+
 Nicht enthalten im aktuellen Stand:
 
 - Druckfunktion

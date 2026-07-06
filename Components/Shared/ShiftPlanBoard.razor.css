@@ -734,20 +734,6 @@
     word-break: break-word;
 }
 
-.shiftplan-task-material-quantity {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    padding: 0.14rem 0.42rem;
-    border-radius: 999px;
-    background: rgba(34, 197, 94, 0.16);
-    border: 1px solid rgba(34, 197, 94, 0.32);
-    color: #86efac;
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.02em;
-}
-
 .shiftplan-task-count {
     flex-shrink: 0;
     display: inline-flex;

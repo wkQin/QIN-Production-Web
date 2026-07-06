@@ -3,6 +3,7 @@
 @implements IAsyncDisposable
 @using ApexCharts
 @using System.IO
+@using System.Globalization
 @using Microsoft.JSInterop
 @using QIN_Production_Web.Data
 @inject FehleranalyseService AnalyseService
@@ -202,26 +203,93 @@
                             </div>
                         </div>
 
-                        <div class="qin-stat-grid mt-4">
-                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-stat-card-good">
+                        <div class="qin-stat-grid mt-4 fehleranalyse-summary-grid">
+                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-summary-card fehleranalyse-stat-card-good">
                                 <span class="modern-label d-block mb-2 text-success">Gutteile</span>
                                 <span class="qin-stat-card-value">
-                                    @GesamtResult.Gutteile
+                                    @FormatQuantity(GesamtResult.Gutteile)
                                     <small class="qin-stat-card-subvalue">(@GoodPercentage)</small>
                                 </span>
                             </div>
-                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-stat-card-bad">
+                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-summary-card fehleranalyse-stat-card-bad">
                                 <span class="modern-label d-block mb-2 text-danger">Schlechtteile</span>
                                 <span class="qin-stat-card-value">
-                                    @GesamtResult.Schlechtteile
+                                    @FormatQuantity(GesamtResult.Schlechtteile)
                                     <small class="qin-stat-card-subvalue">(@BadPercentage)</small>
                                 </span>
                             </div>
-                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-stat-card-total">
+                            <div class="qin-stat-card fehleranalyse-stat-card fehleranalyse-summary-card fehleranalyse-stat-card-total">
                                 <span class="modern-label d-block mb-2 text-primary">Gesamt</span>
-                                <span class="qin-stat-card-value">@GesamtResult.Gesamt</span>
+                                <span class="qin-stat-card-value">
+                                    @FormatQuantity(GesamtResult.Gesamt)
+                                    <small class="qin-stat-card-subvalue">@Eintraege.Count Karten</small>
+                                </span>
                             </div>
                         </div>
+
+                        <section class="fehleranalyse-goal-shell mt-4">
+                            <div class="fehleranalyse-goal-head">
+                                <span class="fehleranalyse-goal-kicker">Zielabgleich</span>
+
+                                <div class="fehleranalyse-goal-head-meta">
+                                    <span class="qin-badge qin-badge-info">@SelectedDateRangeLabel</span>
+                                    <span class="fehleranalyse-goal-mini-pill text-info">Ziel @FormatQuantity(ProduktionszielAuswertung.Ziel)</span>
+                                    <span class="@($"fehleranalyse-goal-mini-pill {ProductionStatusClass}")">@ProductionStatusValue</span>
+                                    <span class="fehleranalyse-goal-mini-pill text-success">@ProductionCompletionDisplay</span>
+                                </div>
+                            </div>
+
+                            <div class="fehleranalyse-goal-progress-panel">
+                                <div class="fehleranalyse-goal-progress-track">
+                                    <div class="@($"fehleranalyse-goal-progress-bar {ProductionProgressClass}")" style="@GetGoalProgressStyle()"></div>
+                                </div>
+                                <div class="fehleranalyse-goal-progress-meta">
+                                    <span>Gut @FormatQuantity(ProduktionszielAuswertung.GutteileMitZiel)</span>
+                                    <span>@ProductionProgressMetaText</span>
+                                </div>
+                            </div>
+
+                            <div class="fehleranalyse-goal-detail-shell">
+                                @if (!ProduktionszielAuswertung.Details.Any())
+                                {
+                                    <div class="qin-empty-state fehleranalyse-goal-empty">
+                                        Für den gewählten Zeitraum gibt es noch keine kombinierbaren Ziel- oder Produktionsdaten.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="modern-table-container qin-table-shell">
+                                        <table class="modern-table qin-table fehleranalyse-goal-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Material</th>
+                                                    <th class="text-end">Gutteile</th>
+                                                    <th class="text-end">Ziel</th>
+                                                    <th class="text-end">Schlechtteile</th>
+                                                    <th class="text-end">Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var detail in ProduktionszielAuswertung.Details)
+                                                {
+                                                    <tr>
+                                                        <td class="fw-semibold">@detail.Material</td>
+                                                        <td class="text-end text-success fw-bold">@FormatQuantity(detail.Gutteile)</td>
+                                                        <td class="text-end text-info fw-bold">@FormatQuantity(detail.Ziel)</td>
+                                                        <td class="text-end text-danger fw-bold">@FormatQuantity(detail.Schlechtteile)</td>
+                                                        <td class="text-end">
+                                                            <span class="@($"fehleranalyse-goal-status-pill {GetMaterialStatusClass(detail)}")">
+                                                                @GetMaterialStatusText(detail)
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                            </div>
+                        </section>
                     </div>
 
                     <div class="@(ActiveTab == "eintraege" ? string.Empty : "d-none")">
@@ -356,6 +424,7 @@
     private string SelectedArtikel = string.Empty;
     private string SelectedDekor = string.Empty;
     private string CurrentTheme = "dark";
+    private static readonly CultureInfo DeCulture = CultureInfo.GetCultureInfo("de-DE");
     private DateTime StartDatum = DateTime.Now;
     private DateTime EndDatum = DateTime.Now;
 
@@ -369,6 +438,7 @@
 
     private List<FehlerRow> Eintraege = new();
     private FehlerAnalyseResult GesamtResult = new();
+    private FehleranalyseZielAuswertung ProduktionszielAuswertung = new();
     private List<ChargeItem> ExterneFehler = new();
     private List<ChargeItem> InterneFehler = new();
     private List<ChargeItem> ChartData = new();
@@ -389,6 +459,50 @@
     private string BadPercentage => GesamtResult.Gesamt > 0
         ? ((double)GesamtResult.Schlechtteile / GesamtResult.Gesamt).ToString("P2")
         : "0.00%";
+
+    private bool HasContextFiltersWithoutArtikel =>
+        !string.IsNullOrWhiteSpace(SearchCharge) ||
+        !string.IsNullOrWhiteSpace(SelectedKunde) ||
+        !string.IsNullOrWhiteSpace(SelectedProjekt) ||
+        !string.IsNullOrWhiteSpace(SelectedDekor);
+
+    private string SelectedDateRangeLabel =>
+        StartDatum.Date == EndDatum.Date
+            ? StartDatum.ToString("dd.MM.yyyy", DeCulture)
+            : $"{StartDatum:dd.MM.yyyy} - {EndDatum:dd.MM.yyyy}";
+
+    private string ProductionCompletionDisplay =>
+        ProduktionszielAuswertung.Erfuellung.HasValue
+            ? ProduktionszielAuswertung.Erfuellung.Value.ToString("P1", DeCulture)
+            : "Kein Ziel";
+
+    private string ProductionStatusValue =>
+        ProduktionszielAuswertung.Ziel <= 0
+            ? "Kein Ziel"
+            : ProduktionszielAuswertung.Offen > 0
+                ? $"Offen {FormatQuantity(ProduktionszielAuswertung.Offen)}"
+                : $"Über Ziel {FormatQuantity(ProduktionszielAuswertung.UeberZiel)}";
+
+    private string ProductionStatusClass =>
+        ProduktionszielAuswertung.Ziel <= 0
+            ? "is-neutral"
+            : ProduktionszielAuswertung.Offen > 0
+                ? "is-open"
+                : "is-hit";
+
+    private string ProductionProgressClass =>
+        ProduktionszielAuswertung.Ziel <= 0
+            ? "is-neutral"
+            : ProduktionszielAuswertung.Offen > 0
+                ? "is-open"
+                : "is-hit";
+
+    private string ProductionProgressMetaText =>
+        ProduktionszielAuswertung.Ziel <= 0
+            ? "Kein Ziel im Schichtplan"
+            : ProduktionszielAuswertung.Offen > 0
+                ? $"{FormatQuantity(ProduktionszielAuswertung.Offen)} Gutteile bis zum Ziel"
+                : $"{FormatQuantity(ProduktionszielAuswertung.UeberZiel)} Gutteile über Ziel";
 
     private IEnumerable<FehlerRow> SortedEintraege => SortColumn switch
     {
@@ -543,6 +657,13 @@
             Gutteile = Eintraege.Sum(x => x.Gutteile)
         };
 
+        ProduktionszielAuswertung = await AnalyseService.GetProduktionszielAuswertungAsync(
+            Eintraege,
+            StartDatum,
+            EndDatum,
+            SelectedArtikel,
+            HasContextFiltersWithoutArtikel);
+
         var total = GesamtResult.Gesamt == 0 ? 1 : GesamtResult.Gesamt;
 
         ExterneFehler = new List<ChargeItem>
@@ -593,6 +714,7 @@
 
         Eintraege.Clear();
         GesamtResult = new();
+        ProduktionszielAuswertung = new();
         ExterneFehler.Clear();
         InterneFehler.Clear();
         ChartData.Clear();
@@ -725,6 +847,40 @@
     }
 
     private static string DisplayCount(int value) => value == 0 ? "-" : value.ToString();
+
+    private string GetGoalProgressStyle()
+    {
+        var progress = ProduktionszielAuswertung.Erfuellung ?? 0d;
+        var width = Math.Clamp(progress, 0d, 1d) * 100d;
+        return $"width: {width.ToString("0.#", CultureInfo.InvariantCulture)}%;";
+    }
+
+    private static string FormatQuantity(int value) => value.ToString("N0", DeCulture);
+
+    private static string GetMaterialStatusText(FehleranalyseZielDetail detail)
+    {
+        if (detail.Ziel <= 0)
+        {
+            return "Kein Ziel";
+        }
+
+        if (detail.Offen > 0)
+        {
+            return $"Offen {FormatQuantity(detail.Offen)}";
+        }
+
+        return $"Über Ziel {FormatQuantity(detail.UeberZiel)}";
+    }
+
+    private static string GetMaterialStatusClass(FehleranalyseZielDetail detail)
+    {
+        if (detail.Ziel <= 0)
+        {
+            return "is-neutral";
+        }
+
+        return detail.Offen > 0 ? "is-open" : "is-hit";
+    }
 
     private static string TruncateText(string? value, int maxLength)
     {
@@ -859,6 +1015,15 @@
         min-height: 120px;
     }
 
+    .fehleranalyse-summary-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .fehleranalyse-summary-card {
+        min-height: 138px;
+        padding-block: 1.15rem;
+    }
+
     .fehleranalyse-stat-card-good {
         box-shadow: inset 0 0 0 1px rgba(16, 185, 129, 0.12);
     }
@@ -869,6 +1034,171 @@
 
     .fehleranalyse-stat-card-total {
         box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.14);
+    }
+
+    .fehleranalyse-goal-shell {
+        position: relative;
+        padding: 1.3rem;
+        border-radius: 1.4rem;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+        background:
+            radial-gradient(circle at top right, rgba(14, 165, 233, 0.16), transparent 30%),
+            radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.14), transparent 28%),
+            linear-gradient(145deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.84));
+        overflow: hidden;
+    }
+
+    .fehleranalyse-goal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .fehleranalyse-goal-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.28rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.16);
+        color: #bfdbfe;
+        font-size: 0.73rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .fehleranalyse-goal-head-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.55rem;
+        justify-content: flex-end;
+    }
+
+    .fehleranalyse-goal-mini-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.38rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.46);
+        border: 1px solid rgba(148, 163, 184, 0.16);
+        color: #e2e8f0;
+        font-size: 0.78rem;
+        font-weight: 800;
+        line-height: 1;
+        white-space: nowrap;
+    }
+
+    .fehleranalyse-goal-mini-pill.is-neutral {
+        color: #cbd5e1;
+    }
+
+    .fehleranalyse-goal-mini-pill.is-open {
+        color: #fcd34d;
+        border-color: rgba(245, 158, 11, 0.24);
+    }
+
+    .fehleranalyse-goal-mini-pill.is-hit {
+        color: #86efac;
+        border-color: rgba(16, 185, 129, 0.24);
+    }
+
+    .fehleranalyse-goal-progress-panel {
+        padding: 0.9rem 1.05rem;
+        border-radius: 1rem;
+        background: rgba(15, 23, 42, 0.38);
+        border: 1px solid rgba(148, 163, 184, 0.14);
+    }
+
+    .fehleranalyse-goal-progress-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .fehleranalyse-goal-progress-meta span {
+        color: rgba(226, 232, 240, 0.78);
+        font-size: 0.9rem;
+    }
+
+    .fehleranalyse-goal-progress-track {
+        margin: 0 0 0.7rem;
+        height: 0.8rem;
+        border-radius: 999px;
+        background: rgba(15, 23, 42, 0.72);
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .fehleranalyse-goal-progress-bar {
+        height: 100%;
+        border-radius: inherit;
+        transition: width 0.2s ease;
+    }
+
+    .fehleranalyse-goal-progress-bar.is-neutral {
+        background: linear-gradient(90deg, rgba(148, 163, 184, 0.48), rgba(100, 116, 139, 0.78));
+    }
+
+    .fehleranalyse-goal-progress-bar.is-open {
+        background: linear-gradient(90deg, #0ea5e9, #f59e0b);
+    }
+
+    .fehleranalyse-goal-progress-bar.is-hit {
+        background: linear-gradient(90deg, #10b981, #22c55e);
+    }
+
+    .fehleranalyse-goal-detail-shell {
+        margin-top: 1rem;
+        padding: 0.2rem;
+        border-radius: 1rem;
+        background: rgba(2, 6, 23, 0.3);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+    }
+
+    .fehleranalyse-goal-empty {
+        min-height: 120px;
+        display: grid;
+        place-items: center;
+    }
+
+    .fehleranalyse-goal-table th,
+    .fehleranalyse-goal-table td {
+        white-space: nowrap;
+    }
+
+    .fehleranalyse-goal-status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 132px;
+        padding: 0.32rem 0.72rem;
+        border-radius: 999px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+    }
+
+    .fehleranalyse-goal-status-pill.is-neutral {
+        background: rgba(148, 163, 184, 0.14);
+        color: #cbd5e1;
+        border: 1px solid rgba(148, 163, 184, 0.18);
+    }
+
+    .fehleranalyse-goal-status-pill.is-open {
+        background: rgba(245, 158, 11, 0.16);
+        color: #fcd34d;
+        border: 1px solid rgba(245, 158, 11, 0.24);
+    }
+
+    .fehleranalyse-goal-status-pill.is-hit {
+        background: rgba(16, 185, 129, 0.16);
+        color: #86efac;
+        border: 1px solid rgba(16, 185, 129, 0.24);
     }
 
     .fehleranalyse-page .apexcharts-tooltip {
@@ -922,6 +1252,33 @@
         background: rgba(37, 99, 235, 0.06);
     }
 
+    [data-theme='light'] .fehleranalyse-goal-shell {
+        border-color: rgba(148, 163, 184, 0.2);
+        background:
+            radial-gradient(circle at top right, rgba(14, 165, 233, 0.12), transparent 28%),
+            radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.12), transparent 26%),
+            linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.94));
+    }
+
+    [data-theme='light'] .fehleranalyse-goal-progress-meta span {
+        color: #475569;
+    }
+
+    [data-theme='light'] .fehleranalyse-goal-mini-pill {
+        background: rgba(255, 255, 255, 0.78);
+        color: #0f172a;
+    }
+
+    [data-theme='light'] .fehleranalyse-goal-progress-panel,
+    [data-theme='light'] .fehleranalyse-goal-detail-shell {
+        background: rgba(255, 255, 255, 0.72);
+        border-color: rgba(148, 163, 184, 0.16);
+    }
+
+    [data-theme='light'] .fehleranalyse-goal-progress-track {
+        background: rgba(226, 232, 240, 0.72);
+    }
+
     [data-theme='light'] .fehleranalyse-page .apexcharts-tooltip-title {
         background: #eef2ff !important;
     }
@@ -929,6 +1286,19 @@
     @@media (max-width: 991.98px) {
         .fehleranalyse-tab-content {
             padding: 1rem;
+        }
+
+        .fehleranalyse-summary-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .fehleranalyse-goal-head {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .fehleranalyse-goal-head-meta {
+            justify-content: flex-start;
         }
     }
 
@@ -943,6 +1313,25 @@
 
         .fehleranalyse-chart-pane-compact {
             min-height: 360px;
+        }
+
+        .fehleranalyse-goal-shell {
+            padding: 1rem;
+        }
+
+        .fehleranalyse-goal-progress-meta {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .fehleranalyse-goal-table th,
+        .fehleranalyse-goal-table td {
+            white-space: normal;
+        }
+
+        .fehleranalyse-goal-status-pill {
+            min-width: 0;
+            width: 100%;
         }
     }
 </style>

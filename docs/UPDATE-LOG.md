@@ -4,6 +4,11 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.2.8
+- Fehleranalyse: Im Zielabgleich werden Materialien ohne Zielvorgabe weiter in der Tabelle gezeigt, aber nicht mehr in Offen-, Überziel- und Erfüllungswerte eingerechnet.
+- Fehleranalyse: Historische Zielauswertungen ziehen geänderte Material-Ziele aus dem Schichtplan-Stamm nicht mehr rückwirkend auf alte Tage, damit frühere Zeiträume keine falschen Überziel-Werte mehr zeigen.
+- Fehleranalyse: Im Gesamt-Tab stehen Gutteile, Schlechtteile und Gesamt jetzt klar im Vordergrund; der Zielabgleich wurde kompakter gemacht und die erklärenden Zusatztexte wurden entfernt.
+- Fehleranalyse: Die Gesamtauswertung zeigt jetzt zusätzlich das Schichtplan-Ziel für den gewählten Zeitraum, vergleicht Gutteile direkt mit dem geplanten Bedarf und blendet darunter eine Materialübersicht mit Gutteilen, Ziel und Schlechtteilen ein.
+- Schichtplan: Die Fertigungsmenge im Dashboard und in der Monitoransicht ist vorerst ausgeblendet und bleibt nur in Endkontrolle und Schichtplan-Verwaltung sichtbar.
 - Schichtplan Verwaltung: Die Planungsseite wurde optisch klarer gegliedert mit Arbeitsmodus-Leiste, ruhigeren Werkzeugkarten und direkteren Bedienhinweisen fuer Material, Benutzer und Schichtkarten.
 - Schichtplan: In der Verwaltung koennen Materialien jetzt per Doppelklick bearbeitet werden, inklusive Materialname und heutiger Zielmenge.
 - Schichtplan: Im Sauberraum zeigt der Schichtplan Materialien jetzt direkt mit gruener Zielmenge an, auch wenn einer Person mehrere Materialien zugeordnet sind.

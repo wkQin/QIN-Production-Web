@@ -62,8 +62,38 @@ namespace QIN_Production_Web.Data
         public bool Success => Content.Length > 0 && string.IsNullOrWhiteSpace(ErrorMessage);
     }
 
+    public class FehleranalyseZielDetail
+    {
+        public string Material { get; set; } = "";
+        public int Gutteile { get; set; }
+        public int Schlechtteile { get; set; }
+        public int Ziel { get; set; }
+        public int Gesamt => Gutteile + Schlechtteile;
+        public int Offen => Math.Max(Ziel - Gutteile, 0);
+        public int UeberZiel => Math.Max(Gutteile - Ziel, 0);
+        public double? Erfuellung => Ziel > 0 ? (double)Gutteile / Ziel : null;
+    }
+
+    public class FehleranalyseZielAuswertung
+    {
+        public int Gutteile { get; set; }
+        public int Schlechtteile { get; set; }
+        public int Ziel { get; set; }
+        public string Hinweis { get; set; } = "";
+        public List<FehleranalyseZielDetail> Details { get; set; } = new();
+
+        public int GutteileMitZiel => Details.Where(detail => detail.Ziel > 0).Sum(detail => detail.Gutteile);
+        public int SchlechtteileMitZiel => Details.Where(detail => detail.Ziel > 0).Sum(detail => detail.Schlechtteile);
+        public int Offen => Math.Max(Ziel - GutteileMitZiel, 0);
+        public int UeberZiel => Math.Max(GutteileMitZiel - Ziel, 0);
+        public double? Erfuellung => Ziel > 0 ? (double)GutteileMitZiel / Ziel : null;
+        public bool HasData => Ziel > 0 || Gutteile > 0 || Schlechtteile > 0 || Details.Count > 0;
+    }
+
     public class FehleranalyseService
     {
+        private const string MaterialOhneZuordnung = "Ohne Materialzuordnung";
+
         public async Task<List<CustomerData>> GetKundenAsync()
         {
             var kunden = new List<CustomerData>();
@@ -206,6 +236,103 @@ namespace QIN_Production_Web.Data
             return daten;
         }
 
+        public async Task<FehleranalyseZielAuswertung> GetProduktionszielAuswertungAsync(
+            IReadOnlyCollection<FehlerRow>? fehlerRows,
+            DateTime von,
+            DateTime bis,
+            string? artikelFilter,
+            bool hasContextFiltersWithoutArtikel)
+        {
+            var rows = fehlerRows?.ToList() ?? new List<FehlerRow>();
+            var plannedRows = await GetSchichtplanZielRowsAsync(von, bis);
+
+            var actualByMaterial = rows
+                .GroupBy(
+                    row => string.IsNullOrWhiteSpace(row.Artikel) ? MaterialOhneZuordnung : row.Artikel.Trim(),
+                    StringComparer.OrdinalIgnoreCase)
+                .Select(group => new FehleranalyseMaterialIstRow
+                {
+                    Material = group.Key,
+                    Gutteile = group.Sum(item => item.Gutteile),
+                    Schlechtteile = group.Sum(item => item.Schlechtteile)
+                })
+                .ToList();
+
+            var planByMaterial = plannedRows
+                .Where(row => !string.IsNullOrWhiteSpace(row.Material))
+                .Where(row => row.ZielMenge > 0)
+                .Where(row => row.BenutzerAnzahl > 0)
+                .GroupBy(row => row.Material.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Select(group => new FehleranalyseMaterialPlanRow
+                {
+                    Material = group.First().Material.Trim(),
+                    Ziel = group.Sum(item => item.ZielMenge * item.BenutzerAnzahl)
+                })
+                .Where(row => row.Ziel > 0)
+                .ToList();
+
+            if (!string.IsNullOrWhiteSpace(artikelFilter))
+            {
+                planByMaterial = FilterPlanMaterialsByReference(planByMaterial, new[] { artikelFilter.Trim() });
+            }
+            else if (hasContextFiltersWithoutArtikel)
+            {
+                var actualMaterialNames = actualByMaterial
+                    .Where(row => !string.Equals(row.Material, MaterialOhneZuordnung, StringComparison.OrdinalIgnoreCase))
+                    .Select(row => row.Material)
+                    .ToList();
+
+                planByMaterial = FilterPlanMaterialsByReference(planByMaterial, actualMaterialNames);
+            }
+
+            var detailsByMaterial = new Dictionary<string, FehleranalyseZielDetail>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var plannedMaterial in planByMaterial)
+            {
+                detailsByMaterial[plannedMaterial.Material] = new FehleranalyseZielDetail
+                {
+                    Material = plannedMaterial.Material,
+                    Ziel = plannedMaterial.Ziel
+                };
+            }
+
+            foreach (var actualMaterial in actualByMaterial)
+            {
+                var matchingPlan = MatchPlanMaterial(planByMaterial, actualMaterial.Material);
+                var key = matchingPlan?.Material ?? actualMaterial.Material;
+
+                if (!detailsByMaterial.TryGetValue(key, out var detail))
+                {
+                    detail = new FehleranalyseZielDetail
+                    {
+                        Material = key
+                    };
+                    detailsByMaterial[key] = detail;
+                }
+
+                detail.Gutteile += actualMaterial.Gutteile;
+                detail.Schlechtteile += actualMaterial.Schlechtteile;
+            }
+
+            var orderedDetails = detailsByMaterial.Values
+                .OrderByDescending(detail => detail.Ziel)
+                .ThenByDescending(detail => detail.Gutteile)
+                .ThenByDescending(detail => detail.Schlechtteile)
+                .ThenBy(detail => detail.Material, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+
+            return new FehleranalyseZielAuswertung
+            {
+                Gutteile = rows.Sum(row => row.Gutteile),
+                Schlechtteile = rows.Sum(row => row.Schlechtteile),
+                Ziel = orderedDetails.Sum(detail => detail.Ziel),
+                Hinweis = hasContextFiltersWithoutArtikel
+                    ? "Bei Kunde-, Projekt-, Dekor- oder Charge-Filtern wird das Ziel über die im Ergebnis gefundenen Materialien an den Schichtplan angekoppelt, weil diese Zusatzfelder dort nicht gespeichert sind."
+                    : "",
+                Details = orderedDetails
+            };
+        }
+
         public Task<FehleranalyseExportResult> ExportToExcelAsync(List<FehlerRow> fehlerListe)
         {
             if (fehlerListe == null || !fehlerListe.Any())
@@ -292,6 +419,241 @@ namespace QIN_Production_Web.Data
                     ErrorMessage = $"Fehler beim Export: {ex.Message}"
                 });
             }
+        }
+
+        private async Task<List<FehleranalyseSchichtplanZielRow>> GetSchichtplanZielRowsAsync(DateTime von, DateTime bis)
+        {
+            var rows = new List<FehleranalyseSchichtplanZielRow>();
+
+            const string query = @"
+WITH MaterialAssignments AS
+(
+    SELECT
+        p.PlanDatum,
+        COALESCE(m1.Material, e.Material) AS Material,
+        CASE
+            WHEN m1.ID IS NULL THEN 0
+            WHEN CAST(m1.CreatedAt AS date) > p.PlanDatum THEN 0
+            WHEN m1.UpdatedAt IS NOT NULL AND CAST(m1.UpdatedAt AS date) > p.PlanDatum THEN 0
+            ELSE ISNULL(m1.TagesMenge, 0)
+        END AS ZielMenge,
+        COUNT(ben.ID) AS BenutzerAnzahl
+    FROM dbo.SchichtplanPlan p
+    INNER JOIN dbo.SchichtplanEintrag e
+        ON e.SchichtplanPlanID = p.ID
+    INNER JOIN dbo.SchichtplanArbeitsplatz ap
+        ON ap.ID = e.ArbeitsplatzID
+    INNER JOIN dbo.SchichtplanEintragBenutzer ben
+        ON ben.SchichtplanEintragID = e.ID
+    LEFT JOIN dbo.SchichtplanMaterialStamm m1
+        ON m1.ID = e.MaterialStammID
+    WHERE p.PlanDatum >= @fromDate
+      AND p.PlanDatum <= @toDate
+      AND ap.Bereich = N'Sauberraum'
+      AND ISNULL(LTRIM(RTRIM(COALESCE(m1.Material, e.Material))), N'') <> N''
+    GROUP BY
+        p.PlanDatum,
+        e.ID,
+        COALESCE(m1.Material, e.Material),
+        CASE
+            WHEN m1.ID IS NULL THEN 0
+            WHEN CAST(m1.CreatedAt AS date) > p.PlanDatum THEN 0
+            WHEN m1.UpdatedAt IS NOT NULL AND CAST(m1.UpdatedAt AS date) > p.PlanDatum THEN 0
+            ELSE ISNULL(m1.TagesMenge, 0)
+        END
+
+    UNION ALL
+
+    SELECT
+        p.PlanDatum,
+        COALESCE(m2.Material, e.Material2) AS Material,
+        CASE
+            WHEN m2.ID IS NULL THEN 0
+            WHEN CAST(m2.CreatedAt AS date) > p.PlanDatum THEN 0
+            WHEN m2.UpdatedAt IS NOT NULL AND CAST(m2.UpdatedAt AS date) > p.PlanDatum THEN 0
+            ELSE ISNULL(m2.TagesMenge, 0)
+        END AS ZielMenge,
+        COUNT(ben.ID) AS BenutzerAnzahl
+    FROM dbo.SchichtplanPlan p
+    INNER JOIN dbo.SchichtplanEintrag e
+        ON e.SchichtplanPlanID = p.ID
+    INNER JOIN dbo.SchichtplanArbeitsplatz ap
+        ON ap.ID = e.ArbeitsplatzID
+    INNER JOIN dbo.SchichtplanEintragBenutzer ben
+        ON ben.SchichtplanEintragID = e.ID
+    LEFT JOIN dbo.SchichtplanMaterialStamm m2
+        ON m2.ID = e.MaterialStammID2
+    WHERE p.PlanDatum >= @fromDate
+      AND p.PlanDatum <= @toDate
+      AND ap.Bereich = N'Sauberraum'
+      AND ISNULL(LTRIM(RTRIM(COALESCE(m2.Material, e.Material2))), N'') <> N''
+    GROUP BY
+        p.PlanDatum,
+        e.ID,
+        COALESCE(m2.Material, e.Material2),
+        CASE
+            WHEN m2.ID IS NULL THEN 0
+            WHEN CAST(m2.CreatedAt AS date) > p.PlanDatum THEN 0
+            WHEN m2.UpdatedAt IS NOT NULL AND CAST(m2.UpdatedAt AS date) > p.PlanDatum THEN 0
+            ELSE ISNULL(m2.TagesMenge, 0)
+        END
+)
+SELECT
+    PlanDatum,
+    Material,
+    ZielMenge,
+    BenutzerAnzahl
+FROM MaterialAssignments
+WHERE ZielMenge > 0
+  AND BenutzerAnzahl > 0;";
+
+            try
+            {
+                using var connection = new SqlConnection(SqlManager.FertigungConnectionString);
+                await connection.OpenAsync();
+
+                using var command = new SqlCommand(query, connection);
+                command.Parameters.Add("@fromDate", SqlDbType.Date).Value = von.Date;
+                command.Parameters.Add("@toDate", SqlDbType.Date).Value = bis.Date;
+
+                using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    rows.Add(new FehleranalyseSchichtplanZielRow
+                    {
+                        PlanDatum = reader["PlanDatum"] != DBNull.Value ? Convert.ToDateTime(reader["PlanDatum"]) : DateTime.MinValue,
+                        Material = reader["Material"]?.ToString() ?? "",
+                        ZielMenge = reader["ZielMenge"] != DBNull.Value ? Convert.ToInt32(reader["ZielMenge"]) : 0,
+                        BenutzerAnzahl = reader["BenutzerAnzahl"] != DBNull.Value ? Convert.ToInt32(reader["BenutzerAnzahl"]) : 0
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting schichtplan target rows: {ex.Message}");
+            }
+
+            return rows;
+        }
+
+        private static List<FehleranalyseMaterialPlanRow> FilterPlanMaterialsByReference(
+            List<FehleranalyseMaterialPlanRow> planMaterials,
+            IEnumerable<string> referenceMaterials)
+        {
+            var references = referenceMaterials
+                .Where(material => !string.IsNullOrWhiteSpace(material))
+                .Select(material => material.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (references.Count == 0)
+            {
+                return new List<FehleranalyseMaterialPlanRow>();
+            }
+
+            return planMaterials
+                .Where(planMaterial => references.Any(reference => ScoreMaterialMatch(planMaterial.Material, reference) >= 2))
+                .ToList();
+        }
+
+        private static FehleranalyseMaterialPlanRow? MatchPlanMaterial(
+            List<FehleranalyseMaterialPlanRow> planMaterials,
+            string actualMaterial)
+        {
+            if (string.IsNullOrWhiteSpace(actualMaterial) ||
+                string.Equals(actualMaterial, MaterialOhneZuordnung, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            FehleranalyseMaterialPlanRow? bestMatch = null;
+            var bestScore = 0;
+
+            foreach (var planMaterial in planMaterials)
+            {
+                var score = ScoreMaterialMatch(planMaterial.Material, actualMaterial);
+                if (score > bestScore)
+                {
+                    bestScore = score;
+                    bestMatch = planMaterial;
+                }
+            }
+
+            return bestScore >= 2 ? bestMatch : null;
+        }
+
+        private static int ScoreMaterialMatch(string assignedMaterial, string producedMaterial)
+        {
+            var assignedTokens = TokenizeMaterialName(assignedMaterial);
+            var producedTokens = TokenizeMaterialName(producedMaterial);
+
+            if (assignedTokens.Count == 0 || producedTokens.Count == 0)
+            {
+                return 0;
+            }
+
+            var commonTokens = assignedTokens.Intersect(producedTokens, StringComparer.OrdinalIgnoreCase).ToList();
+            var assignedCompact = string.Concat(assignedTokens);
+            var producedCompact = string.Concat(producedTokens);
+
+            var score = commonTokens.Count;
+
+            if (!string.IsNullOrWhiteSpace(assignedCompact) &&
+                !string.IsNullOrWhiteSpace(producedCompact) &&
+                (producedCompact.Contains(assignedCompact, StringComparison.OrdinalIgnoreCase) ||
+                 assignedCompact.Contains(producedCompact, StringComparison.OrdinalIgnoreCase)))
+            {
+                score += 2;
+            }
+
+            if (assignedTokens.Count <= 3 && commonTokens.Count == assignedTokens.Count)
+            {
+                score += 1;
+            }
+
+            return score;
+        }
+
+        private static List<string> TokenizeMaterialName(string? material)
+        {
+            if (string.IsNullOrWhiteSpace(material))
+            {
+                return new List<string>();
+            }
+
+            var cleaned = new string(
+                material
+                    .ToUpperInvariant()
+                    .Select(ch => char.IsLetterOrDigit(ch) ? ch : ' ')
+                    .ToArray());
+
+            return cleaned
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Where(token => token.Length > 1)
+                .Where(token => token is not "BLENDE" and not "TEIL" and not "SATZ" and not "SET")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        private sealed class FehleranalyseSchichtplanZielRow
+        {
+            public DateTime PlanDatum { get; set; }
+            public string Material { get; set; } = "";
+            public int ZielMenge { get; set; }
+            public int BenutzerAnzahl { get; set; }
+        }
+
+        private sealed class FehleranalyseMaterialIstRow
+        {
+            public string Material { get; set; } = "";
+            public int Gutteile { get; set; }
+            public int Schlechtteile { get; set; }
+        }
+
+        private sealed class FehleranalyseMaterialPlanRow
+        {
+            public string Material { get; set; } = "";
+            public int Ziel { get; set; }
         }
     }
 }
