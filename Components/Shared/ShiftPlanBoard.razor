@@ -230,6 +230,7 @@
     private bool isFullscreen;
     private bool activateMonitorView;
     private bool isBackgroundRefreshing;
+    private DateTime? pendingMonitorDateRefresh;
     private CancellationTokenSource? monitorRefreshCts;
     private string CurrentUserName { get; set; } = "Dashboard";
     private string CurrentTheme { get; set; } = "dark";
@@ -373,6 +374,7 @@
     private async Task SelectBoardDateAsync(DateTime requestedDate, bool markAsManualSelection)
     {
         var date = requestedDate.Date;
+        var requiresMonitorDateRefresh = isFullscreen && lastLoadedDate != date;
         if (markAsManualSelection)
         {
             hasManualDateSelection = true;
@@ -384,6 +386,10 @@
         }
 
         await LoadBoardAsync(date);
+        if (requiresMonitorDateRefresh && string.IsNullOrWhiteSpace(loadError))
+        {
+            pendingMonitorDateRefresh = date;
+        }
         await PersistClientStateAsync();
     }
 
@@ -412,6 +418,7 @@
 
         isFullscreen = false;
         activateMonitorView = false;
+        pendingMonitorDateRefresh = null;
         await PersistClientStateAsync();
     }
 
@@ -438,6 +445,19 @@
 
         activateMonitorView = false;
         await JS.InvokeVoidAsync("shiftPlanBoard.activate", shellId, controlsId, stageShellId, stageId);
+
+        if (pendingMonitorDateRefresh.HasValue &&
+            isFullscreen &&
+            !isLoading &&
+            string.IsNullOrWhiteSpace(loadError) &&
+            board.PlanDatum.Date == pendingMonitorDateRefresh.Value.Date)
+        {
+            var refreshDate = pendingMonitorDateRefresh.Value.Date;
+            pendingMonitorDateRefresh = null;
+
+            await LoadBoardAsync(refreshDate, showLoadingState: false);
+            StateHasChanged();
+        }
     }
 
     [JSInvokable]

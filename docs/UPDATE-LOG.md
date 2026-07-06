@@ -3,6 +3,11 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.3.1
+- Schichtplan Verwaltung: Zielmengen in Materialliste, Karten und Bearbeitungsdialog heißen jetzt einheitlich `Tagesvorgabe`.
+- Schichtplan Verwaltung: Der Benutzer `Schichtplan Monitor` wird in der Benutzerzuweisung nicht mehr als normaler Plan-Benutzer angeboten.
+- Schichtplan Monitoransicht: Beim Datumswechsel wird der angezeigte Tag im Vollbild direkt noch einmal still neu geladen, damit die Skalierung nicht halbiert hängen bleibt.
+
 ## Update 3.3
 - Fehleranalyse: Im Zielabgleich werden Materialien ohne Zielvorgabe weiter in der Tabelle gezeigt, aber nicht mehr in Offen-, Überziel- und Erfüllungswerte eingerechnet.
 - Fehleranalyse: Historische Zielauswertungen ziehen geänderte Material-Ziele aus dem Schichtplan-Stamm nicht mehr rückwirkend auf alte Tage, damit frühere Zeiträume keine falschen Überziel-Werte mehr zeigen.

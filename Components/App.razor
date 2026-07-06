@@ -469,13 +469,16 @@
 
                 const scaleX = Math.max(0.1, Math.min(3, availableWidth / naturalWidth));
                 const scaleY = Math.max(0.1, Math.min(3, availableHeight / naturalHeight));
+                const scaledWidth = naturalWidth * scaleX;
+                const leftOffset = Math.max(0, (availableWidth - scaledWidth) / 2);
                 const topOffset = 0;
 
                 shell.style.setProperty('--shiftplan-fit-scale-x', scaleX.toString());
                 shell.style.setProperty('--shiftplan-fit-scale-y', scaleY.toString());
                 shell.style.setProperty('--shiftplan-fit-controls', `${controlsHeight}px`);
+                stage.style.left = '0';
                 stage.style.top = `${Math.floor(topOffset)}px`;
-                stage.style.transform = `scale(${scaleX}, ${scaleY}) translateX(-50%)`;
+                stage.style.transform = `translate(${Math.round(leftOffset)}px, 0) scale(${scaleX}, ${scaleY})`;
             };
 
             const removeSession = (shellId, stageShellId, stageId) => {

@@ -169,8 +169,8 @@
     min-width: var(--shiftplan-stage-width);
     position: absolute;
     top: 0;
-    left: 50%;
-    transform-origin: top center;
+    left: 0;
+    transform-origin: top left;
 }
 
 .shiftplan-board-meta {

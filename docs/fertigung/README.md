@@ -63,4 +63,3 @@ Kurze, druckbare Schritt-für-Schritt-Anleitung für den Arbeitsplatz.
 Die Markdown-Dateien sind die bearbeitbaren Quelldokumente.
 
 Für Word und PDF sollen die HTML-Dateien verwendet werden, weil Word daraus Überschriften, Abstände und Listen deutlich besser übernimmt.
-

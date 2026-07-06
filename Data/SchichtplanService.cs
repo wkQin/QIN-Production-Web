@@ -886,6 +886,7 @@ WHERE ID = @Id
                         CAST(0 AS bit) AS IsManual
                   FROM dbo.LoginDaten
                   WHERE ISNULL(LTRIM(RTRIM(Benutzer)), N'') <> N''
+                    AND LTRIM(RTRIM(Benutzer)) <> N'Schichtplan Monitor'
                     AND
                     (
                         LTRIM(RTRIM(ISNULL(Rechte, N''))) LIKE N'%Thermoformung%'
@@ -907,13 +908,16 @@ WHERE ID = @Id
                         CAST(NULL AS NVARCHAR(100)) AS Bereich,
                         CAST(1 AS bit) AS IsManual
                   FROM dbo.SchichtplanZusatzBenutzer
-                  WHERE Aktiv = 1;"))
+                  WHERE Aktiv = 1
+                    AND LTRIM(RTRIM(Benutzer)) <> N'Schichtplan Monitor';"))
                 .ToList();
         }
 
         return loginUsers
             .Concat(manualUsers)
-            .Where(user => !string.IsNullOrWhiteSpace(user.DisplayName))
+            .Where(user =>
+                !string.IsNullOrWhiteSpace(user.DisplayName) &&
+                !string.Equals(user.DisplayName?.Trim(), "Schichtplan Monitor", StringComparison.OrdinalIgnoreCase))
             .GroupBy(user => $"{user.Source}|{user.Key}", StringComparer.OrdinalIgnoreCase)
             .Select(group => group.First())
             .OrderBy(user => user.DisplayName ?? string.Empty, StringComparer.Create(System.Globalization.CultureInfo.GetCultureInfo("de-DE"), true))

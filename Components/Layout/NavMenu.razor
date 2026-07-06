@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
 @using QIN_Production_Web.Data
 @implements IDisposable
 @inject AuthenticationStateProvider AuthStateProvider
@@ -94,14 +95,69 @@
                     @if (IsVerwaltungOpen && !IsCollapsed)
                     {
                         <div class="nav-submenu">
-                            <NavLink class="sub-item" href="verwaltung/fehleranalyse">Fehleranalyse</NavLink>
-                            <NavLink class="sub-item" href="verwaltung/chargenanalyse">Chargenanalyse</NavLink>
-                            <NavLink class="sub-item" href="verwaltung/schichtplan">Schichtplan</NavLink>
+                            <NavLink class="sub-item" href="verwaltung/fehleranalyse">
+                                <span class="verwaltung-subitem-label">
+                                    <i class="fa-solid fa-chart-column verwaltung-subitem-icon" aria-hidden="true"></i>
+                                    <span>Fehleranalyse</span>
+                                </span>
+                            </NavLink>
+                            <NavLink class="sub-item live-nav-item" href="verwaltung/live-fertigung">
+                                <span class="live-nav-label">
+                                    <span class="live-nav-dot" aria-hidden="true"></span>
+                                    <span>Live-Fertigung</span>
+                                </span>
+                            </NavLink>
+                            <NavLink class="sub-item" href="verwaltung/schichtplan">
+                                <span class="verwaltung-subitem-label">
+                                    <i class="fa-solid fa-calendar-days verwaltung-subitem-icon" aria-hidden="true"></i>
+                                    <span>Schichtplan</span>
+                                </span>
+                            </NavLink>
+                            <NavLink class="sub-item" href="verwaltung/layout">
+                                <span class="verwaltung-subitem-label">
+                                    <i class="fa-solid fa-layer-group verwaltung-subitem-icon" aria-hidden="true"></i>
+                                    <span>Produktionslayout</span>
+                                </span>
+                            </NavLink>
+                            <button type="button"
+                                    class="@($"sub-item more-submenu-toggle {(IsVerwaltungMoreOpen ? "open" : string.Empty)} {(IsVerwaltungMoreRoute ? "is-route-active" : string.Empty)}")"
+                                    @onclick="ToggleVerwaltungMore">
+                                <span class="verwaltung-subitem-label">
+                                    <i class="fa-solid fa-ellipsis verwaltung-subitem-icon" aria-hidden="true"></i>
+                                    <span>Mehr</span>
+                                </span>
+                                <i class="fa-solid fa-chevron-@(IsVerwaltungMoreOpen ? "down" : "right") chevron"></i>
+                            </button>
+                            @if (IsVerwaltungMoreOpen)
+                            {
+                                <div class="nav-submenu nav-submenu-nested">
+                                    <NavLink class="sub-item" href="verwaltung/chargenanalyse">
+                                        <span class="verwaltung-subitem-label">
+                                            <i class="fa-solid fa-magnifying-glass-chart verwaltung-subitem-icon" aria-hidden="true"></i>
+                                            <span>Chargenanalyse</span>
+                                        </span>
+                                    </NavLink>
+                                    <NavLink class="sub-item" href="verwaltung/auftraege">
+                                        <span class="verwaltung-subitem-label">
+                                            <i class="fa-solid fa-clipboard-list verwaltung-subitem-icon" aria-hidden="true"></i>
+                                            <span>Fertigungsaufträge</span>
+                                        </span>
+                                    </NavLink>
+                                    <NavLink class="sub-item" href="verwaltung/wareneingang">
+                                        <span class="verwaltung-subitem-label">
+                                            <i class="fa-solid fa-boxes-stacked verwaltung-subitem-icon" aria-hidden="true"></i>
+                                            <span>Wareneingang</span>
+                                        </span>
+                                    </NavLink>
+                                    <NavLink class="sub-item text-info fw-bold" href="verwaltung/aktivitaeten">
+                                        <span class="verwaltung-subitem-label">
+                                            <i class="fa-solid fa-list-check verwaltung-subitem-icon" aria-hidden="true"></i>
+                                            <span>Aktivitätenprotokoll</span>
+                                        </span>
+                                    </NavLink>
+                                </div>
+                            }
                             <!-- <NavLink class="sub-item" href="verwaltung/barcode">Barcode-Profile</NavLink> -->
-                            <NavLink class="sub-item" href="verwaltung/auftraege">Fertigungsaufträge</NavLink>
-                            <NavLink class="sub-item" href="verwaltung/wareneingang">Wareneingang</NavLink>
-                            <NavLink class="sub-item" href="verwaltung/layout">Produktionslayout</NavLink>
-                            <NavLink class="sub-item text-info fw-bold" href="verwaltung/aktivitaeten"><i class="fa-solid fa-list-check me-1"></i> Aktivitätenprotokoll</NavLink>
                         </div>
                     }
                 </div>
@@ -299,6 +355,7 @@
 
     private bool IsFertigungOpen = true;
     private bool IsVerwaltungOpen = false;
+    private bool IsVerwaltungMoreOpen;
 
     private int UnreadCount = 0;
     private int AlertCount = 0;
@@ -321,6 +378,8 @@
         }
 
         MessageService.OnUnreadCountChanged += HandleUnreadCountChanged;
+        NavigationManager.LocationChanged += HandleLocationChanged;
+        SyncVerwaltungMoreState();
         
         await LoadUnreadCount();
         await LoadAlerts();
@@ -436,11 +495,44 @@
         return count.ToString();
     }
 
+    private bool IsVerwaltungMoreRoute => IsVerwaltungMoreTarget(NavigationManager.Uri);
+
     private void ToggleFertigung() {
         if(!IsCollapsed) IsFertigungOpen = !IsFertigungOpen;
     }
+
     private void ToggleVerwaltung() {
         if(!IsCollapsed) IsVerwaltungOpen = !IsVerwaltungOpen;
+    }
+
+    private void ToggleVerwaltungMore()
+    {
+        if (!IsCollapsed)
+        {
+            IsVerwaltungMoreOpen = !IsVerwaltungMoreOpen;
+        }
+    }
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        SyncVerwaltungMoreState(e.Location);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void SyncVerwaltungMoreState(string? location = null)
+    {
+        if (IsVerwaltungMoreTarget(location ?? NavigationManager.Uri))
+        {
+            IsVerwaltungMoreOpen = true;
+        }
+    }
+
+    private static bool IsVerwaltungMoreTarget(string location)
+    {
+        return location.Contains("/verwaltung/chargenanalyse", StringComparison.OrdinalIgnoreCase)
+            || location.Contains("/verwaltung/auftraege", StringComparison.OrdinalIgnoreCase)
+            || location.Contains("/verwaltung/wareneingang", StringComparison.OrdinalIgnoreCase)
+            || location.Contains("/verwaltung/aktivitaeten", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task ToggleMenu()
@@ -454,6 +546,7 @@
     public void Dispose()
     {
         MessageService.OnUnreadCountChanged -= HandleUnreadCountChanged;
+        NavigationManager.LocationChanged -= HandleLocationChanged;
         _pollingTimer?.Dispose();
     }
 }

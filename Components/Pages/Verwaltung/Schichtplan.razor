@@ -245,7 +245,7 @@
                                                                     <strong>@materialSlot.Material</strong>
                                                                     @if (string.Equals(boardSection.Name, "Sauberraum", StringComparison.OrdinalIgnoreCase) && materialSlot.TagesMenge.HasValue)
                                                                     {
-                                                                        <span class="schichtplan-material-card-quantity">@materialSlot.TagesMenge.Value Stk Ziel</span>
+                                                                        <span class="schichtplan-material-card-quantity">Tagesvorgabe: @materialSlot.TagesMenge.Value Stk</span>
                                                                     }
                                                                 </div>
                                                                 <button type="button" class="schichtplan-clear-btn" @onclick="() => ClearMaterialAsync(workplace.ArbeitsplatzId, cell.Shift, materialSlot.Slot)">
@@ -342,7 +342,7 @@
                                          @ondragend="EndDragAsync">
                                         <div class="schichtplan-material-row-main">
                                             <span class="schichtplan-material-name">@material.Material</span>
-                                            <span class="schichtplan-material-meta">Ziel heute: @(material.TagesMenge?.ToString() ?? "-")</span>
+                                            <span class="schichtplan-material-meta">Tagesvorgabe: @(material.TagesMenge?.ToString() ?? "-")</span>
                                         </div>
 
                                         <button type="button"
@@ -371,7 +371,7 @@
             <div class="schichtplan-modal-head">
                 <div>
                     <h3>Material bearbeiten</h3>
-                    <p>Name und heutige Zielmenge fuer dieses Material anpassen.</p>
+                    <p>Name und Tagesvorgabe fuer dieses Material anpassen.</p>
                 </div>
                 <button type="button" class="schichtplan-modal-close" @onclick="CloseMaterialEditDialog" aria-label="Popup schliessen">
                     <i class="fa-solid fa-xmark"></i>
@@ -388,7 +388,7 @@
                 </label>
 
                 <label class="schichtplan-modal-field">
-                    <span>Heutige Materialmenge</span>
+                    <span>Tagesvorgabe</span>
                     <input type="number"
                            min="0"
                            step="1"
