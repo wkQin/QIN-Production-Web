@@ -44,6 +44,18 @@ Dokumente:
 - `SCHICHTPLAN-PRODUKTIONSMONITOR-BACKEND.md`
 - `SCHICHTPLAN-PRODUKTIONSMONITOR.sql`
 
+### Live-Fertigung
+
+Ordner:
+
+`docs/fertigung/live-fertigung`
+
+Dokumente:
+
+- `LIVE-FERTIGUNG-DOKUMENTATION.md`
+- `LIVE-FERTIGUNG-BACKEND.md`
+- `LIVE-FERTIGUNG-ARBEITSANWEISUNG.md`
+
 ## Dokumenttypen
 
 ### Dokumentation

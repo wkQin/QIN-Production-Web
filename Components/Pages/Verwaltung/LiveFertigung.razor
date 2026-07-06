@@ -3,12 +3,418 @@
 
 <PageTitle>Live-Fertigung - Verwaltung</PageTitle>
 
-<div class="qin-page-shell pb-4">
-    <div class="glass-card qin-panel p-4">
-        <div class="d-flex align-items-center gap-3 mb-2">
-            <span class="bg-danger rounded-circle d-inline-block" style="width: 12px; height: 12px; box-shadow: 0 0 0.9rem rgba(220, 53, 69, 0.85);"></span>
-            <h2 class="qin-hero-title mb-0">Live-Fertigung</h2>
+<div class="qin-page-shell live-fertigung-page pb-4">
+    <section class="glass-card qin-panel live-fertigung-hero">
+        <div class="live-fertigung-title-row">
+            <span class="live-fertigung-live-dot" aria-hidden="true"></span>
+            <h2 class="live-fertigung-title mb-0">Live-Fertigung</h2>
         </div>
-        <p class="text-secondary mb-0 small">Dieser Bereich wird im nächsten Schritt aufgebaut.</p>
-    </div>
+    </section>
+
+    <section class="glass-card qin-panel live-fertigung-tabs-panel">
+        <div class="live-fertigung-tabs-strip" role="tablist" aria-label="Produktionsbereiche">
+            @foreach (var area in Areas)
+            {
+                <button type="button"
+                        role="tab"
+                        class="@GetTabButtonClass(area.Key)"
+                        aria-selected="@(ActiveAreaKey == area.Key)"
+                        @onclick="@(() => SelectArea(area.Key))">
+                    <i class="@area.Icon" aria-hidden="true"></i>
+                    <span>@area.Label</span>
+                </button>
+            }
+        </div>
+    </section>
+
+    <section class="glass-card qin-panel live-fertigung-content-panel">
+        <div class="live-fertigung-content-head live-fertigung-content-head-compact">
+            <div>
+                <h3 class="card-title-modern mb-0">@ActiveArea.Label</h3>
+            </div>
+
+            @if (ActiveAreaKey == "Endkontrolle")
+            {
+                <span class="live-fertigung-priority-badge">Erster Ausbau</span>
+            }
+        </div>
+
+        @if (ActiveAreaKey == EndkontrolleAreaKey)
+        {
+            <div class="endkontrolle-live-shell">
+                <div class="endkontrolle-layout-stage">
+                    <section class="endkontrolle-room endkontrolle-room-one" aria-label="Raum 1">
+                        <span class="endkontrolle-room-label">Raum 1</span>
+
+                        <div class="endkontrolle-room-column endkontrolle-room-column-left">
+                            @foreach (var station in RoomOneLeftStations)
+                            {
+                                @RenderEndkontrolleTable(station)
+                            }
+                        </div>
+
+                        <div class="endkontrolle-top-station">
+                            @RenderEndkontrolleTable(EndkontrolleStationsByTable[4])
+                        </div>
+
+                        <div class="endkontrolle-room-column endkontrolle-room-column-right">
+                            @foreach (var station in RoomOneRightStations)
+                            {
+                                @RenderEndkontrolleTable(station)
+                            }
+                        </div>
+                    </section>
+
+                    <section class="endkontrolle-room endkontrolle-room-two" aria-label="Raum 2">
+                        <span class="endkontrolle-room-label">Raum 2</span>
+
+                        <div class="endkontrolle-room-column endkontrolle-room-column-left">
+                            @foreach (var station in RoomTwoStations)
+                            {
+                                @RenderEndkontrolleTable(station)
+                            }
+                        </div>
+                    </section>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="live-fertigung-placeholder-grid">
+                <article class="live-fertigung-placeholder-card is-primary">
+                    <span class="modern-label">Geplanter Inhalt</span>
+                    <h4>@ActiveArea.PrimaryFocusTitle</h4>
+                    <p class="mb-0">@ActiveArea.PrimaryFocusText</p>
+                </article>
+
+                <article class="live-fertigung-placeholder-card">
+                    <span class="modern-label">Nächster Schritt</span>
+                    <h4>Live-Daten anbinden</h4>
+                    <p class="mb-0">
+                        Für diesen Bereich wird im nächsten Ausbauschritt die echte Belegung, Menge und Zielmenge auf die Seite gebracht.
+                    </p>
+                </article>
+
+                <article class="live-fertigung-placeholder-card">
+                    <span class="modern-label">Später geplant</span>
+                    <h4>Hover-Details</h4>
+                    <p class="mb-0">
+                        Ein zusätzlicher Hover- oder Info-Button soll später auch ältere und bereits fertige Informationen direkt im Überblick zeigen.
+                    </p>
+                </article>
+            </div>
+        }
+    </section>
 </div>
+
+@code {
+    private const string EndkontrolleAreaKey = "Endkontrolle";
+    private const string DefaultAreaKey = EndkontrolleAreaKey;
+
+    private string ActiveAreaKey { get; set; } = DefaultAreaKey;
+
+    private static readonly IReadOnlyList<LiveAreaTab> Areas =
+    [
+        new("Endkontrolle", "Endkontrolle", "fa-solid fa-shield-heart", "Start mit Sauberraum und Arbeitsplatzsicht", "Erster geplanter Live-Bereich mit Vogelperspektive auf die einzelnen Arbeitsplätze der Endkontrolle.", "Arbeitsplätze, Material, Mitarbeiter, gemachte Menge und Zielmenge", "Die Endkontrolle soll als erste Ansicht die Arbeitsplätze von oben zeigen und pro Platz sofort erkennbar machen, wer gerade welches Material bearbeitet."),
+        new("Wareneingang", "Wareneingang", "fa-solid fa-boxes-stacked", "Materialeingang und aktuelle Buchungslage", "Geplante Live-Übersicht für eingehende Materialien und den aktuellen Bearbeitungsstand im Wareneingang.", "Offene Eingänge, Bearbeiter und Materialfluss", "Der Bereich soll später schnell zeigen, was offen ist, was schon gebucht wurde und wo es noch Klärungsbedarf gibt."),
+        new("Thermoformung", "Thermoformung", "fa-solid fa-temperature-three-quarters", "Aktive Aufträge und Maschinenbelegung", "Geplante Live-Ansicht für laufende Thermoformungs-Aufträge und die aktuelle Bearbeitung.", "Maschinenstatus, Auftrag und Produktionsfortschritt", "Hier soll später sichtbar werden, welche Aufträge laufen, wer daran arbeitet und wie weit die aktuelle Fertigung fortgeschritten ist."),
+        new("UV", "UV", "fa-solid fa-sun", "UV-Bereich und Bearbeitungsstand", "Geplante Live-Ansicht für UV-Arbeitsplätze und deren aktuellen Fertigungsstatus.", "Arbeitsplatzstatus, Material und Fortschritt", "Der UV-Bereich bekommt später eine eigene Live-Sicht mit den wichtigsten Statusdaten direkt aus dem laufenden Betrieb."),
+        new("Stanzen", "Stanzen", "fa-solid fa-cookie-bite", "Stanzplätze und aktuelle Belegung", "Geplante Live-Ansicht für aktive Stanzplätze mit Fokus auf Belegung und Produktionsstand.", "Arbeitsplatzbelegung und Stückzahlen", "Die Stanzbereiche sollen später im Überblick zeigen, welche Materialien gerade laufen und wie sich die Mengen entwickeln."),
+        new("Fraesen", "Fräsen", "fa-solid fa-screwdriver-wrench", "Fräsplätze und Bearbeitungsfortschritt", "Geplante Live-Ansicht für Fräsarbeitsplätze und die aktuell laufenden Arbeiten.", "Mitarbeiter, Material und Bearbeitungsstand", "Für Fräsen ist eine eigene Live-Darstellung geplant, damit der aktuelle Stand direkt im Verwaltungsbereich sichtbar ist.")
+    ];
+
+    private static readonly IReadOnlyDictionary<int, EndkontrolleTableTestData> EndkontrolleStationsByTable =
+        new Dictionary<int, EndkontrolleTableTestData>
+        {
+            [1] = new(1, true, "A. Yilmaz", ["ABS Schwarz 2,0", "PMMA Klar"], 184, 220,
+                [
+                    new("08:12", "ABS Schwarz 2,0", "Charge SR-2407", 62, 3, "Kratzer geprüft"),
+                    new("10:04", "ABS Schwarz 2,0", "Charge SR-2407", 58, 1, "Nachkontrolle"),
+                    new("12:41", "ABS Schwarz 2,0", "Charge SR-2411", 64, 2, "OK")
+                ],
+                [
+                    new("05.07.", "ABS Schwarz 2,0", 206, 220),
+                    new("04.07.", "ABS Grau 1,5", 198, 210),
+                    new("03.07.", "ABS Schwarz 2,0", 224, 220)
+                ]),
+            [2] = new(2, true, "M. Kaya", ["PMMA Klar"], 143, 180,
+                [
+                    new("07:55", "PMMA Klar", "Charge SR-2389", 74, 4, "Fusseln"),
+                    new("11:20", "PMMA Klar", "Charge SR-2389", 69, 2, "OK")
+                ],
+                [
+                    new("05.07.", "PMMA Klar", 171, 180),
+                    new("04.07.", "PMMA Rauch", 166, 175)
+                ]),
+            [3] = new(3, false, "-", [], 0, 0, [], []),
+            [4] = new(4, true, "S. Becker", ["PC Transparent", "PC Opal"], 96, 150,
+                [
+                    new("09:18", "PC Transparent", "Charge SR-2420", 42, 1, "Nadelstich"),
+                    new("13:02", "PC Transparent", "Charge SR-2420", 54, 0, "OK")
+                ],
+                [
+                    new("05.07.", "PC Transparent", 148, 150),
+                    new("04.07.", "PC Opal", 131, 140)
+                ]),
+            [5] = new(5, true, "L. Demir", ["ABS Beige"], 211, 200,
+                [
+                    new("08:30", "ABS Beige", "Charge SR-2401", 86, 2, "OK"),
+                    new("10:47", "ABS Beige", "Charge SR-2401", 72, 1, "Dekorfehler"),
+                    new("13:35", "ABS Beige", "Charge SR-2408", 53, 0, "OK")
+                ],
+                [
+                    new("05.07.", "ABS Beige", 205, 200),
+                    new("04.07.", "ABS Beige", 191, 200),
+                    new("03.07.", "ABS Beige", 218, 200)
+                ]),
+            [6] = new(6, true, "N. Hoffmann", ["ABS Grau 1,5", "ABS Schwarz 1,5"], 122, 190,
+                [
+                    new("09:05", "ABS Grau 1,5", "Charge SR-2395", 61, 2, "Farbfehler"),
+                    new("12:14", "ABS Grau 1,5", "Charge SR-2395", 61, 1, "OK")
+                ],
+                [
+                    new("05.07.", "ABS Grau 1,5", 188, 190),
+                    new("04.07.", "ABS Schwarz 1,5", 174, 185)
+                ]),
+            [7] = new(7, false, "-", [], 0, 0, [], []),
+            [8] = new(8, true, "E. Schulz", ["PMMA Rauch"], 89, 160,
+                [
+                    new("10:11", "PMMA Rauch", "Charge SR-2427", 41, 3, "Pickel"),
+                    new("13:26", "PMMA Rauch", "Charge SR-2427", 48, 2, "OK")
+                ],
+                [
+                    new("05.07.", "PMMA Rauch", 154, 160),
+                    new("04.07.", "PMMA Klar", 161, 160)
+                ]),
+            [9] = new(9, true, "R. Stein", ["PC Opal"], 132, 170,
+                [
+                    new("08:44", "PC Opal", "Charge SR-2415", 70, 1, "OK"),
+                    new("12:03", "PC Opal", "Charge SR-2415", 62, 2, "Knicke")
+                ],
+                [
+                    new("05.07.", "PC Opal", 176, 170),
+                    new("04.07.", "PC Transparent", 163, 170)
+                ]),
+            [10] = new(10, true, "T. Wagner", ["ABS Schwarz 1,5", "ABS Schwarz 2,0"], 158, 200,
+                [
+                    new("07:50", "ABS Schwarz 1,5", "Charge SR-2409", 81, 3, "OK"),
+                    new("11:54", "ABS Schwarz 1,5", "Charge SR-2409", 77, 1, "Oelflecken")
+                ],
+                [
+                    new("05.07.", "ABS Schwarz 1,5", 197, 200),
+                    new("04.07.", "ABS Schwarz 2,0", 204, 210)
+                ]),
+            [11] = new(11, false, "-", [], 0, 0, [], []),
+            [12] = new(12, true, "P. Novak", ["ABS Weiß"], 73, 140,
+                [
+                    new("09:39", "ABS Weiß", "Charge SR-2431", 36, 0, "OK"),
+                    new("12:58", "ABS Weiß", "Charge SR-2431", 37, 1, "Flecken")
+                ],
+                [
+                    new("05.07.", "ABS Weiß", 137, 140),
+                    new("04.07.", "ABS Weiß", 142, 140)
+                ])
+        };
+
+    private static readonly IReadOnlyList<EndkontrolleTableTestData> RoomOneLeftStations =
+    [
+        EndkontrolleStationsByTable[3],
+        EndkontrolleStationsByTable[2],
+        EndkontrolleStationsByTable[1]
+    ];
+
+    private static readonly IReadOnlyList<EndkontrolleTableTestData> RoomOneRightStations =
+    [
+        EndkontrolleStationsByTable[5],
+        EndkontrolleStationsByTable[6],
+        EndkontrolleStationsByTable[7],
+        EndkontrolleStationsByTable[8]
+    ];
+
+    private static readonly IReadOnlyList<EndkontrolleTableTestData> RoomTwoStations =
+    [
+        EndkontrolleStationsByTable[9],
+        EndkontrolleStationsByTable[10],
+        EndkontrolleStationsByTable[11],
+        EndkontrolleStationsByTable[12]
+    ];
+
+    private LiveAreaTab ActiveArea => Areas.FirstOrDefault(area => area.Key == ActiveAreaKey) ?? Areas[0];
+
+    private void SelectArea(string areaKey)
+    {
+        ActiveAreaKey = areaKey;
+    }
+
+    private string GetTabButtonClass(string areaKey) =>
+        areaKey == ActiveAreaKey
+            ? "live-fertigung-tab-btn is-active"
+            : "live-fertigung-tab-btn";
+
+    private static string GetEndkontrolleTableClass(EndkontrolleTableTestData station) =>
+        station.IsOccupied
+            ? "endkontrolle-table-card is-occupied"
+            : "endkontrolle-table-card is-free";
+
+    private static int GetProgressPercent(EndkontrolleTableTestData station) =>
+        station.TargetQuantity > 0
+            ? Math.Clamp((int)Math.Round(station.DoneQuantity / (double)station.TargetQuantity * 100), 0, 140)
+            : 0;
+
+    private static string GetProgressStyle(EndkontrolleTableTestData station) =>
+        $"width:{Math.Min(GetProgressPercent(station), 100).ToString(System.Globalization.CultureInfo.InvariantCulture)}%;";
+
+    private static RenderFragment RenderEndkontrolleTable(EndkontrolleTableTestData station) => @<div class="endkontrolle-table-station">
+        <div class="@GetEndkontrolleTableClass(station)">
+            <div class="endkontrolle-table-topline">
+                <span class="endkontrolle-table-label">Tisch @station.TableNumber</span>
+                <span class="endkontrolle-table-state">
+                    <span class="endkontrolle-table-state-dot"></span>
+                    @(station.IsOccupied ? "belegt" : "frei")
+                </span>
+            </div>
+
+            <div class="endkontrolle-table-main">
+                <strong>@(station.IsOccupied ? station.User : "Nicht besetzt")</strong>
+                @if (station.Materials.Count == 0)
+                {
+                    <span class="endkontrolle-material-empty">Keine Zuweisung</span>
+                }
+                else
+                {
+                    <div class="endkontrolle-material-stack">
+                        @foreach (var material in station.Materials)
+                        {
+                            <span>@material</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="endkontrolle-table-metrics">
+                <div>
+                    <span>Menge</span>
+                    <strong>@station.DoneQuantity</strong>
+                </div>
+                <div>
+                    <span>Ziel</span>
+                    <strong>@(station.TargetQuantity > 0 ? station.TargetQuantity : "-")</strong>
+                </div>
+            </div>
+
+            <div class="endkontrolle-table-progress">
+                <span style="@GetProgressStyle(station)"></span>
+            </div>
+        </div>
+
+        <div class="endkontrolle-table-actions">
+            <div class="endkontrolle-hover-action">
+                <button type="button" class="endkontrolle-icon-btn" aria-label="Heutige Einträge anzeigen">
+                    <i class="fa-solid fa-list-check" aria-hidden="true"></i>
+                    <span class="endkontrolle-icon-tooltip">Heutige Einträge</span>
+                </button>
+                <div class="endkontrolle-hover-panel">
+                    <div class="endkontrolle-hover-head">
+                        <strong>Tisch @station.TableNumber: Heutige Einträge</strong>
+                        <span>@station.TodayEntries.Count Einträge</span>
+                    </div>
+                    <div class="endkontrolle-hover-legend">
+                        <span class="text-success">Gut</span>
+                        <span class="text-danger">Schlecht</span>
+                    </div>
+                    @if (station.TodayEntries.Count == 0)
+                    {
+                        <div class="endkontrolle-hover-empty">Keine Einträge</div>
+                    }
+                    else
+                    {
+                        @foreach (var entry in station.TodayEntries)
+                        {
+                            <div class="endkontrolle-hover-row">
+                                <div>
+                                    <strong>@entry.Time</strong>
+                                    <span>@entry.Material</span>
+                                    <small>@entry.Charge</small>
+                                </div>
+                                <div class="endkontrolle-hover-values">
+                                    <span class="text-success">@entry.Good</span>
+                                    <span class="text-danger">@entry.Bad</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="endkontrolle-hover-action">
+                <button type="button" class="endkontrolle-icon-btn" aria-label="Letzte Tage anzeigen">
+                    <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                    <span class="endkontrolle-icon-tooltip">Letzte Tage</span>
+                </button>
+                <div class="endkontrolle-hover-panel is-history">
+                    <div class="endkontrolle-hover-head">
+                        <strong>Tisch @station.TableNumber: Letzte Tage</strong>
+                        <span>Menge / Ziel</span>
+                    </div>
+                    <div class="endkontrolle-hover-legend">
+                        <span>Datum</span>
+                        <span>Menge / Ziel</span>
+                    </div>
+                    @if (station.HistoryEntries.Count == 0)
+                    {
+                        <div class="endkontrolle-hover-empty">Keine Historie</div>
+                    }
+                    else
+                    {
+                        @foreach (var entry in station.HistoryEntries)
+                        {
+                            <div class="endkontrolle-hover-row">
+                                <div>
+                                    <strong>@entry.Date</strong>
+                                    <span>@entry.Material</span>
+                                </div>
+                                <div class="endkontrolle-hover-values">
+                                    <span>@entry.Done</span>
+                                    <small>/ @entry.Target</small>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>;
+
+    private sealed record LiveAreaTab(
+        string Key,
+        string Label,
+        string Icon,
+        string ShortDescription,
+        string Description,
+        string PrimaryFocusTitle,
+        string PrimaryFocusText);
+
+    private sealed record EndkontrolleTableTestData(
+        int TableNumber,
+        bool IsOccupied,
+        string User,
+        IReadOnlyList<string> Materials,
+        int DoneQuantity,
+        int TargetQuantity,
+        IReadOnlyList<EndkontrolleTodayEntry> TodayEntries,
+        IReadOnlyList<EndkontrolleHistoryEntry> HistoryEntries);
+
+    private sealed record EndkontrolleTodayEntry(
+        string Time,
+        string Material,
+        string Charge,
+        int Good,
+        int Bad,
+        string Note);
+
+    private sealed record EndkontrolleHistoryEntry(
+        string Date,
+        string Material,
+        int Done,
+        int Target);
+}

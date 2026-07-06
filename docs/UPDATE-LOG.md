@@ -4,6 +4,14 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
+- Live-Fertigung: Endkontrolle-Tische können im Testdesign mehrere Materialien anzeigen; die Hover-Buttons liegen jetzt neben den Tischkarten und öffnen ihre Details außerhalb der Karte.
+- Live-Fertigung: Die Endkontrolle-Tischkarten zeigen jetzt statische Testdaten mit Benutzer, Material, gemachter Menge, Zielmenge und Belegungsfarbe.
+- Live-Fertigung: Pro Endkontrolle-Tisch sind zwei Hover-Buttons vorbereitet, um heutige Testeinträge und einen Verlauf der letzten Tage anzuzeigen.
+- Live-Fertigung: Endkontrolle hat jetzt einen neuen Aufbau mit Raum 1, Raum 2 und vorbereiteten Tischkarten direkt an den beschriebenen Wänden.
+- Live-Fertigung: Der verworfene Endkontrolle-Layout-Entwurf wurde entfernt, damit der Bereich neu nach fachlicher Beschreibung gestaltet werden kann.
+- Live-Fertigung: Die neue Verwaltungsseite hat jetzt eine vorbereitete Bereichsauswahl für Endkontrolle, Wareneingang, Thermoformung, UV, Stanzen und Fräsen.
+- Live-Fertigung: Endkontrolle ist beim Öffnen der Seite automatisch als erster Bereich aktiv.
+- Dokumentation: Für Live-Fertigung wurden erste Fach-, Backend- und Arbeitsanweisungsdokumente angelegt.
 - Schichtplan Verwaltung: Zielmengen in Materialliste, Karten und Bearbeitungsdialog heißen jetzt einheitlich `Tagesvorgabe`.
 - Schichtplan Verwaltung: Der Benutzer `Schichtplan Monitor` wird in der Benutzerzuweisung nicht mehr als normaler Plan-Benutzer angeboten.
 - Schichtplan Monitoransicht: Beim Datumswechsel wird der angezeigte Tag im Vollbild direkt noch einmal still neu geladen, damit die Skalierung nicht halbiert hängen bleibt.
