@@ -423,6 +423,8 @@ namespace QIN_Production_Web.Data
 
         private async Task<List<FehleranalyseSchichtplanZielRow>> GetSchichtplanZielRowsAsync(DateTime von, DateTime bis)
         {
+            await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(SqlManager.FertigungConnectionString);
+
             var rows = new List<FehleranalyseSchichtplanZielRow>();
 
             const string query = @"
@@ -432,6 +434,7 @@ WITH MaterialAssignments AS
         p.PlanDatum,
         COALESCE(m1.Material, e.Material) AS Material,
         CASE
+            WHEN e.MaterialZielMenge IS NOT NULL THEN e.MaterialZielMenge
             WHEN m1.ID IS NULL THEN 0
             WHEN CAST(m1.CreatedAt AS date) > p.PlanDatum THEN 0
             WHEN m1.UpdatedAt IS NOT NULL AND CAST(m1.UpdatedAt AS date) > p.PlanDatum THEN 0
@@ -456,6 +459,7 @@ WITH MaterialAssignments AS
         e.ID,
         COALESCE(m1.Material, e.Material),
         CASE
+            WHEN e.MaterialZielMenge IS NOT NULL THEN e.MaterialZielMenge
             WHEN m1.ID IS NULL THEN 0
             WHEN CAST(m1.CreatedAt AS date) > p.PlanDatum THEN 0
             WHEN m1.UpdatedAt IS NOT NULL AND CAST(m1.UpdatedAt AS date) > p.PlanDatum THEN 0
@@ -468,6 +472,7 @@ WITH MaterialAssignments AS
         p.PlanDatum,
         COALESCE(m2.Material, e.Material2) AS Material,
         CASE
+            WHEN e.Material2ZielMenge IS NOT NULL THEN e.Material2ZielMenge
             WHEN m2.ID IS NULL THEN 0
             WHEN CAST(m2.CreatedAt AS date) > p.PlanDatum THEN 0
             WHEN m2.UpdatedAt IS NOT NULL AND CAST(m2.UpdatedAt AS date) > p.PlanDatum THEN 0
@@ -492,6 +497,7 @@ WITH MaterialAssignments AS
         e.ID,
         COALESCE(m2.Material, e.Material2),
         CASE
+            WHEN e.Material2ZielMenge IS NOT NULL THEN e.Material2ZielMenge
             WHEN m2.ID IS NULL THEN 0
             WHEN CAST(m2.CreatedAt AS date) > p.PlanDatum THEN 0
             WHEN m2.UpdatedAt IS NOT NULL AND CAST(m2.UpdatedAt AS date) > p.PlanDatum THEN 0

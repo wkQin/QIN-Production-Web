@@ -1,73 +1,73 @@
 # Live-Fertigung Backend
 
-Diese Dokumentation beschreibt den aktuellen technischen Startstand der Verwaltungsseite `Live-Fertigung`.
+Diese Dokumentation beschreibt den technischen Stand der Verwaltungsseite `Live-Fertigung`.
 
 ## Seite im System
 
 - Route: `/verwaltung/live-fertigung`
 - Datei: [LiveFertigung.razor](/Components/Pages/Verwaltung/LiveFertigung.razor:1)
 - Styles: [LiveFertigung.razor.css](/Components/Pages/Verwaltung/LiveFertigung.razor.css:1)
+- Service: [LiveFertigungService.cs](/Data/LiveFertigungService.cs:1)
+- Modelle: [LiveFertigungModels.cs](/Data/LiveFertigungModels.cs:1)
 
 ## Aktueller Umfang
 
-Die Seite enthält im Startstand noch keine angebundenen Live-Daten.
+Die Seite hat für `Endkontrolle` eine erste echte Datenanbindung.
 
 Aktuell umgesetzt sind:
 
 - Verwaltungsroute für die neue Seite
 - Bereichsauswahl über Tabs
 - Standardauswahl `Endkontrolle`
-- neuer Endkontrolle-Aufbau mit `Raum 1`, `Raum 2` und vorbereiteten Tischkarten
-- statische Testdaten für Tischbelegung, Benutzer, ein oder mehrere Materialien, Menge und Zielmenge
+- Endkontrolle-Aufbau mit `Raum 1`, `Raum 2` und Tischkarten
+- Datenservice `LiveFertigungService`
+- echte Sauberraum-Zuweisungen aus dem Schichtplan
+- echte Wochen- und historische Endkontrolle-Einträge aus `dbo.Table1`
+- Anzeige von Benutzer, ein oder mehreren Materialien, Menge und Zielmenge
 - seitlich ausgelagerte Hover-Aktionsleisten für heutige Einträge und Verlauf der letzten Tage
-- vorbereitete Inhaltsfläche pro ausgewähltem Bereich
-- vorbereitete Beschreibung für den geplanten späteren Ausbau
 
-## Bereichsauswahl
+## Datenquellen
 
-Die Tabs werden aktuell direkt in der Seite definiert.
+Die Endkontrolle nutzt aktuell zwei Datenbereiche:
 
-Pro Bereich sind hinterlegt:
+- `Fertigung.dbo.SchichtplanPlan`, `SchichtplanEintrag`, `SchichtplanEintragBenutzer`, `SchichtplanArbeitsplatz` und `SchichtplanMaterialStamm`
+- `qinFSK\table1.dbo.Table1` mit `dbo.LoginDaten`
 
-- technischer Schlüssel
-- sichtbarer Name
-- Icon
-- Kurzbeschreibung
-- Beschreibung für den Inhaltsbereich
-- geplanter Fokus des Bereichs
+Der Schichtplan liefert:
 
-Die aktive Auswahl wird lokal über `ActiveAreaKey` gesteuert.
+- Benutzer
+- Personalnummer
+- Sauberraum-Zuweisung inklusive Arbeitsplatz `Tisch 1` bis `Tisch 12`
+- Material 1 und Material 2
+- Zielmenge je Material aus dem Tages-Snapshot `SchichtplanEintrag.MaterialZielMenge` und `Material2ZielMenge`
 
-Standardwert:
+`dbo.Table1` liefert:
 
-- `Endkontrolle`
+- Einträge der letzten 7 Tage
+- Gutteile
+- Schlechtteile als Summe der Fehlerfelder
+- Artikel als Material
+- Charge
+- Bemerkungen
+- Verlauf der letzten Tage
 
-## Noch nicht umgesetzt
+Die Zuordnung zur Live-Fertigung erfolgt über `SchichtplanArbeitsplatz.ArbeitsplatzName`. Ein Schichtplan-Arbeitsplatz `Tisch 7` wird dadurch direkt auf die Live-Karte `Tisch 7` gesetzt. Freie Plätze bleiben rot.
+
+Historische Zielmengen werden aus dem Schichtplan-Tages-Snapshot gelesen. Wird die Tagesmenge eines Materials später im Materialstamm geändert, ändern sich alte Live-Fertigung-Verlaufstage dadurch nicht mehr rückwirkend.
+
+## Noch Offen
 
 Folgende technische Schritte sind noch offen:
 
-- Anbindung an echte Fertigungs- und Live-Daten
-- Auflösung einzelner Arbeitsplätze pro Bereich
-- Ersetzen der statischen Testdaten durch Daten aus Schichtplan und `dbo.Table1`
-- Befüllung der Endkontrolle-Arbeitsplätze mit echten Arbeitsplatzinformationen
-- Zuordnung von Mitarbeiter, Material, Zielmenge und gemachter Menge
-- spätere Hover- oder Detailansicht für alte und fertige Informationen
-- eventuelle gemeinsame Datenmodelle und Services für die Bereichskarten
+- Prüfung, ob Mehrfachzuweisungen pro Tisch im Tagesbetrieb getrennt oder zusammengefasst angezeigt werden sollen
+- Detailansicht für alte und fertige Informationen über die aktuelle Wochen- und Verlaufsansicht hinaus
+- gemeinsame Datenmodelle und Services für weitere Live-Fertigung-Bereiche
 
-## Geplanter technischer Ausbau
+## Geplanter Technischer Ausbau
 
 Voraussichtlich wird die Seite später Folgendes benötigen:
 
-1. Ein gemeinsames Datenmodell für Bereich, Arbeitsplatz, Mitarbeiter, Material und Mengen.
-2. Einen Service für Live-Fertigungsdaten oder mehrere Bereichs-Services mit einheitlichem Rückgabeformat.
-3. Eine klare Trennung zwischen:
-   - aktuelle Live-Information
-   - ältere Information
-   - bereits fertige Information
+1. Eine fachliche Entscheidung zur Darstellung mehrerer Schichten oder Personen auf demselben Tisch.
+2. Einen gemeinsamen Datenvertrag für Bereich, Arbeitsplatz, Mitarbeiter, Material und Mengen.
+3. Eine klare Trennung zwischen aktueller Live-Information, älterer Information und bereits fertiger Information.
 4. Eine strukturierte Wiederverwendung von Karten- oder Arbeitsplatz-Komponenten für mehrere Bereiche.
-
-## Wichtiger Hinweis
-
-Die Seite ist aktuell bewusst nur als navigierbarer Startaufbau umgesetzt.
-
-Damit kann die visuelle und fachliche Struktur zuerst abgestimmt werden, bevor echte Live-Daten und Bereichslogik angebunden werden.

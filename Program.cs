@@ -41,6 +41,7 @@ builder.Services.AddScoped<ChargenanalyseService>();
 builder.Services.AddScoped<ProduktionslayoutService>();
 builder.Services.AddScoped<FertigungsauftraegeService>();
 builder.Services.AddScoped<SchichtplanService>();
+builder.Services.AddScoped<LiveFertigungService>();
 builder.Services.AddScoped<VerwaltungWareneingangService>();
 builder.Services.AddScoped<NachrichtenService>();
 builder.Services.AddScoped<ActivityLogService>();

@@ -12,6 +12,8 @@ public class SchichtplanService
 
     public async Task<SchichtplanBoardModel> GetBoardAsync(DateTime planDate)
     {
+        await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(_fertigungConnectionString);
+
         var normalizedDate = planDate.Date;
 
         using var connection = new SqlConnection(_fertigungConnectionString);
@@ -36,10 +38,12 @@ public class SchichtplanService
                     e.Schicht,
                     e.MaterialStammID,
                     COALESCE(m1.Material, e.Material) AS Material,
-                    m1.TagesMenge AS MaterialTagesMenge,
+                    COALESCE(e.MaterialZielMenge, m1.TagesMenge) AS MaterialTagesMenge,
+                    e.MaterialZielMenge,
                     e.MaterialStammID2,
                     COALESCE(m2.Material, e.Material2) AS Material2,
-                    m2.TagesMenge AS Material2TagesMenge,
+                    COALESCE(e.Material2ZielMenge, m2.TagesMenge) AS Material2TagesMenge,
+                    e.Material2ZielMenge,
                     e.FA_Nr,
                     e.Bemerkung,
                     e.ZuletztGeaendertAm
@@ -80,6 +84,8 @@ public class SchichtplanService
 
     public async Task<int> CopyPlanAsync(DateTime sourceDate, DateTime targetDate, string changedBy)
     {
+        await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(_fertigungConnectionString);
+
         var normalizedSourceDate = sourceDate.Date;
         var normalizedTargetDate = targetDate.Date;
 
@@ -154,8 +160,10 @@ USING
         source.Schicht,
         source.MaterialStammID,
         source.Material,
+        source.MaterialZielMenge,
         source.MaterialStammID2,
         source.Material2,
+        source.Material2ZielMenge,
         source.FA_Nr,
         source.Bemerkung
     FROM dbo.SchichtplanEintrag source
@@ -170,8 +178,10 @@ WHEN NOT MATCHED THEN
         Schicht,
         MaterialStammID,
         Material,
+        MaterialZielMenge,
         MaterialStammID2,
         Material2,
+        Material2ZielMenge,
         FA_Nr,
         Bemerkung,
         CreatedBy,
@@ -184,8 +194,10 @@ WHEN NOT MATCHED THEN
         source.Schicht,
         source.MaterialStammID,
         source.Material,
+        source.MaterialZielMenge,
         source.MaterialStammID2,
         source.Material2,
+        source.Material2ZielMenge,
         source.FA_Nr,
         source.Bemerkung,
         @ChangedBy,
@@ -663,6 +675,8 @@ WHERE ID = @Id
 
     public async Task<SchichtplanMaterialAssignResult> AssignMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialId, string changedBy)
     {
+        await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(_fertigungConnectionString);
+
         ValidateShift(shift);
 
         using var connection = new SqlConnection(_fertigungConnectionString);
@@ -670,7 +684,7 @@ WHERE ID = @Id
         using var transaction = connection.BeginTransaction();
 
         var material = await connection.QuerySingleOrDefaultAsync<MaterialRow>(
-            @"SELECT TOP (1) ID, Material
+            @"SELECT TOP (1) ID, Material, TagesMenge
               FROM dbo.SchichtplanMaterialStamm
               WHERE ID = @MaterialId
                 AND Aktiv = 1;",
@@ -687,7 +701,7 @@ WHERE ID = @Id
         var entryId = await EnsureEntryAsync(connection, transaction, planId, workplaceId, shift, changedBy);
 
         var entry = await connection.QuerySingleAsync<EntryRow>(
-            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialStammID2, Material2, FA_Nr, Bemerkung, ZuletztGeaendertAm
+            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialZielMenge, MaterialStammID2, Material2, Material2ZielMenge, FA_Nr, Bemerkung, ZuletztGeaendertAm
               FROM dbo.SchichtplanEintrag
               WHERE ID = @EntryId;",
             new { EntryId = entryId },
@@ -708,6 +722,7 @@ WHERE ID = @Id
                 @"UPDATE dbo.SchichtplanEintrag
                   SET MaterialStammID = @MaterialId,
                       Material = @Material,
+                      MaterialZielMenge = @MaterialZielMenge,
                       ZuletztGeaendertAm = SYSDATETIME(),
                       ZuletztGeaendertVon = @ChangedBy
                   WHERE ID = @EntryId;";
@@ -719,6 +734,7 @@ WHERE ID = @Id
                 @"UPDATE dbo.SchichtplanEintrag
                   SET MaterialStammID2 = @MaterialId,
                       Material2 = @Material,
+                      Material2ZielMenge = @MaterialZielMenge,
                       ZuletztGeaendertAm = SYSDATETIME(),
                       ZuletztGeaendertVon = @ChangedBy
                   WHERE ID = @EntryId;";
@@ -737,6 +753,7 @@ WHERE ID = @Id
                 EntryId = entryId,
                 MaterialId = material.Id,
                 Material = material.Material,
+                MaterialZielMenge = material.TagesMenge,
                 ChangedBy = NormalizeAuditName(changedBy)
             },
             transaction);
@@ -749,6 +766,8 @@ WHERE ID = @Id
 
     public async Task ClearMaterialAsync(DateTime planDate, int workplaceId, string shift, int materialSlot, string changedBy)
     {
+        await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(_fertigungConnectionString);
+
         ValidateShift(shift);
         ValidateMaterialSlot(materialSlot);
 
@@ -764,7 +783,7 @@ WHERE ID = @Id
         }
 
         var entry = await connection.QuerySingleAsync<EntryRow>(
-            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialStammID2, Material2, FA_Nr, Bemerkung, ZuletztGeaendertAm
+            @"SELECT TOP (1) ID, ArbeitsplatzID, Schicht, MaterialStammID, Material, MaterialZielMenge, MaterialStammID2, Material2, Material2ZielMenge, FA_Nr, Bemerkung, ZuletztGeaendertAm
               FROM dbo.SchichtplanEintrag
               WHERE ID = @EntryId;",
             new { EntryId = entryId.Value },
@@ -772,28 +791,35 @@ WHERE ID = @Id
 
         var primaryMaterialId = entry.MaterialStammID;
         var primaryMaterial = NormalizeNullable(entry.Material);
+        var primaryMaterialZielMenge = entry.MaterialZielMenge;
         var secondaryMaterialId = entry.MaterialStammID2;
         var secondaryMaterial = NormalizeNullable(entry.Material2);
+        var secondaryMaterialZielMenge = entry.Material2ZielMenge;
 
         if (materialSlot == 1)
         {
             primaryMaterialId = secondaryMaterialId;
             primaryMaterial = secondaryMaterial;
+            primaryMaterialZielMenge = secondaryMaterialZielMenge;
             secondaryMaterialId = null;
             secondaryMaterial = null;
+            secondaryMaterialZielMenge = null;
         }
         else
         {
             secondaryMaterialId = null;
             secondaryMaterial = null;
+            secondaryMaterialZielMenge = null;
         }
 
         await connection.ExecuteAsync(
             @"UPDATE dbo.SchichtplanEintrag
               SET MaterialStammID = @PrimaryMaterialId,
                   Material = @PrimaryMaterial,
+                  MaterialZielMenge = @PrimaryMaterialZielMenge,
                   MaterialStammID2 = @SecondaryMaterialId,
                   Material2 = @SecondaryMaterial,
+                  Material2ZielMenge = @SecondaryMaterialZielMenge,
                   ZuletztGeaendertAm = SYSDATETIME(),
                   ZuletztGeaendertVon = @ChangedBy
               WHERE ID = @EntryId;",
@@ -802,8 +828,10 @@ WHERE ID = @Id
                 EntryId = entryId.Value,
                 PrimaryMaterialId = primaryMaterialId,
                 PrimaryMaterial = primaryMaterial,
+                PrimaryMaterialZielMenge = primaryMaterialZielMenge,
                 SecondaryMaterialId = secondaryMaterialId,
                 SecondaryMaterial = secondaryMaterial,
+                SecondaryMaterialZielMenge = secondaryMaterialZielMenge,
                 ChangedBy = NormalizeAuditName(changedBy)
             },
             transaction);
@@ -938,6 +966,8 @@ WHERE ID = @Id
 
     public async Task<List<SchichtplanSauberraumProgressModel>> GetSauberraumProgressForUserAsync(string? personalnummer, string? displayName, DateTime? planDate = null)
     {
+        await SchichtplanSchemaService.EnsureZielSnapshotColumnsAsync(_fertigungConnectionString);
+
         var normalizedPersonalnummer = NormalizeNullable(personalnummer);
         var normalizedDisplayName = NormalizeNullable(displayName);
         var normalizedPlanDate = (planDate ?? GetAutomaticPlanDate()).Date;
@@ -952,7 +982,7 @@ WITH AssignedMaterials AS
     SELECT
         e.MaterialStammID AS MaterialId,
         COALESCE(m1.Material, e.Material) AS Material,
-        m1.TagesMenge AS ZielMenge
+        COALESCE(e.MaterialZielMenge, m1.TagesMenge) AS ZielMenge
     FROM dbo.SchichtplanPlan p
     INNER JOIN dbo.SchichtplanEintrag e
         ON e.SchichtplanPlanID = p.ID
@@ -976,7 +1006,7 @@ WITH AssignedMaterials AS
     SELECT
         e.MaterialStammID2 AS MaterialId,
         COALESCE(m2.Material, e.Material2) AS Material,
-        m2.TagesMenge AS ZielMenge
+        COALESCE(e.Material2ZielMenge, m2.TagesMenge) AS ZielMenge
     FROM dbo.SchichtplanPlan p
     INNER JOIN dbo.SchichtplanEintrag e
         ON e.SchichtplanPlanID = p.ID
@@ -1540,9 +1570,11 @@ END;",
         public int? MaterialStammID { get; set; }
         public string? Material { get; set; }
         public int? MaterialTagesMenge { get; set; }
+        public int? MaterialZielMenge { get; set; }
         public int? MaterialStammID2 { get; set; }
         public string? Material2 { get; set; }
         public int? Material2TagesMenge { get; set; }
+        public int? Material2ZielMenge { get; set; }
         public string? FA_Nr { get; set; }
         public string? Bemerkung { get; set; }
         public DateTime? ZuletztGeaendertAm { get; set; }

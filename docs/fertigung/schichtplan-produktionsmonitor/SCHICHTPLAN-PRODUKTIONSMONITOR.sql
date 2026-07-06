@@ -110,8 +110,10 @@ BEGIN TRY
             Schicht             NVARCHAR(20) NOT NULL,
             MaterialStammID     INT NULL,
             Material            NVARCHAR(200) NULL,
+            MaterialZielMenge   INT NULL,
             MaterialStammID2    INT NULL,
             Material2           NVARCHAR(200) NULL,
+            Material2ZielMenge  INT NULL,
             FA_Nr               NVARCHAR(50) NULL,
             Bemerkung           NVARCHAR(500) NULL,
             CreatedAt           DATETIME2(0) NOT NULL
@@ -171,10 +173,22 @@ BEGIN TRY
             ADD MaterialStammID2 INT NULL;
     END;
 
+    IF COL_LENGTH(N'dbo.SchichtplanEintrag', N'MaterialZielMenge') IS NULL
+    BEGIN
+        ALTER TABLE dbo.SchichtplanEintrag
+            ADD MaterialZielMenge INT NULL;
+    END;
+
     IF COL_LENGTH(N'dbo.SchichtplanEintrag', N'Material2') IS NULL
     BEGIN
         ALTER TABLE dbo.SchichtplanEintrag
             ADD Material2 NVARCHAR(200) NULL;
+    END;
+
+    IF COL_LENGTH(N'dbo.SchichtplanEintrag', N'Material2ZielMenge') IS NULL
+    BEGIN
+        ALTER TABLE dbo.SchichtplanEintrag
+            ADD Material2ZielMenge INT NULL;
     END;
 
     IF COL_LENGTH(N'dbo.SchichtplanEintragBenutzer', N'SchichtplanPlanID') IS NULL

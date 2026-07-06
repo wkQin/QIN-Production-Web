@@ -106,6 +106,13 @@ Die Daten kommen aktuell aus der Datenbank:
 - `dbo.SchichtplanEintragBenutzer`
 - `dbo.SchichtplanMaterialStamm`
 
+Zielmengen werden als Tages-Snapshot direkt in `dbo.SchichtplanEintrag` gespeichert:
+
+- `MaterialZielMenge`
+- `Material2ZielMenge`
+
+Dadurch bleiben die Ziele eines Tages stabil, auch wenn die Standard-Tagesvorgabe im Materialstamm später geändert wird.
+
 Die Verwaltungsseite lädt zusätzlich verfügbare Benutzer aus `dbo.LoginDaten` aus der Hauptdatenbank und kombiniert diese mit manuellen Zusatzbenutzern aus `dbo.SchichtplanZusatzBenutzer`.
 
 Aktuell sind folgende Bereiche enthalten:

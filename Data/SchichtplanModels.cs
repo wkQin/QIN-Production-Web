@@ -51,9 +51,11 @@ public sealed class SchichtplanCellModel
     public int? MaterialStammId { get; set; }
     public string? Material { get; set; }
     public int? MaterialTagesMenge { get; set; }
+    public int? MaterialZielMenge { get; set; }
     public int? MaterialStammId2 { get; set; }
     public string? Material2 { get; set; }
     public int? Material2TagesMenge { get; set; }
+    public int? Material2ZielMenge { get; set; }
     public string? FANr { get; set; }
     public string? Bemerkung { get; set; }
     public DateTime? LastUpdatedAt { get; set; }

@@ -4,6 +4,16 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
+- Schichtplan: Die neuen Zielmengen-Snapshot-Spalten werden vor betroffenen Abfragen automatisch angelegt, damit bestehende Datenbanken nicht mit `Invalid column name` abbrechen.
+- Schichtplan: Zielmengen werden jetzt als Tages-Snapshot in `SchichtplanEintrag.MaterialZielMenge` und `Material2ZielMenge` gespeichert.
+- Fehleranalyse und Live-Fertigung: Zielauswertungen lesen jetzt den Tages-Snapshot aus dem Schichtplan, damit tägliche Zieländerungen historische Tage nicht rückwirkend verfälschen.
+- Live-Fertigung: Die Hover-Titel der Endkontrolle wurden vereinheitlicht auf `Einträge letzte 7 Tage` und `Mengen letzte 7 Tage`.
+- Live-Fertigung: Der Verlauf der letzten Tage zeigt geänderte Material-Zielmengen nicht mehr rückwirkend als neue Zielmenge für alte Produktionstage an.
+- Live-Fertigung: Im Wochen-Hover der Endkontrolle wird die Uhrzeit ausgeblendet, sodass nur Datum, Material, Charge, Gutteile und Schlechtteile sichtbar sind.
+- Live-Fertigung: Der obere Hover-Button der Endkontrolle zeigt jetzt Einträge der letzten 7 Tage mit Datum, Material, Charge, Gutteilen und Schlechtteilen.
+- Live-Fertigung: Die Endkontrolle ordnet Schichtplan-Zuweisungen jetzt über `SchichtplanArbeitsplatz.ArbeitsplatzName` direkt den echten Tischen 1 bis 12 zu.
+- Live-Fertigung: Endkontrolle lädt jetzt echte Sauberraum-Zuweisungen aus dem Schichtplan und verbindet sie mit heutigen sowie historischen Endkontrolle-Einträgen aus `dbo.Table1`.
+- Live-Fertigung: Für die Endkontrolle wurde ein eigener `LiveFertigungService` ergänzt, der Benutzer, Materialien, Zielmenge, Gutteile, Schlechtteile und Hover-Verlauf für die Tischkarten vorbereitet.
 - Live-Fertigung: Endkontrolle-Tische können im Testdesign mehrere Materialien anzeigen; die Hover-Buttons liegen jetzt neben den Tischkarten und öffnen ihre Details außerhalb der Karte.
 - Live-Fertigung: Die Endkontrolle-Tischkarten zeigen jetzt statische Testdaten mit Benutzer, Material, gemachter Menge, Zielmenge und Belegungsfarbe.
 - Live-Fertigung: Pro Endkontrolle-Tisch sind zwei Hover-Buttons vorbereitet, um heutige Testeinträge und einen Verlauf der letzten Tage anzuzeigen.
