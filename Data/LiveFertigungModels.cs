@@ -8,6 +8,7 @@ public sealed class LiveFertigungEndkontrolleTableModel
     public string? Personalnummer { get; set; }
     public IReadOnlyList<string> Materials { get; set; } = [];
     public int DoneQuantity { get; set; }
+    public int BadQuantity { get; set; }
     public int TargetQuantity { get; set; }
     public IReadOnlyList<LiveFertigungWeekEntryModel> WeekEntries { get; set; } = [];
     public IReadOnlyList<LiveFertigungHistoryEntryModel> HistoryEntries { get; set; } = [];

@@ -21,7 +21,8 @@ Ziel ist, dass die Verwaltung und später auch andere berechtigte Nutzer schnell
 - welche Arbeitsplätze aktiv sind
 - welcher Mitarbeiter an welchem Platz arbeitet
 - welches Material aktuell bearbeitet wird
-- welche gemachte Menge bereits vorliegt
+- welche Menge an Gutteilen bereits vorliegt
+- wie viele Schlechtteile angefallen sind
 - welche Zielmenge geplant ist
 
 ## Aktueller Stand
@@ -35,7 +36,8 @@ Aktuell gilt:
 - Für `Endkontrolle` gibt es einen Aufbau mit `Raum 1` oben und `Raum 2` unten links.
 - Die Tische sind als Karten direkt an den beschriebenen Raumwänden platziert.
 - Die Tischkarten zeigen echte Sauberraum-Zuweisungen aus dem Schichtplan und verwenden die dort gepflegten Tisch-Arbeitsplätze.
-- Die Tischkarten zeigen Benutzer, Material, gemachte Menge und Zielmenge.
+- Die Tischkarten zeigen Benutzer, Material, Menge als Gutteile und Schlechtteile.
+- Die Zielmenge steht direkt rechts neben dem Namen.
 - Mehrere Materialien pro Schichtplan-Zuweisung werden als Materialchips angezeigt.
 - Belegte Tische werden grün markiert, freie Tische rot.
 - Die erste Hover-Fläche zeigt Endkontrolle-Einträge der letzten 7 Tage mit Datum, Material, Charge, Gutteilen und Schlechtteilen ohne Uhrzeit.
@@ -54,8 +56,9 @@ Geplant ist dort:
 - pro Arbeitsplatz der Name des Mitarbeiters
 - das aktuell bearbeitete Material
 - bei Bedarf mehrere Materialien pro Tag
-- die gemachte Menge
-- die Zielmenge
+- die Menge als Gutteile
+- die Schlechtteile
+- die Zielmenge direkt neben dem Namen
 - eine Detailansicht für Einträge der letzten 7 Tage
 - eine Verlaufansicht für die letzten Tage
 

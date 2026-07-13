@@ -320,6 +320,7 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
             Personalnummer = string.Join(", ", assignments.Select(assignment => assignment.Personalnummer).Where(value => !string.IsNullOrWhiteSpace(value)).Distinct(StringComparer.OrdinalIgnoreCase)),
             Materials = materials,
             DoneQuantity = todayRows.Sum(row => row.Good),
+            BadQuantity = todayRows.Sum(row => row.Bad),
             TargetQuantity = targetQuantity,
             WeekEntries = productionRows
                 .Where(row => row.FSKdate.Date >= planDate.AddDays(-6) && row.FSKdate.Date <= planDate)
@@ -374,6 +375,7 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
             User = "-",
             Materials = [],
             DoneQuantity = 0,
+            BadQuantity = 0,
             TargetQuantity = 0,
             WeekEntries = [],
             HistoryEntries = []

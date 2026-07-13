@@ -4,6 +4,7 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
+- Live-Fertigung: In der Endkontrolle steht das Ziel jetzt direkt rechts neben dem Namen; die Karten zeigen darunter `Menge` in grün als Gutteile und `Schlecht` in rot als Summe aller Fehlerteile.
 - Schichtplan: Die neuen Zielmengen-Snapshot-Spalten werden vor betroffenen Abfragen automatisch angelegt, damit bestehende Datenbanken nicht mit `Invalid column name` abbrechen.
 - Schichtplan: Zielmengen werden jetzt als Tages-Snapshot in `SchichtplanEintrag.MaterialZielMenge` und `Material2ZielMenge` gespeichert.
 - Fehleranalyse und Live-Fertigung: Zielauswertungen lesen jetzt den Tages-Snapshot aus dem Schichtplan, damit tägliche Zieländerungen historische Tage nicht rückwirkend verfälschen.

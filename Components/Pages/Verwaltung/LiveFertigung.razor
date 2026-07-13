@@ -172,6 +172,7 @@
             User = "-",
             Materials = [],
             DoneQuantity = 0,
+            BadQuantity = 0,
             TargetQuantity = 0,
             WeekEntries = [],
             HistoryEntries = []
@@ -201,7 +202,10 @@
             </div>
 
             <div class="endkontrolle-table-main">
-                <strong>@(station.IsOccupied ? station.User : "Nicht besetzt")</strong>
+                <div class="endkontrolle-table-user-row">
+                    <strong>@(station.IsOccupied ? station.User : "Nicht besetzt")</strong>
+                    <span class="endkontrolle-target-pill">Ziel @(station.TargetQuantity > 0 ? station.TargetQuantity : "-")</span>
+                </div>
                 @if (station.Materials.Count == 0)
                 {
                     <span class="endkontrolle-material-empty">Keine Zuweisung</span>
@@ -218,13 +222,13 @@
             </div>
 
             <div class="endkontrolle-table-metrics">
-                <div>
+                <div class="endkontrolle-metric-card is-good">
                     <span>Menge</span>
                     <strong>@station.DoneQuantity</strong>
                 </div>
-                <div>
-                    <span>Ziel</span>
-                    <strong>@(station.TargetQuantity > 0 ? station.TargetQuantity : "-")</strong>
+                <div class="endkontrolle-metric-card is-bad">
+                    <span>Schlecht</span>
+                    <strong>@station.BadQuantity</strong>
                 </div>
             </div>
 
