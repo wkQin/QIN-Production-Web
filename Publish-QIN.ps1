@@ -1,30 +1,33 @@
 # Publish-QIN.ps1
-# Dieses Skript bereitet alles für den Server vor.
+# This script prepares the deployment package for the server.
 
-Write-Host "--- QIN-Production: Veröffentlichung wird gestartet ---" -ForegroundColor Cyan
+Write-Host "--- QIN-Production: Publishing started ---" -ForegroundColor Cyan
 
-# Sicherstellen, dass wir im richtigen Verzeichnis sind
+# Make sure we are in the project directory
 Set-Location -Path $PSScriptRoot
 
-# 1. Altes Paket löschen, falls vorhanden
+# 1. Remove old package if it exists
 if (Test-Path ".\publish_output") {
     Remove-Item -Path ".\publish_output" -Recurse -Force
 }
 
-# 2. Projekt kompilieren und exportieren (Release Mode + Self-Contained)
-Write-Host "Kompiliere Dateien inkl. .NET 10 Runtime für den Server..." -ForegroundColor Yellow
+# 2. Publish the project for IIS deployment
+Write-Host "Publishing files including the .NET runtime for the server..." -ForegroundColor Yellow
 dotnet publish ".\QIN-Production-Web.csproj" -c Release -o ".\publish_output" -r win-x64 --self-contained true --nologo
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "`nERFOLG!" -ForegroundColor Green
-    Write-Host "Sämtliche Dateien für den Server liegen nun in diesem Ordner:"
+    Write-Host "`nSUCCESS!" -ForegroundColor Green
+    Write-Host "All server files are now available in this folder:"
     Write-Host (Get-Item ".\publish_output").FullName -ForegroundColor White
-    Write-Host "`nNächste Schritte:"
-    Write-Host "1. Kopiere den INHALT des 'publish_output' Ordners auf deinen Server (z.B. nach C:\inetpub\wwwroot\qin)."
-    Write-Host "2. Stelle sicher, dass auf dem Server das '.NET Hosting Bundle' installiert ist."
-    Write-Host "3. Erstelle im IIS Manager eine neue Website, die auf diesen Pfad zeigt."
+    Write-Host "`nNext steps:"
+    Write-Host "1. Copy the CONTENTS of 'publish_output' to the server target folder (for example C:\inetpub\wwwroot\qin)." -ForegroundColor White
+    Write-Host "2. Important: IIS must point to the deployed target folder that contains 'web.config' and 'QIN-Production-Web.exe'." -ForegroundColor Yellow
+    Write-Host "3. Do not point IIS to the source project folder and do not copy 'publish_output' as a nested subfolder." -ForegroundColor Yellow
+    Write-Host "4. Make sure the '.NET Hosting Bundle' is installed on the server." -ForegroundColor White
+    Write-Host "5. Create or update the IIS website so its Physical Path matches that deployed target folder exactly." -ForegroundColor White
 }
 else {
-    Write-Host "`nFEHLER beim Erstellen des Pakets!" -ForegroundColor Red
+    Write-Host "`nPublishing failed!" -ForegroundColor Red
 }
+
 pause
