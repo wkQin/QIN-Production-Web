@@ -1,8 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
+using System;
+using System.Threading.Tasks;
 
 namespace QIN_Production_Web.Helpers
 {
@@ -12,27 +12,20 @@ namespace QIN_Production_Web.Helpers
         {
             try
             {
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("QIN-Production-Tool", "pod-tool@qin-form.local"));
-                
-                var recipients = recipientEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (var recipient in recipients)
-                {
-                    message.To.Add(new MailboxAddress("", recipient.Trim()));
-                }
-                
                 bool isBad = zustand.Equals("Schlecht", StringComparison.OrdinalIgnoreCase);
                 string subjectPrefix = isBad ? "WICHTIG: " : "Info: ";
                 string titleColor = isBad ? "#d9534f" : "#2ca02c";
                 string titleText = isBad ? "Wareneingang mit mangelhaftem Zustand" : "Neuer Wareneingang erfasst";
                 string topNoticeHtml = string.IsNullOrWhiteSpace(hinweisOben)
-                    ? ""
+                    ? string.Empty
                     : $@"<div style='background: #fff3cd; border: 2px solid #ffc107; color: #664d03; padding: 12px 14px; margin: 0 0 18px 0; font-size: 15px; font-weight: bold;'>
                             {hinweisOben}
                         </div>";
-                string alertHtml = isBad ? "<p style='font-size: 15px; color: #d9534f; font-weight: bold;'>⚠️ Bitte prüfen Sie diesen Vorgang zeitnah, da der Zustand als 'Schlecht' markiert wurde.</p>" : "";
+                string alertHtml = isBad
+                    ? "<p style='font-size: 15px; color: #d9534f; font-weight: bold;'>&#9888;&#65039; Bitte pr\u00fcfen Sie diesen Vorgang zeitnah, da der Zustand als 'Schlecht' markiert wurde.</p>"
+                    : string.Empty;
 
-                message.Subject = $"{subjectPrefix}Wareneingang erfasst - Zustand: {zustand} (EBE: {ebe})";
+                string subject = $"{subjectPrefix}Wareneingang erfasst - Zustand: {zustand} (EBE: {ebe})";
 
                 string htmlBody = $@"
                 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;'>
@@ -41,7 +34,7 @@ namespace QIN_Production_Web.Helpers
                     <p style='font-size: 14px;'>Hallo QS-Team,</p>
                     <p style='font-size: 14px;'>im Wareneingang wurde soeben ein neuer Eintrag mit dem Zustand <strong>{zustand}</strong> erfasst.</p>
                     {alertHtml}
-                    
+
                     <table style='width: 100%; border-collapse: collapse; margin: 20px 0;'>
                         <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold; width: 130px;'>EBE-Nummer:</td><td style='padding: 8px; border: 1px solid #ddd;'>{ebe}</td></tr>
                         <tr><td style='padding: 8px; border: 1px solid #ddd; font-weight: bold;'>Lieferschein:</td><td style='padding: 8px; border: 1px solid #ddd;'>{lsnr}</td></tr>
@@ -55,35 +48,48 @@ namespace QIN_Production_Web.Helpers
                     <p style='font-size: 12px; color: #777; margin-top: 30px;'>Dies ist eine systemgenerierte Benachrichtigung aus dem QIN-Production Web-Tool. Bitte antworten Sie nicht auf diese E-Mail.</p>
                 </div>";
 
-                message.Body = new TextPart("html")
-                {
-                    Text = htmlBody
-                };
-
-                using (var client = new SmtpClient())
-                {
-                    client.ServerCertificateValidationCallback = (s, c, h, e) => true;
-                    await client.ConnectAsync("192.168.253.73", 587, SecureSocketOptions.StartTlsWhenAvailable);
-
-                    try
-                    {
-                        await client.AuthenticateAsync("klein", "4Shizzle#");
-                    }
-                    catch (AuthenticationException)
-                    {
-                        await client.AuthenticateAsync("klein", "4shizzle#");
-                    }
-
-                    await client.SendAsync(message);
-                    await client.DisconnectAsync(true);
-                }
-                return true;
+                return await SendHtmlEmailAsync(subject, htmlBody, recipientEmails);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Fehler beim Senden der QS Email via MailKit: {ex.Message}");
-                throw; // Rethrow to allow UI to catch and alert
+                throw;
             }
+        }
+
+        public static async Task<bool> SendHtmlEmailAsync(string subject, string htmlBody, string recipientEmails, string senderDisplayName = "QIN-Production-Tool")
+        {
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(senderDisplayName, "pod-tool@qin-form.local"));
+
+            var recipients = recipientEmails.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var recipient in recipients)
+            {
+                message.To.Add(new MailboxAddress(string.Empty, recipient.Trim()));
+            }
+
+            message.Subject = subject;
+            message.Body = new TextPart("html")
+            {
+                Text = htmlBody
+            };
+
+            using var client = new SmtpClient();
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
+            await client.ConnectAsync("192.168.253.73", 587, SecureSocketOptions.StartTlsWhenAvailable);
+
+            try
+            {
+                await client.AuthenticateAsync("klein", "4Shizzle#");
+            }
+            catch (MailKit.Security.AuthenticationException)
+            {
+                await client.AuthenticateAsync("klein", "4shizzle#");
+            }
+
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
+            return true;
         }
     }
 }

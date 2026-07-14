@@ -124,6 +124,7 @@ Wenn das Speichern erfolgreich war:
 - erscheint eine kurze Erfolgsmeldung
 - das Formular wird wieder fuer eine neue Erfassung vorbereitet
 - die Liste der letzten Eintraege wird aktualisiert
+- bei zu hoher Schlechtteilquote wird QS automatisch per E-Mail informiert
 
 Kunde, Projekt, Artikel und Dekor bleiben dabei erhalten. Das ist praktisch, wenn mehrere Karten fuer denselben Auftrag erfasst werden.
 
@@ -197,6 +198,10 @@ Das ist hilfreich:
 - Bei unklaren Zuordnungen zuerst Kunde, Projekt, Artikel und Dekor pruefen.
 - Wenn mehrere Karten nacheinander fuer denselben Auftrag erfasst werden, spart die bestehende Vorauswahl Zeit.
 - Fuer Korrekturen immer den `Bearbeiten`-Button unten verwenden.
+- Wenn fuer ein Material in `dbo.Materialliste.Schlechtteile_Toleranz` ein Grenzwert gepflegt ist, vergleicht das System die Tagesquote automatisch damit.
+- Wenn kein Grenzwert gepflegt ist, verwendet das System automatisch `15 %`.
+- Ueberschreitet ein Artikel diesen Wert, geht automatisch eine QS-Mail mit der Tagesliste und den kritischen Artikeln an `qsintern@qin-form.de`.
+- In der Mail steht dann auch, dass keine Materialtoleranz gepflegt war und deshalb der Standardwert `15 %` verwendet wurde.
 
 ## Relevante Code-Stellen
 

@@ -43,6 +43,13 @@ Wichtige Felder:
 - `Bemerkung`
 - `Personalnummer`
 
+Schlechtteile:
+
+- Als Schlechtteile gelten alle Fehlerfelder zusammen.
+- Externe Fehler: `Fusseln`, `Nadelstiche`, `Pickel`, `Dekorfehler`, `Color`, `Flecken`, `Nebel`, `Vertiefung`
+- Interne Fehler: `Oelflecken`, `Tiefziehfehler`, `Fraesfehler`, `Knicke`, `Kratzer`
+- Formel: `Schlechtteile / (Gutteile + Schlechtteile) * 100`
+
 ## Aktueller UI-Aufbau
 
 Die Seite ist jetzt in vier klar sichtbare Bereiche gegliedert:
@@ -134,6 +141,37 @@ Wenn `IsEditMode == false`, wird aufgerufen:
 DB-Zieltabelle:
 
 - `dbo.Table1`
+
+## Automatische QS-Mail bei zu hoher Schlechtteilquote
+
+Nach jedem erfolgreichen Speichern oder Aktualisieren startet im Hintergrund eine Tagesprüfung für das Datum des gespeicherten Eintrags.
+
+Ablauf:
+
+1. Das System summiert in `dbo.Table1` je `Artikel` die `Gutteile`.
+2. Danach werden alle Fehlerfelder pro Artikel zu `Schlechtteile` addiert.
+3. Aus beiden Werten wird die prozentuale Schlechtteilquote berechnet.
+4. Anschließend sucht das System in `dbo.Materialliste` den passenden Materialsatz.
+5. Verwendet werden dafür die Felder `Nr`, `Suchbegriff`, `Beschreibung` und `Beschreibung2`.
+6. Wenn in `dbo.Materialliste.Schlechtteile_Toleranz` ein Prozentwert gepflegt ist und die Tagesquote darüber liegt, wird eine QS-Mail versendet.
+7. Wenn fuer ein gematchtes Material keine Toleranz gepflegt ist, verwendet das System automatisch den Standardwert `15 %`.
+8. In der QS-Mail wird dann sichtbar erwaehnt, dass keine Materialtoleranz gepflegt war und der Standardwert benutzt wurde.
+
+Neue Materiallisten-Spalte:
+
+- `dbo.Materialliste.Schlechtteile_Toleranz`
+- Datentyp: `decimal(10,2)`
+- Bedeutung: erlaubte Schlechtteilquote in Prozent
+- Eingabeformat: `10` bedeutet `10 %`, nicht `0,10`
+- Wenn das Feld leer bleibt, arbeitet die Endkontrolle automatisch mit `15 %` Standardtoleranz.
+
+Mailverhalten:
+
+- Empfänger: `qsintern@qin-form.de`
+- Die Mail enthält alle am Tag produzierten Artikel.
+- Kritische Artikel werden in einer eigenen roten Tabelle hervorgehoben.
+- Artikel ohne gepflegte Toleranz nutzen automatisch `15 %` und werden in der Mail als Standardfall gekennzeichnet.
+- Die Mail zeigt zusätzlich die Auslösezeit und pro kritischem Artikel die drei größten Fehlerarten.
 
 ## Bearbeiten bestehender Eintraege
 
