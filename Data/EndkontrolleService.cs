@@ -52,6 +52,7 @@ namespace QIN_Production_Web.Data
     public class EndkontrolleService
     {
         private const string SchlechtteileToleranzColumn = "Schlechtteile_Toleranz";
+        private const string SchlechtteileVertragswertColumn = "Schlechtteile_Vertragswert";
         private const decimal DefaultSchlechtteileToleranzProzent = 15m;
         private const string QsRecipientEmail = "qsintern@qin-form.de";
 
@@ -391,13 +392,14 @@ namespace QIN_Production_Web.Data
             await connection.OpenAsync();
 
             bool hasToleranceColumn = await ColumnExistsAsync(connection, "dbo", "Materialliste", SchlechtteileToleranzColumn);
+            bool hasContractValueColumn = await ColumnExistsAsync(connection, "dbo", "Materialliste", SchlechtteileVertragswertColumn);
             var productionRows = await LoadDailyProductionRowsAsync(connection, produktionsdatum);
             if (productionRows.Count == 0)
             {
                 return;
             }
 
-            var materialRows = await LoadMaterialToleranceRowsAsync(connection, hasToleranceColumn);
+            var materialRows = await LoadMaterialToleranceRowsAsync(connection, hasToleranceColumn, hasContractValueColumn);
             foreach (var productionRow in productionRows)
             {
                 var match = FindBestMaterialMatch(productionRow.Artikel, materialRows);
@@ -415,6 +417,7 @@ namespace QIN_Production_Web.Data
                     : !string.IsNullOrWhiteSpace(match.Suchbegriff)
                         ? match.Suchbegriff
                         : match.Nr;
+                productionRow.VertragswertProzent = match.SchlechtteileVertragswert;
             }
 
             var kritischeMaterialien = productionRows
@@ -503,13 +506,16 @@ GROUP BY Artikel;";
             return rows;
         }
 
-        private static async Task<List<EndkontrolleMaterialToleranceRow>> LoadMaterialToleranceRowsAsync(SqlConnection connection, bool hasToleranceColumn)
+        private static async Task<List<EndkontrolleMaterialToleranceRow>> LoadMaterialToleranceRowsAsync(SqlConnection connection, bool hasToleranceColumn, bool hasContractValueColumn)
         {
             string toleranceSelect = hasToleranceColumn
                 ? SchlechtteileToleranzColumn
                 : "CAST(NULL AS decimal(10,2)) AS Schlechtteile_Toleranz";
+            string contractValueSelect = hasContractValueColumn
+                ? SchlechtteileVertragswertColumn
+                : "CAST(NULL AS decimal(10,2)) AS Schlechtteile_Vertragswert";
             string query = $@"
-SELECT Nr, Suchbegriff, Beschreibung, Beschreibung2, {toleranceSelect}
+SELECT Nr, Suchbegriff, Beschreibung, Beschreibung2, {toleranceSelect}, {contractValueSelect}
 FROM dbo.Materialliste
 WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
    OR ISNULL(LTRIM(RTRIM(Suchbegriff)), '') <> ''
@@ -531,6 +537,10 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                     SchlechtteileToleranz = reader["Schlechtteile_Toleranz"] == DBNull.Value
                         ? null
                         : Convert.ToDecimal(reader["Schlechtteile_Toleranz"], CultureInfo.InvariantCulture)
+                    ,
+                    SchlechtteileVertragswert = reader["Schlechtteile_Vertragswert"] == DBNull.Value
+                        ? null
+                        : Convert.ToDecimal(reader["Schlechtteile_Vertragswert"], CultureInfo.InvariantCulture)
                 });
             }
 
@@ -669,6 +679,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: right;'>Schlechtteile</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: right;'>Quote</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: right;'>Toleranz</th>");
+            html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: right;'>Vertragswert</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: left;'>Wichtigste Fehler</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #fecaca; text-align: left;'>Materialliste-Match</th>");
             html.AppendLine("          </tr>");
@@ -681,6 +692,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; vertical-align: top;'>{material.Schlechtteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; font-weight: 800; color: #b91c1c; vertical-align: top;'>{material.SchlechtteileProzent.ToString("0.##", culture)} %</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; vertical-align: top;'>{FormatTolerance(material, culture)}</td>");
+                html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; vertical-align: top;'>{FormatPercent(material.VertragswertProzent, culture)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; vertical-align: top;'>{BuildTopDefectsHtml(material, culture)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; vertical-align: top;'>{WebUtility.HtmlEncode(GetMatchLabel(material))}</td>");
                 html.AppendLine("          </tr>");
@@ -695,6 +707,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #dbe4f0; text-align: right;'>Schlechtteile</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #dbe4f0; text-align: right;'>Quote</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #dbe4f0; text-align: right;'>Toleranz</th>");
+            html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #dbe4f0; text-align: right;'>Vertragswert</th>");
             html.AppendLine("              <th style='padding: 12px 14px; border-bottom: 1px solid #dbe4f0; text-align: left;'>Status</th>");
             html.AppendLine("          </tr>");
 
@@ -719,6 +732,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{material.Schlechtteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{material.SchlechtteileProzent.ToString("0.##", culture)} %</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{FormatTolerance(material, culture)}</td>");
+                html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{FormatPercent(material.VertragswertProzent, culture)}</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; color: {(material.IsCritical ? "#b91c1c" : "#374151")};'>{WebUtility.HtmlEncode(statusText)}</td>");
                 html.AppendLine("          </tr>");
             }
@@ -793,6 +807,11 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                 : $"{material.ToleranzProzent.Value.ToString("0.##", culture)} %";
         }
 
+        private static string FormatPercent(decimal? value, CultureInfo culture)
+        {
+            return value.HasValue ? $"{value.Value.ToString("0.##", culture)} %" : "-";
+        }
+
         private static async Task<bool> ColumnExistsAsync(SqlConnection connection, string schema, string table, string column)
         {
             const string query = @"
@@ -830,6 +849,7 @@ WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
             public int Gesamt => Gutteile + Schlechtteile;
             public decimal SchlechtteileProzent => Gesamt <= 0 ? 0m : Math.Round((decimal)Schlechtteile * 100m / Gesamt, 2);
             public decimal? ToleranzProzent { get; set; }
+            public decimal? VertragswertProzent { get; set; }
             public bool UsesDefaultTolerance { get; set; }
             public string? MatchedMaterialNumber { get; set; }
             public string? MatchedMaterialLabel { get; set; }
@@ -868,6 +888,7 @@ WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
             public string? Beschreibung { get; set; }
             public string? Beschreibung2 { get; set; }
             public decimal? SchlechtteileToleranz { get; set; }
+            public decimal? SchlechtteileVertragswert { get; set; }
             public string? MatchField { get; set; }
         }
     }

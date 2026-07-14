@@ -164,6 +164,10 @@ Neue Materiallisten-Spalte:
 - Bedeutung: erlaubte Schlechtteilquote in Prozent
 - Eingabeformat: `10` bedeutet `10 %`, nicht `0,10`
 - Wenn das Feld leer bleibt, arbeitet die Endkontrolle automatisch mit `15 %` Standardtoleranz.
+- `dbo.Materialliste.Schlechtteile_Vertragswert`
+- Datentyp: `decimal(10,2)`
+- Bedeutung: vertraglich vorgegebener Maximalwert des Kunden in Prozent
+- Dieser Wert wird aktuell in der QS-Mail nur zur Information angezeigt und steuert nicht die Eskalationslogik.
 
 Mailverhalten:
 
@@ -172,6 +176,7 @@ Mailverhalten:
 - Kritische Artikel werden in einer eigenen roten Tabelle hervorgehoben.
 - Artikel ohne gepflegte Toleranz nutzen automatisch `15 %` und werden in der Mail als Standardfall gekennzeichnet.
 - Die Mail zeigt zusätzlich die Auslösezeit und pro kritischem Artikel die drei größten Fehlerarten.
+- Zusätzlich zeigt die Mail den vertraglichen Kundenwert aus `Schlechtteile_Vertragswert`, wenn er in der Materialliste gepflegt ist.
 
 ## Bearbeiten bestehender Eintraege
 

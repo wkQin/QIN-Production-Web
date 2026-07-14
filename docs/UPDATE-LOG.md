@@ -6,7 +6,9 @@ Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 ## Update 3.3.1
 - Endkontrolle Sauberraum: Nach jedem Speichern wird die Tagesquote der Schlechtteile pro Artikel aus `dbo.Table1` neu berechnet und bei Überschreitung der Materialtoleranz automatisch per QS-Mail gemeldet; fehlt die Toleranz, nutzt das System sichtbar den Standardwert `15 %`.
 - Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt echtes deutsches Schriftbild, Auslösezeit, deutlichere Gestaltung und pro kritischem Artikel die wichtigsten Fehlerarten als Top-3.
+- Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt zusätzlich den vertraglichen Kundenwert aus `dbo.Materialliste.Schlechtteile_Vertragswert`.
 - Datenbank: `dbo.Materialliste` hat jetzt die neue Spalte `Schlechtteile_Toleranz` als Prozentwert für die erlaubte Schlechtteilquote pro Material.
+- Datenbank: `dbo.Materialliste` hat jetzt die neue Spalte `Schlechtteile_Vertragswert` für den vertraglichen Maximalwert des Kunden.
 - Live-Fertigung: In der Endkontrolle steht das Ziel jetzt direkt rechts neben dem Namen; die Karten zeigen darunter `Menge` in grün als Gutteile und `Schlecht` in rot als Summe aller Fehlerteile.
 - Schichtplan: Die neuen Zielmengen-Snapshot-Spalten werden vor betroffenen Abfragen automatisch angelegt, damit bestehende Datenbanken nicht mit `Invalid column name` abbrechen.
 - Schichtplan: Zielmengen werden jetzt als Tages-Snapshot in `SchichtplanEintrag.MaterialZielMenge` und `Material2ZielMenge` gespeichert.

@@ -202,6 +202,7 @@ Das ist hilfreich:
 - Wenn kein Grenzwert gepflegt ist, verwendet das System automatisch `15 %`.
 - Ueberschreitet ein Artikel diesen Wert, geht automatisch eine QS-Mail mit der Tagesliste und den kritischen Artikeln an `qsintern@qin-form.de`.
 - In der Mail steht dann auch, dass keine Materialtoleranz gepflegt war und deshalb der Standardwert `15 %` verwendet wurde.
+- Wenn in `dbo.Materialliste.Schlechtteile_Vertragswert` ein vertraglicher Kundenwert gepflegt ist, wird dieser zusaetzlich in der Mail angezeigt.
 
 ## Relevante Code-Stellen
 
