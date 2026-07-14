@@ -51,7 +51,9 @@ obj/
 publish_output/
 
 # Temporary local verification builds
-temp_build_verify*/
+build_verify_tmp*/
+build_verify_tmp*
+tmp/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

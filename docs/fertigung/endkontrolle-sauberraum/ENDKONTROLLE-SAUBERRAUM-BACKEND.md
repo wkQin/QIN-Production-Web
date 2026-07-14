@@ -157,6 +157,13 @@ Ablauf:
 7. Wenn fuer ein gematchtes Material keine Toleranz gepflegt ist, verwendet das System automatisch den Standardwert `15 %`.
 8. In der QS-Mail wird dann sichtbar erwaehnt, dass keine Materialtoleranz gepflegt war und der Standardwert benutzt wurde.
 
+Material-Matching:
+
+- Die Suche arbeitet nicht nur mit `Artikel`, sondern auch mit `Projekt` und `Dekor`.
+- Fuer kurze Namen wie `Deckel Oben` oder `Audi Rollo` wird dadurch der Materialtreffer deutlich robuster.
+- Zusaetzlich werden einfache Varianten fuer `Links`, `Rechts`, `LL`, `RL`, `LH` und `RH` mitberuecksichtigt.
+- Die Tagesauswertung wird dafuer pro `Artikel`, `Projekt` und `Dekor` gebildet, damit unterschiedliche Dekore oder Projektkontexte nicht zu einem ungenauen Sammelwert zusammenfallen.
+
 Neue Materiallisten-Spalte:
 
 - `dbo.Materialliste.Schlechtteile_Toleranz`

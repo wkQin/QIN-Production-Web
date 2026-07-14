@@ -402,7 +402,7 @@ namespace QIN_Production_Web.Data
             var materialRows = await LoadMaterialToleranceRowsAsync(connection, hasToleranceColumn, hasContractValueColumn);
             foreach (var productionRow in productionRows)
             {
-                var match = FindBestMaterialMatch(productionRow.Artikel, materialRows);
+                var match = FindBestMaterialMatch(productionRow, materialRows);
                 if (match is null)
                 {
                     continue;
@@ -431,7 +431,7 @@ namespace QIN_Production_Web.Data
                 return;
             }
 
-            string subject = $"Endkontrolle: QS-Alarm Schlechtteilquote überschritten ({produktionsdatum:dd.MM.yyyy})";
+            string subject = $"Endkontrolle: QS-Alarm Schlechtteilquote Ã¼berschritten ({produktionsdatum:dd.MM.yyyy})";
             string htmlBody = BuildSchlechtteileAlertHtml(produktionsdatum, DateTime.Now, userName, productionRows, kritischeMaterialien);
             await EmailHelper.SendHtmlEmailAsync(subject, htmlBody, QsRecipientEmail);
         }
@@ -441,6 +441,8 @@ namespace QIN_Production_Web.Data
             const string query = @"
 SELECT
     Artikel,
+    Projekt,
+    Dekor,
     SUM(ISNULL(Gutteile, 0)) AS Gutteile,
     SUM(ISNULL(Fusseln, 0)) AS Fusseln,
     SUM(ISNULL(Nadelstiche, 0)) AS Nadelstiche,
@@ -473,7 +475,7 @@ SELECT
 FROM dbo.Table1
 WHERE CAST(FSKdate AS date) = @Produktionsdatum
   AND ISNULL(LTRIM(RTRIM(Artikel)), '') <> ''
-GROUP BY Artikel;";
+GROUP BY Artikel, Projekt, Dekor;";
 
             var rows = new List<EndkontrolleDailyProductionRow>();
             using var command = new SqlCommand(query, connection);
@@ -485,6 +487,8 @@ GROUP BY Artikel;";
                 rows.Add(new EndkontrolleDailyProductionRow
                 {
                     Artikel = reader["Artikel"]?.ToString()?.Trim() ?? string.Empty,
+                    Projekt = reader["Projekt"]?.ToString()?.Trim() ?? string.Empty,
+                    Dekor = reader["Dekor"]?.ToString()?.Trim() ?? string.Empty,
                     Gutteile = reader["Gutteile"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Gutteile"]),
                     Fusseln = reader["Fusseln"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Fusseln"]),
                     Nadelstiche = reader["Nadelstiche"] == DBNull.Value ? 0 : Convert.ToInt32(reader["Nadelstiche"]),
@@ -534,6 +538,11 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                     Suchbegriff = reader["Suchbegriff"]?.ToString()?.Trim(),
                     Beschreibung = reader["Beschreibung"]?.ToString()?.Trim(),
                     Beschreibung2 = reader["Beschreibung2"]?.ToString()?.Trim(),
+                    CombinedText = string.Join(" ",
+                        reader["Nr"] == DBNull.Value ? string.Empty : reader["Nr"]?.ToString(),
+                        reader["Suchbegriff"] == DBNull.Value ? string.Empty : reader["Suchbegriff"]?.ToString(),
+                        reader["Beschreibung"] == DBNull.Value ? string.Empty : reader["Beschreibung"]?.ToString(),
+                        reader["Beschreibung2"] == DBNull.Value ? string.Empty : reader["Beschreibung2"]?.ToString()).Trim(),
                     SchlechtteileToleranz = reader["Schlechtteile_Toleranz"] == DBNull.Value
                         ? null
                         : Convert.ToDecimal(reader["Schlechtteile_Toleranz"], CultureInfo.InvariantCulture)
@@ -547,28 +556,46 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             return rows;
         }
 
-        private static EndkontrolleMaterialToleranceRow? FindBestMaterialMatch(string artikel, List<EndkontrolleMaterialToleranceRow> materialRows)
+        private static EndkontrolleMaterialToleranceRow? FindBestMaterialMatch(EndkontrolleDailyProductionRow row, List<EndkontrolleMaterialToleranceRow> materialRows)
         {
             EndkontrolleMaterialToleranceRow? bestMatch = null;
             string? bestField = null;
             int bestScore = 0;
+            var searchInputs = BuildSearchInputs(row);
 
             foreach (var materialRow in materialRows)
             {
-                foreach (var candidate in new[]
+                foreach (var searchInput in searchInputs)
                 {
-                    ("Nr", materialRow.Nr),
-                    ("Suchbegriff", materialRow.Suchbegriff),
-                    ("Beschreibung", materialRow.Beschreibung),
-                    ("Beschreibung2", materialRow.Beschreibung2)
-                })
-                {
-                    int score = ScoreMaterialMatch(artikel, candidate.Item2);
-                    if (score > bestScore)
+                    foreach (var candidate in new[]
                     {
-                        bestScore = score;
-                        bestMatch = materialRow;
-                        bestField = candidate.Item1;
+                        ("Nr", materialRow.Nr),
+                        ("Suchbegriff", materialRow.Suchbegriff),
+                        ("Beschreibung", materialRow.Beschreibung),
+                        ("Beschreibung2", materialRow.Beschreibung2),
+                        ("Kombiniert", materialRow.CombinedText)
+                    })
+                    {
+                        int score = ScoreMaterialMatch(searchInput.Text, candidate.Item2);
+                        if (score <= 0)
+                        {
+                            continue;
+                        }
+
+                        score += searchInput.Bonus;
+                        if (candidate.Item1 == "Kombiniert")
+                        {
+                            score += 10;
+                        }
+
+                        if (score > bestScore)
+                        {
+                            bestScore = score;
+                            bestMatch = materialRow;
+                            bestField = searchInput.Label == "Artikel"
+                                ? candidate.Item1
+                                : $"{candidate.Item1} ({searchInput.Label})";
+                        }
                     }
                 }
             }
@@ -580,6 +607,79 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
 
             bestMatch.MatchField = bestField;
             return bestMatch;
+        }
+
+        private static List<(string Label, string Text, int Bonus)> BuildSearchInputs(EndkontrolleDailyProductionRow row)
+        {
+            var inputs = new List<(string Label, string Text, int Bonus)>();
+
+            void AddInput(string label, string? text, int bonus)
+            {
+                if (string.IsNullOrWhiteSpace(text))
+                {
+                    return;
+                }
+
+                string trimmed = text.Trim();
+                if (!inputs.Any(existing => existing.Text.Equals(trimmed, StringComparison.OrdinalIgnoreCase)))
+                {
+                    inputs.Add((label, trimmed, bonus));
+                }
+            }
+
+            AddInput("Artikel", row.Artikel, 0);
+
+            foreach (var artikelVariante in BuildArtikelVarianten(row.Artikel))
+            {
+                AddInput("Artikel-Variante", artikelVariante, 5);
+                if (!string.IsNullOrWhiteSpace(row.Projekt))
+                {
+                    AddInput("Artikel + Projekt", $"{artikelVariante} {row.Projekt}", 30);
+                }
+
+                if (!string.IsNullOrWhiteSpace(row.Dekor))
+                {
+                    AddInput("Artikel + Dekor", $"{artikelVariante} {row.Dekor}", 25);
+                }
+            }
+
+            AddInput("Projekt", row.Projekt, 8);
+            AddInput("Dekor", row.Dekor, 12);
+
+            if (!string.IsNullOrWhiteSpace(row.Projekt) && !string.IsNullOrWhiteSpace(row.Dekor))
+            {
+                AddInput("Projekt + Dekor", $"{row.Projekt} {row.Dekor}", 35);
+                AddInput("Artikel + Projekt + Dekor", $"{row.Artikel} {row.Projekt} {row.Dekor}", 40);
+            }
+
+            return inputs;
+        }
+
+        private static IEnumerable<string> BuildArtikelVarianten(string? artikel)
+        {
+            if (string.IsNullOrWhiteSpace(artikel))
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            var varianten = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                artikel.Trim()
+            };
+
+            string basis = artikel.Trim();
+            varianten.Add(basis.Replace(" Links", " LL", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" Rechts", " RL", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" Links", " LH", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" Rechts", " RH", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" LL", " Links", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" RL", " Rechts", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" LH", " Links", StringComparison.OrdinalIgnoreCase));
+            varianten.Add(basis.Replace(" RH", " Rechts", StringComparison.OrdinalIgnoreCase));
+
+            return varianten
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Select(value => value.Trim());
         }
 
         private static int ScoreMaterialMatch(string input, string? candidate)
@@ -626,14 +726,14 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
 
         private static string NormalizeMaterialText(string value)
         {
-            return string.Concat(Regex.Matches(value.ToUpperInvariant().Replace('µ', 'U'), @"[\p{L}\p{N}]+")
+            return string.Concat(Regex.Matches(value.ToUpperInvariant().Replace("Âµ", "U").Replace('µ', 'U'), @"[\p{L}\p{N}]+")
                 .Select(match => match.Value)
                 .Where(token => token.Length > 1));
         }
 
         private static HashSet<string> GetMaterialTokens(string value)
         {
-            return Regex.Matches(value.ToUpperInvariant().Replace('µ', 'U'), @"[\p{L}\p{N}]+")
+            return Regex.Matches(value.ToUpperInvariant().Replace("Âµ", "U").Replace('µ', 'U'), @"[\p{L}\p{N}]+")
                 .Select(match => match.Value)
                 .Where(token => token.Length > 1)
                 .Where(token => token is not "BLENDE" and not "TEIL" and not "SATZ" and not "SET")
@@ -659,17 +759,17 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             html.AppendLine("<div style='font-family: Segoe UI, Arial, sans-serif; max-width: 1120px; margin: 0 auto; color: #14213d; background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%); border-radius: 28px; overflow: hidden; border: 1px solid #dbe4f0;'>");
             html.AppendLine("  <div style='padding: 20px 28px 18px 28px; background: radial-gradient(circle at top right, rgba(248,113,113,0.22), transparent 34%), linear-gradient(135deg, #7f1d1d 0%, #b91c1c 52%, #ef4444 100%); color: #ffffff;'>");
             html.AppendLine("      <div style='font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.88; font-weight: 700;'>Endkontrolle Sauberraum</div>");
-            html.AppendLine("      <h2 style='margin: 8px 0 6px 0; font-size: 28px; line-height: 1.12;'>Endkontrolle: QS-Alarm Schlechtteilquote überschritten</h2>");
-            html.AppendLine($"      <p style='margin: 0; font-size: 14px; line-height: 1.55; max-width: 760px;'>Am <strong>{produktionsdatum:dd.MM.yyyy}</strong> liegt die Schlechtteilquote bei mindestens einem Material über der gepflegten Toleranz aus <strong>dbo.Materialliste.{SchlechtteileToleranzColumn}</strong>.</p>");
+            html.AppendLine("      <h2 style='margin: 8px 0 6px 0; font-size: 28px; line-height: 1.12;'>Endkontrolle: QS-Alarm Schlechtteilquote Ã¼berschritten</h2>");
+            html.AppendLine($"      <p style='margin: 0; font-size: 14px; line-height: 1.55; max-width: 760px;'>Am <strong>{produktionsdatum:dd.MM.yyyy}</strong> liegt die Schlechtteilquote bei mindestens einem Material Ã¼ber der gepflegten Toleranz aus <strong>dbo.Materialliste.{SchlechtteileToleranzColumn}</strong>.</p>");
             html.AppendLine("  </div>");
 
             html.AppendLine("  <div style='padding: 18px 28px 24px 28px;'>");
             html.AppendLine("      <div style='display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 18px;'>");
-            html.AppendLine($"          <div style='background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 14px 16px; min-width: 180px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>Ausgelöst am</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px;'>{ausgeloestAm:dd.MM.yyyy HH:mm}</div></div>");
-            html.AppendLine($"          <div style='background: #fff1f2; border: 1px solid #fecdd3; border-radius: 18px; padding: 14px 16px; min-width: 180px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #9f1239; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>Zu prüfen</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px; color: #be123c;'>{kritischeMaterialien.Count} Material(ien)</div></div>");
-            html.AppendLine($"          <div style='background: #fff7ed; border: 1px solid #fdba74; border-radius: 18px; padding: 14px 16px; min-width: 220px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #9a3412; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>Standardfälle</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px; color: #c2410c;'>{materialienMitStandardToleranz}</div><div style='font-size: 12px; margin-top: 4px; color: #9a3412;'>ohne gepflegte Toleranz</div></div>");
+            html.AppendLine($"          <div style='background: #ffffff; border: 1px solid #e5e7eb; border-radius: 18px; padding: 14px 16px; min-width: 180px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>AusgelÃ¶st am</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px;'>{ausgeloestAm:dd.MM.yyyy HH:mm}</div></div>");
+            html.AppendLine($"          <div style='background: #fff1f2; border: 1px solid #fecdd3; border-radius: 18px; padding: 14px 16px; min-width: 180px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #9f1239; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>Zu prÃ¼fen</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px; color: #be123c;'>{kritischeMaterialien.Count} Material(ien)</div></div>");
+            html.AppendLine($"          <div style='background: #fff7ed; border: 1px solid #fdba74; border-radius: 18px; padding: 14px 16px; min-width: 220px; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><div style='font-size: 12px; color: #9a3412; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700;'>StandardfÃ¤lle</div><div style='font-size: 22px; font-weight: 800; margin-top: 6px; color: #c2410c;'>{materialienMitStandardToleranz}</div><div style='font-size: 12px; margin-top: 4px; color: #9a3412;'>ohne gepflegte Toleranz</div></div>");
             html.AppendLine("      </div>");
-            html.AppendLine($"      <div style='margin-bottom: 22px; padding: 14px 16px; border-radius: 18px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><strong>Ausgelöst durch:</strong> {WebUtility.HtmlEncode(userName)}</div>");
+            html.AppendLine($"      <div style='margin-bottom: 22px; padding: 14px 16px; border-radius: 18px; background: #ffffff; border: 1px solid #e5e7eb; box-shadow: 0 12px 28px rgba(15, 23, 42, 0.06);'><strong>AusgelÃ¶st durch:</strong> {WebUtility.HtmlEncode(userName)}</div>");
 
             html.AppendLine("      <h3 style='margin: 8px 0 14px 0; color: #991b1b; font-size: 20px;'>Kritische Materialien</h3>");
             html.AppendLine("      <table style='width: 100%; border-collapse: separate; border-spacing: 0; margin: 0 0 26px 0; background: #ffffff; border: 1px solid #fecaca; border-radius: 18px; overflow: hidden; box-shadow: 0 18px 36px rgba(127, 29, 29, 0.08);'>");
@@ -687,7 +787,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             foreach (var material in kritischeMaterialien)
             {
                 html.AppendLine("          <tr style='background: #fff7f7;'>");
-                html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; font-weight: 800; color: #b91c1c; vertical-align: top;'>{WebUtility.HtmlEncode(material.Artikel)}</td>");
+                html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; font-weight: 800; color: #b91c1c; vertical-align: top;'>{BuildMaterialTitleHtml(material)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; vertical-align: top;'>{material.Gutteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; vertical-align: top;'>{material.Schlechtteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 14px; border-bottom: 1px solid #fee2e2; text-align: right; font-weight: 800; color: #b91c1c; vertical-align: top;'>{material.SchlechtteileProzent.ToString("0.##", culture)} %</td>");
@@ -716,7 +816,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                 string rowStyle = material.IsCritical ? "background: #fef2f2;" : "background: #ffffff;";
                 string statusText = material.IsCritical
                     ? material.UsesDefaultTolerance
-                        ? "Kontrollieren · Standard 15 % verwendet"
+                        ? "Kontrollieren Â· Standard 15 % verwendet"
                         : "Kontrollieren"
                     : material.ToleranzProzent.HasValue
                         ? material.UsesDefaultTolerance
@@ -727,7 +827,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                 string fontWeight = material.IsCritical ? "bold" : "600";
 
                 html.AppendLine($"          <tr style='{rowStyle}'>");
-                html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; font-weight: {fontWeight}; color: {titleColor};'>{WebUtility.HtmlEncode(material.Artikel)}</td>");
+                html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; font-weight: {fontWeight}; color: {titleColor};'>{BuildMaterialTitleHtml(material)}</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{material.Gutteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{material.Schlechtteile.ToString("N0", culture)}</td>");
                 html.AppendLine($"              <td style='padding: 12px 14px; border-bottom: 1px solid #e5e7eb; text-align: right;'>{material.SchlechtteileProzent.ToString("0.##", culture)} %</td>");
@@ -739,7 +839,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
 
             html.AppendLine("      </table>");
             html.AppendLine("      <div style='margin-top: 22px; padding: 16px 18px; border-radius: 18px; background: #f8fafc; border: 1px solid #dbe4f0; color: #475569; font-size: 12px; line-height: 1.7;'>");
-            html.AppendLine("          Die Schlechtteilquote wird aus allen Fehlerfeldern der Endkontrolle als <strong>Schlechtteile / (Gutteile + Schlechtteile) × 100</strong> berechnet.");
+            html.AppendLine("          Die Schlechtteilquote wird aus allen Fehlerfeldern der Endkontrolle als <strong>Schlechtteile / (Gutteile + Schlechtteile) Ã— 100</strong> berechnet.");
             html.AppendLine("      </div>");
             html.AppendLine("  </div>");
             html.AppendLine("</div>");
@@ -769,6 +869,31 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             return html.ToString();
         }
 
+        private static string BuildMaterialTitleHtml(EndkontrolleDailyProductionRow material)
+        {
+            var html = new StringBuilder();
+            html.Append(WebUtility.HtmlEncode(material.Artikel));
+
+            var meta = new List<string>();
+            if (!string.IsNullOrWhiteSpace(material.Projekt))
+            {
+                meta.Add(material.Projekt);
+            }
+
+            if (!string.IsNullOrWhiteSpace(material.Dekor))
+            {
+                meta.Add(material.Dekor);
+            }
+
+            if (meta.Count > 0)
+            {
+                string metaText = string.Join(" · ", meta);
+                html.Append($"<div style='margin-top: 4px; font-size: 11px; font-weight: 600; color: #64748b;'>{WebUtility.HtmlEncode(metaText)}</div>");
+            }
+
+            return html.ToString();
+        }
+
         private static string GetMatchLabel(EndkontrolleDailyProductionRow material)
         {
             if (string.IsNullOrWhiteSpace(material.MatchedMaterialLabel))
@@ -784,12 +909,12 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
 
             if (!string.IsNullOrWhiteSpace(material.MatchField))
             {
-                parts.Add($"Match über {material.MatchField}");
+                parts.Add($"Match Ã¼ber {material.MatchField}");
             }
 
             if (material.UsesDefaultTolerance)
             {
-                parts.Add($"Keine Toleranz gepflegt · Standard {DefaultSchlechtteileToleranzProzent.ToString("0.##", CultureInfo.GetCultureInfo("de-DE"))} % verwendet");
+                parts.Add($"Keine Toleranz gepflegt Â· Standard {DefaultSchlechtteileToleranzProzent.ToString("0.##", CultureInfo.GetCultureInfo("de-DE"))} % verwendet");
             }
 
             return string.Join(" | ", parts);
@@ -831,6 +956,8 @@ WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
         private sealed class EndkontrolleDailyProductionRow
         {
             public string Artikel { get; set; } = string.Empty;
+            public string Projekt { get; set; } = string.Empty;
+            public string Dekor { get; set; } = string.Empty;
             public int Gutteile { get; set; }
             public int Fusseln { get; set; }
             public int Nadelstiche { get; set; }
@@ -868,9 +995,9 @@ WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
                     ("Flecken", Flecken),
                     ("Nebel", Nebel),
                     ("Vertiefung", Vertiefung),
-                    ("Ölflecken", Oelflecken),
+                    ("Ã–lflecken", Oelflecken),
                     ("Tiefziehfehler", Tiefziehfehler),
-                    ("Fräsfehler", Fraesfehler),
+                    ("FrÃ¤sfehler", Fraesfehler),
                     ("Knicke", Knicke),
                     ("Kratzer", Kratzer)
                 }
@@ -887,9 +1014,11 @@ WHERE s.name = @Schema AND t.name = @Table AND c.name = @Column;";
             public string? Suchbegriff { get; set; }
             public string? Beschreibung { get; set; }
             public string? Beschreibung2 { get; set; }
+            public string? CombinedText { get; set; }
             public decimal? SchlechtteileToleranz { get; set; }
             public decimal? SchlechtteileVertragswert { get; set; }
             public string? MatchField { get; set; }
         }
     }
 }
+
