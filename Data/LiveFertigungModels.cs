@@ -22,6 +22,7 @@ public sealed class LiveFertigungWeekEntryModel
     public int Good { get; set; }
     public int Bad { get; set; }
     public string Note { get; set; } = string.Empty;
+    public bool MatchesAssignedMaterial { get; set; } = true;
 }
 
 public sealed class LiveFertigungHistoryEntryModel
@@ -30,4 +31,5 @@ public sealed class LiveFertigungHistoryEntryModel
     public string Material { get; set; } = string.Empty;
     public int Done { get; set; }
     public int? Target { get; set; }
+    public bool MatchesAssignedMaterial { get; set; } = true;
 }

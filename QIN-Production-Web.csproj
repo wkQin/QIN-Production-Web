@@ -7,8 +7,15 @@
     <RootNamespace>QIN_Production_Web</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-    <DefaultItemExcludes>$(DefaultItemExcludes);publish_output\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish_output\**;build_verify_tmp*\**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="build_verify_tmp*\**" />
+    <Content Remove="build_verify_tmp*\**" />
+    <EmbeddedResource Remove="build_verify_tmp*\**" />
+    <None Remove="build_verify_tmp*\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.19.0" />

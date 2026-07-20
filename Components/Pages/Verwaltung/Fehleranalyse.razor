@@ -102,11 +102,6 @@
                     </div>
                 </div>
 
-                <div class="fehleranalyse-filter-footer mt-3">
-                    <button class="btn qin-btn-ghost w-100 fw-bold" @onclick="ExportData" disabled="@(!Eintraege.Any() || IsLoading)">
-                        <i class="fa-solid fa-file-excel text-success me-2"></i> Export
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -290,9 +285,21 @@
                                 }
                             </div>
                         </section>
+
+                        <div class="fehleranalyse-export-row mt-4">
+                            <button class="btn qin-btn-ghost fehleranalyse-export-button" @onclick="ExportData" disabled="@(!Eintraege.Any() || IsLoading)">
+                                <i class="fa-solid fa-file-excel text-success me-2"></i> Export
+                            </button>
+                        </div>
                     </div>
 
                     <div class="@(ActiveTab == "eintraege" ? string.Empty : "d-none")">
+                        <div class="fehleranalyse-export-row fehleranalyse-export-row-entries">
+                            <button class="btn qin-btn-ghost fehleranalyse-export-button" @onclick="ExportData" disabled="@(!Eintraege.Any() || IsLoading)">
+                                <i class="fa-solid fa-file-excel text-success me-2"></i> Export
+                            </button>
+                        </div>
+
                         <div class="modern-table-container qin-table-shell fehleranalyse-entries-shell">
                             <table id="fehleranalyse-eintraege-table" class="modern-table qin-table entries-grid fehleranalyse-entries-table">
                                 <thead>
@@ -732,7 +739,18 @@
         StateHasChanged();
         await Task.Delay(50);
 
-        var result = await AnalyseService.ExportToExcelAsync(Eintraege);
+        var result = await AnalyseService.ExportToExcelAsync(new FehleranalyseExportRequest
+        {
+            Eintraege = Eintraege,
+            StartDatum = StartDatum,
+            EndDatum = EndDatum,
+            Charge = SearchCharge,
+            Kunde = SelectedKunde,
+            Projekt = SelectedProjekt,
+            Artikel = SelectedArtikel,
+            Dekor = SelectedDekor,
+            ProduktionszielAuswertung = ProduktionszielAuswertung
+        });
 
         IsLoading = false;
         StateHasChanged();
@@ -913,12 +931,6 @@
         padding-inline: 0.7rem;
     }
 
-    .fehleranalyse-filter-footer {
-        margin-top: auto;
-        padding-top: 0.9rem;
-        border-top: 1px solid var(--border-color);
-    }
-
     .fehleranalyse-results-panel {
         padding: 0;
         overflow: hidden;
@@ -943,6 +955,22 @@
         font-size: 1rem;
         font-weight: 700;
         color: var(--text-primary);
+    }
+
+    .fehleranalyse-export-row {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .fehleranalyse-export-row-entries {
+        margin-bottom: 0.9rem;
+    }
+
+    .fehleranalyse-export-button {
+        flex-shrink: 0;
+        font-weight: 700;
+        min-width: 124px;
     }
 
     .fehleranalyse-emphasis-row td {
@@ -1305,6 +1333,11 @@
     @@media (max-width: 767.98px) {
         .fehleranalyse-status-badge {
             min-width: 72px;
+        }
+
+        .fehleranalyse-export-button {
+            width: 100%;
+            min-width: 0;
         }
 
         .fehleranalyse-chart-pane {

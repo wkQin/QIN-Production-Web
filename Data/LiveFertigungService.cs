@@ -148,6 +148,8 @@ ORDER BY ArbeitsplatzSortierung, EntryId, Sortierung, AssignmentId, MaterialSlot
 SELECT
     t.FSKdate,
     LTRIM(RTRIM(ISNULL(t.Artikel, N''))) AS Material,
+    LTRIM(RTRIM(ISNULL(t.Projekt, N''))) AS Projekt,
+    LTRIM(RTRIM(ISNULL(t.Dekor, N''))) AS Dekor,
     LTRIM(RTRIM(ISNULL(t.Charge, N''))) AS Charge,
     ISNULL(t.Gutteile, 0) AS Good,
     ISNULL(t.Fusseln, 0)
@@ -277,6 +279,66 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
             : [];
     }
 
+    private static List<LiveProductionRow> GetFilteredRowsForAssignment(
+        IReadOnlyDictionary<string, List<LiveProductionRow>> groupedRows,
+        LiveAssignmentRow assignment)
+    {
+        var rows = GetRowsForAssignment(groupedRows, assignment);
+        if (rows.Count == 0)
+        {
+            return [];
+        }
+
+        var assignedMaterials = assignment.Materials
+            .Select(material => NormalizeNullable(material.Material))
+            .Where(material => !string.IsNullOrWhiteSpace(material))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (assignedMaterials.Count == 0)
+        {
+            return rows;
+        }
+
+        var matchedRows = new List<LiveProductionRow>();
+
+        foreach (var assignedMaterial in assignedMaterials)
+        {
+            var strongMatches = rows
+                .Where(row => MaterialMatchHelper.IsStrongAssignedMaterialMatch(row.Material, row.Projekt, row.Dekor, assignedMaterial))
+                .ToList();
+
+            if (strongMatches.Count > 0)
+            {
+                matchedRows.AddRange(strongMatches);
+                continue;
+            }
+
+            var fallbackScores = rows
+                .Select(row => new
+                {
+                    Row = row,
+                    Score = MaterialMatchHelper.GetAssignedMaterialFallbackScore(row.Material, row.Projekt, row.Dekor, assignedMaterial)
+                })
+                .Where(entry => entry.Score > 0)
+                .ToList();
+
+            if (fallbackScores.Count == 0)
+            {
+                continue;
+            }
+
+            int bestFallbackScore = fallbackScores.Max(entry => entry.Score);
+            matchedRows.AddRange(fallbackScores
+                .Where(entry => entry.Score == bestFallbackScore)
+                .Select(entry => entry.Row));
+        }
+
+        return matchedRows
+            .Distinct()
+            .ToList();
+    }
+
     private static LiveFertigungEndkontrolleTableModel BuildOccupiedTable(
         int tableNumber,
         IReadOnlyList<LiveAssignmentRow> assignments,
@@ -284,12 +346,14 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
         IReadOnlyList<LiveHistoricalTargetRow> historicalTargets,
         DateTime planDate)
     {
-        var productionRows = assignments
+        var allProductionRows = assignments
             .SelectMany(assignment => GetRowsForAssignment(groupedProductionRows, assignment))
             .GroupBy(row => new
             {
                 row.FSKdate,
                 row.Material,
+                row.Projekt,
+                row.Dekor,
                 row.Charge,
                 row.Good,
                 row.Bad,
@@ -300,7 +364,29 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
             .Select(group => group.First())
             .ToList();
 
-        var todayRows = productionRows
+        var matchedProductionRows = assignments
+            .SelectMany(assignment => GetFilteredRowsForAssignment(groupedProductionRows, assignment))
+            .GroupBy(row => new
+            {
+                row.FSKdate,
+                row.Material,
+                row.Projekt,
+                row.Dekor,
+                row.Charge,
+                row.Good,
+                row.Bad,
+                row.Note,
+                row.Personalnummer,
+                row.Benutzer
+            })
+            .Select(group => group.First())
+            .ToList();
+
+        var matchedRowKeys = matchedProductionRows
+            .Select(CreateProductionRowKey)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var todayRows = matchedProductionRows
             .Where(row => row.FSKdate.Date == planDate)
             .OrderByDescending(row => row.FSKdate)
             .ToList();
@@ -322,7 +408,7 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
             DoneQuantity = todayRows.Sum(row => row.Good),
             BadQuantity = todayRows.Sum(row => row.Bad),
             TargetQuantity = targetQuantity,
-            WeekEntries = productionRows
+            WeekEntries = allProductionRows
                 .Where(row => row.FSKdate.Date >= planDate.AddDays(-6) && row.FSKdate.Date <= planDate)
                 .OrderByDescending(row => row.FSKdate)
                 .Take(14)
@@ -333,10 +419,11 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
                     Charge = string.IsNullOrWhiteSpace(row.Charge) ? "Ohne Charge" : row.Charge,
                     Good = row.Good,
                     Bad = row.Bad,
-                    Note = row.Note
+                    Note = row.Note,
+                    MatchesAssignedMaterial = matchedRowKeys.Contains(CreateProductionRowKey(row))
                 })
                 .ToList(),
-            HistoryEntries = productionRows
+            HistoryEntries = allProductionRows
                 .Where(row => row.FSKdate.Date < planDate)
                 .GroupBy(row => new { Date = row.FSKdate.Date, Material = string.IsNullOrWhiteSpace(row.Material) ? "Ohne Artikel" : row.Material })
                 .OrderByDescending(group => group.Key.Date)
@@ -347,10 +434,26 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
                     Date = group.Key.Date.ToString("dd.MM."),
                     Material = group.Key.Material,
                     Done = group.Sum(row => row.Good),
-                    Target = ResolveHistoricalTarget(historicalTargets, tableNumber, group.Key.Date, group.Key.Material)
+                    Target = ResolveHistoricalTarget(historicalTargets, tableNumber, group.Key.Date, group.Key.Material),
+                    MatchesAssignedMaterial = group.All(row => matchedRowKeys.Contains(CreateProductionRowKey(row)))
                 })
                 .ToList()
         };
+    }
+
+    private static string CreateProductionRowKey(LiveProductionRow row)
+    {
+        return string.Join("|",
+            row.FSKdate.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            row.Material,
+            row.Projekt,
+            row.Dekor,
+            row.Charge,
+            row.Good.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            row.Bad.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            row.Note,
+            row.Personalnummer,
+            row.Benutzer);
     }
 
     private static int? ResolveHistoricalTarget(
@@ -527,6 +630,8 @@ GROUP BY PlanDatum, ArbeitsplatzName, Material;",
     {
         public DateTime FSKdate { get; set; }
         public string Material { get; set; } = string.Empty;
+        public string Projekt { get; set; } = string.Empty;
+        public string Dekor { get; set; } = string.Empty;
         public string Charge { get; set; } = string.Empty;
         public int Good { get; set; }
         public int Bad { get; set; }

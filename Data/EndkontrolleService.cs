@@ -432,7 +432,9 @@ namespace QIN_Production_Web.Data
             }
 
             string subject = $"Endkontrolle: QS-Alarm Schlechtteilquote Ã¼berschritten ({produktionsdatum:dd.MM.yyyy})";
+            subject = NormalizeBrokenMailText(subject);
             string htmlBody = BuildSchlechtteileAlertHtml(produktionsdatum, DateTime.Now, userName, productionRows, kritischeMaterialien);
+            htmlBody = NormalizeBrokenMailText(htmlBody);
             await EmailHelper.SendHtmlEmailAsync(subject, htmlBody, QsRecipientEmail);
         }
 
@@ -440,9 +442,9 @@ namespace QIN_Production_Web.Data
         {
             const string query = @"
 SELECT
-    Artikel,
-    Projekt,
-    Dekor,
+    LTRIM(RTRIM(ISNULL(Artikel, ''))) AS Artikel,
+    LTRIM(RTRIM(ISNULL(Projekt, ''))) AS Projekt,
+    LTRIM(RTRIM(ISNULL(Dekor, ''))) AS Dekor,
     SUM(ISNULL(Gutteile, 0)) AS Gutteile,
     SUM(ISNULL(Fusseln, 0)) AS Fusseln,
     SUM(ISNULL(Nadelstiche, 0)) AS Nadelstiche,
@@ -475,7 +477,10 @@ SELECT
 FROM dbo.Table1
 WHERE CAST(FSKdate AS date) = @Produktionsdatum
   AND ISNULL(LTRIM(RTRIM(Artikel)), '') <> ''
-GROUP BY Artikel, Projekt, Dekor;";
+GROUP BY
+    LTRIM(RTRIM(ISNULL(Artikel, ''))),
+    LTRIM(RTRIM(ISNULL(Projekt, ''))),
+    LTRIM(RTRIM(ISNULL(Dekor, '')));";
 
             var rows = new List<EndkontrolleDailyProductionRow>();
             using var command = new SqlCommand(query, connection);
@@ -561,7 +566,7 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
             EndkontrolleMaterialToleranceRow? bestMatch = null;
             string? bestField = null;
             int bestScore = 0;
-            var searchInputs = BuildSearchInputs(row);
+            var searchInputs = MaterialMatchHelper.BuildSearchInputs(row.Artikel, row.Projekt, row.Dekor);
 
             foreach (var materialRow in materialRows)
             {
@@ -576,16 +581,13 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
                         ("Kombiniert", materialRow.CombinedText)
                     })
                     {
-                        int score = ScoreMaterialMatch(searchInput.Text, candidate.Item2);
+                        int score = MaterialMatchHelper.ScoreSearchInput(
+                            new MaterialMatchHelper.SearchInput(searchInput.Label, searchInput.Text, searchInput.Bonus),
+                            candidate.Item2,
+                            candidate.Item1 == "Kombiniert");
                         if (score <= 0)
                         {
                             continue;
-                        }
-
-                        score += searchInput.Bonus;
-                        if (candidate.Item1 == "Kombiniert")
-                        {
-                            score += 10;
                         }
 
                         if (score > bestScore)
@@ -935,6 +937,32 @@ WHERE ISNULL(LTRIM(RTRIM(Nr)), '') <> ''
         private static string FormatPercent(decimal? value, CultureInfo culture)
         {
             return value.HasValue ? $"{value.Value.ToString("0.##", culture)} %" : "-";
+        }
+
+        private static string NormalizeBrokenMailText(string value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return value;
+            }
+
+            return value
+                .Replace("ÃƒÂ¼", "ü", StringComparison.Ordinal)
+                .Replace("Ã¼", "ü", StringComparison.Ordinal)
+                .Replace("ÃƒÂ¶", "ö", StringComparison.Ordinal)
+                .Replace("Ã¶", "ö", StringComparison.Ordinal)
+                .Replace("ÃƒÂ¤", "ä", StringComparison.Ordinal)
+                .Replace("Ã¤", "ä", StringComparison.Ordinal)
+                .Replace("ÃƒÅ¸", "ß", StringComparison.Ordinal)
+                .Replace("ÃŸ", "ß", StringComparison.Ordinal)
+                .Replace("Ãƒâ€“", "Ö", StringComparison.Ordinal)
+                .Replace("Ã–", "Ö", StringComparison.Ordinal)
+                .Replace("Ãƒâ€”", "×", StringComparison.Ordinal)
+                .Replace("Ã—", "×", StringComparison.Ordinal)
+                .Replace("Ã‚Â·", "·", StringComparison.Ordinal)
+                .Replace("Â·", "·", StringComparison.Ordinal)
+                .Replace("Ã‚Âµ", "µ", StringComparison.Ordinal)
+                .Replace("Âµ", "µ", StringComparison.Ordinal);
         }
 
         private static async Task<bool> ColumnExistsAsync(SqlConnection connection, string schema, string table, string column)

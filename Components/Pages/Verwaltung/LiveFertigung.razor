@@ -264,6 +264,10 @@
                                 <div>
                                     <strong>@entry.Date</strong>
                                     <span>@entry.Material</span>
+                                    @if (!entry.MatchesAssignedMaterial)
+                                    {
+                                        <small class="text-warning">Zusätzliche Buchung</small>
+                                    }
                                     <small>@entry.Charge</small>
                                 </div>
                                 <div class="endkontrolle-hover-values">
@@ -302,6 +306,10 @@
                                 <div>
                                     <strong>@entry.Date</strong>
                                     <span>@entry.Material</span>
+                                    @if (!entry.MatchesAssignedMaterial)
+                                    {
+                                        <small class="text-warning">Zusätzliche Buchung</small>
+                                    }
                                 </div>
                                 <div class="endkontrolle-hover-values">
                                     <span>@entry.Done</span>

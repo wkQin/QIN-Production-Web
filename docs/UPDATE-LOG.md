@@ -4,13 +4,18 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
+- Fehleranalyse: Die neue QS-Excel bleibt erhalten; der Export ist in Gesamt und Einzelne Einträge jetzt über kompakte Buttons erreichbar, ohne den oberen Gesamtbereich nach unten zu drücken.
 - Endkontrolle Sauberraum: Nach jedem Speichern wird die Tagesquote der Schlechtteile pro Artikel aus `dbo.Table1` neu berechnet und bei Überschreitung der Materialtoleranz automatisch per QS-Mail gemeldet; fehlt die Toleranz, nutzt das System sichtbar den Standardwert `15 %`.
 - Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt echtes deutsches Schriftbild, Auslösezeit, deutlichere Gestaltung und pro kritischem Artikel die wichtigsten Fehlerarten als Top-3.
 - Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt zusätzlich den vertraglichen Kundenwert aus `dbo.Materialliste.Schlechtteile_Vertragswert`.
 - Endkontrolle Sauberraum: Die Materialsuche für QS-Mails nutzt jetzt neben `Artikel` auch `Projekt`, `Dekor` und einfache Links/Rechts-Varianten, damit Materialtreffer robuster gefunden werden.
+- Endkontrolle Sauberraum: Die QS-Mail bildet Tageswerte jetzt aus bereinigten `Artikel`-, `Projekt`- und `Dekor`-Feldern, damit Leerzeichen- oder Null-Unterschiede keine Tagessummen mehr künstlich aufteilen.
+- Endkontrolle Sauberraum: Die QS-Mail bereinigt fehlerhafte Zeichenkodierungen jetzt vor dem Senden, damit Umlaute wie `ü`, `ö`, `ä` und Begriffe wie `über` wieder korrekt angezeigt werden.
 - Datenbank: `dbo.Materialliste` hat jetzt die neue Spalte `Schlechtteile_Toleranz` als Prozentwert für die erlaubte Schlechtteilquote pro Material.
 - Datenbank: `dbo.Materialliste` hat jetzt die neue Spalte `Schlechtteile_Vertragswert` für den vertraglichen Maximalwert des Kunden.
 - Live-Fertigung: In der Endkontrolle steht das Ziel jetzt direkt rechts neben dem Namen; die Karten zeigen darunter `Menge` in grün als Gutteile und `Schlecht` in rot als Summe aller Fehlerteile.
+- Live-Fertigung: Endkontrolle filtert die Mengen je Mitarbeiter jetzt auf die wirklich im Schichtplan zugewiesenen Materialien, damit ähnliche BMW-/Kuga-/Rollo-Artikel nicht mehr blind zusammengesummiert werden.
+- Live-Fertigung: Der 7-Tage-Hover der Endkontrolle zeigt jetzt zusätzlich auch echte Nebenbuchungen eines Mitarbeiters auf andere Materialien, markiert sie aber sichtbar als zusätzliche Buchung statt sie in die Hauptkarte einzurechnen.
 - Schichtplan: Die neuen Zielmengen-Snapshot-Spalten werden vor betroffenen Abfragen automatisch angelegt, damit bestehende Datenbanken nicht mit `Invalid column name` abbrechen.
 - Schichtplan: Zielmengen werden jetzt als Tages-Snapshot in `SchichtplanEintrag.MaterialZielMenge` und `Material2ZielMenge` gespeichert.
 - Fehleranalyse und Live-Fertigung: Zielauswertungen lesen jetzt den Tages-Snapshot aus dem Schichtplan, damit tägliche Zieländerungen historische Tage nicht rückwirkend verfälschen.
