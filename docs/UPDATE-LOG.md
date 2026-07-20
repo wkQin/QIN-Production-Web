@@ -4,7 +4,8 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
-- Fehleranalyse: Die neue QS-Excel bleibt erhalten; der Export ist in Gesamt und Einzelne Einträge jetzt über kompakte Buttons erreichbar, ohne den oberen Gesamtbereich nach unten zu drücken.
+- Fehleranalyse: Die neue QS-Excel zeigt in Übersicht, Mitarbeitervergleich, Materialvergleich und Einzel-Einträgen jetzt klarere Begriffe wie Schlechtteile, Schlecht extern und Schlecht intern sowie durchgängige Prozentspalten.
+- Fehleranalyse: Der Export ist in Gesamt und Einzelne Einträge jetzt über kompakte Buttons erreichbar, ohne den oberen Gesamtbereich nach unten zu drücken.
 - Endkontrolle Sauberraum: Nach jedem Speichern wird die Tagesquote der Schlechtteile pro Artikel aus `dbo.Table1` neu berechnet und bei Überschreitung der Materialtoleranz automatisch per QS-Mail gemeldet; fehlt die Toleranz, nutzt das System sichtbar den Standardwert `15 %`.
 - Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt echtes deutsches Schriftbild, Auslösezeit, deutlichere Gestaltung und pro kritischem Artikel die wichtigsten Fehlerarten als Top-3.
 - Endkontrolle Sauberraum: Die QS-Mail zeigt jetzt zusätzlich den vertraglichen Kundenwert aus `dbo.Materialliste.Schlechtteile_Vertragswert`.

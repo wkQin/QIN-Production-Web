@@ -453,10 +453,10 @@ namespace QIN_Production_Web.Data
                     .ToList();
 
                 using var workbook = new XLWorkbook();
-                BuildOverviewWorksheet(workbook, request ?? new FehleranalyseExportRequest(), now, gesamt, fehlerarten, auffaelligeKombinationen);
-                BuildMitarbeiterWorksheet(workbook, mitarbeitervergleich);
-                BuildMaterialWorksheet(workbook, materialvergleich);
-                BuildEintraegeWorksheet(workbook, fehlerListe);
+                BuildOverviewWorksheetReadable(workbook, request ?? new FehleranalyseExportRequest(), now, gesamt, fehlerarten, auffaelligeKombinationen);
+                BuildMitarbeiterWorksheetReadable(workbook, mitarbeitervergleich);
+                BuildMaterialWorksheetReadable(workbook, materialvergleich);
+                BuildEintraegeWorksheetReadable(workbook, fehlerListe);
 
                 using var stream = new MemoryStream();
                 workbook.SaveAs(stream);
@@ -487,24 +487,30 @@ namespace QIN_Production_Web.Data
             var ws = workbook.Worksheets.Add("QS-Übersicht");
             var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
 
-            ws.Range("A1:J1").Merge().Value = "Fehleranalyse QS-Export";
-            ApplyTitleStyle(ws.Range("A1:J1"), XLColor.FromHtml("#1D4ED8"));
+            ws.Range("A1:L1").Merge().Value = "Fehleranalyse QS-Export";
+            ApplyTitleStyle(ws.Range("A1:L1"), XLColor.FromHtml("#0F4C81"));
 
-            ws.Range("A2:J2").Merge().Value = $"Erstellt am {createdAt:dd.MM.yyyy HH:mm} | Zeitraum {request.StartDatum:dd.MM.yyyy} bis {request.EndDatum:dd.MM.yyyy}";
-            ApplySubtitleStyle(ws.Range("A2:J2"));
+            ws.Range("A2:L2").Merge().Value = $"Erstellt am {createdAt:dd.MM.yyyy HH:mm}";
+            ApplySubtitleStyle(ws.Range("A2:L2"));
 
-            ws.Range("A4:D4").Merge().Value = "Filter";
-            ApplySectionStyle(ws.Range("A4:D4"));
-            WriteFilterRow(ws, 5, "Charge", request.Charge);
-            WriteFilterRow(ws, 6, "Kunde", request.Kunde);
-            WriteFilterRow(ws, 7, "Projekt", request.Projekt);
-            WriteFilterRow(ws, 8, "Artikel", request.Artikel);
-            WriteFilterRow(ws, 9, "Dekor", request.Dekor);
+            ws.Range("A4:F4").Merge().Value = "Ausgewählter Bereich";
+            ApplySectionStyle(ws.Range("A4:F4"));
+            WriteFilterRow(ws, 5, "Zeitraum", $"{request.StartDatum:dd.MM.yyyy} bis {request.EndDatum:dd.MM.yyyy}", 1, 6);
+            WriteFilterRow(ws, 6, "Charge", request.Charge, 1, 6);
+            WriteFilterRow(ws, 7, "Kunde", request.Kunde, 1, 6);
+            WriteFilterRow(ws, 8, "Projekt", request.Projekt, 1, 6);
+            WriteFilterRow(ws, 9, "Artikel", request.Artikel, 1, 6);
+            WriteFilterRow(ws, 10, "Dekor", request.Dekor, 1, 6);
 
-            ws.Range("F4:J4").Merge().Value = "Kennzahlen";
-            ApplySectionStyle(ws.Range("F4:J4"));
-            WriteMetricRow(ws, 5, "Gutteile", gesamt.Gutteile, "Schlechtteile", gesamt.Schlechtteile, "Gesamt", gesamt.Gesamt);
-            WriteMetricRow(ws, 6, "Gutquote", CalculateQuote(gesamt.Gutteile, gesamt.Gesamt), "Ausschussquote", CalculateQuote(gesamt.Schlechtteile, gesamt.Gesamt), "Externquote", CalculateQuote(gesamt.SchlechtExtern, gesamt.Gesamt), true);
+            ws.Range("G4:L4").Merge().Value = "Gesamtwerte";
+            ApplySectionStyle(ws.Range("G4:L4"));
+            WriteMetricCard(ws, 5, 7, 6, 8, "Gutteile", gesamt.Gutteile, XLColor.FromHtml("#DCFCE7"));
+            WriteMetricCard(ws, 5, 9, 6, 10, "Schlechtteile", gesamt.Schlechtteile, XLColor.FromHtml("#FEE2E2"));
+            WriteMetricCard(ws, 5, 11, 6, 12, "Gesamt", gesamt.Gesamt, XLColor.FromHtml("#DBEAFE"));
+            WriteMetricCard(ws, 8, 7, 9, 8, "Schlecht extern", gesamt.SchlechtExtern, XLColor.FromHtml("#FFEDD5"));
+            WriteMetricCard(ws, 8, 9, 9, 10, "Schlecht intern", gesamt.SchlechtIntern, XLColor.FromHtml("#EDE9FE"));
+            WriteMetricCard(ws, 8, 11, 9, 12, "Einträge", request.Eintraege.Count, XLColor.FromHtml("#E0F2FE"));
+            ws.Range("A12:L12").Merge().Value = "Prozentwerte und Ziel";
             WriteMetricRow(ws, 7, "Internquote", CalculateQuote(gesamt.SchlechtIntern, gesamt.Gesamt), "Schlecht extern", gesamt.SchlechtExtern, "Schlecht intern", gesamt.SchlechtIntern, true, percentFirst: true);
             WriteMetricRow(ws, 8, "Ziel", zielauswertung.Ziel, "Erfüllung", zielauswertung.Erfuellung ?? 0d, zielauswertung.Erfuellung.HasValue ? "Offen" : "Status", zielauswertung.Erfuellung.HasValue ? (object)zielauswertung.Offen : "Kein Ziel", value2IsPercent: true);
             WriteMetricRow(ws, 9, "Über Ziel", zielauswertung.UeberZiel, "Einträge", request.Eintraege.Count, "Druckhinweis", "Für QS-Übersicht im Querformat ausgelegt");
@@ -773,6 +779,343 @@ namespace QIN_Production_Web.Data
             FinalizeWorksheet(ws, 30, true, freezeRow: headerRow);
         }
 
+        private static void BuildOverviewWorksheetReadable(
+            XLWorkbook workbook,
+            FehleranalyseExportRequest request,
+            DateTime createdAt,
+            FehlerAnalyseResult gesamt,
+            IReadOnlyList<FehlerartExportRow> fehlerarten,
+            IReadOnlyList<MitarbeiterExportRow> auffaelligeKombinationen)
+        {
+            var ws = workbook.Worksheets.Add("QS-Übersicht");
+            var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
+
+            ws.Range("A1:L1").Merge().Value = "Fehleranalyse QS-Export";
+            ApplyTitleStyle(ws.Range("A1:L1"), XLColor.FromHtml("#0F4C81"));
+            ws.Range("A2:L2").Merge().Value = $"Erstellt am {createdAt:dd.MM.yyyy HH:mm}";
+            ApplySubtitleStyle(ws.Range("A2:L2"));
+
+            ws.Range("A4:F4").Merge().Value = "Ausgewählter Bereich";
+            ApplySectionStyle(ws.Range("A4:F4"));
+            WriteFilterRowExtended(ws, 5, "Zeitraum", $"{request.StartDatum:dd.MM.yyyy} bis {request.EndDatum:dd.MM.yyyy}", 1, 6);
+            WriteFilterRowExtended(ws, 6, "Charge", request.Charge, 1, 6);
+            WriteFilterRowExtended(ws, 7, "Kunde", request.Kunde, 1, 6);
+            WriteFilterRowExtended(ws, 8, "Projekt", request.Projekt, 1, 6);
+            WriteFilterRowExtended(ws, 9, "Artikel", request.Artikel, 1, 6);
+            WriteFilterRowExtended(ws, 10, "Dekor", request.Dekor, 1, 6);
+
+            ws.Range("G4:L4").Merge().Value = "Gesamtwerte";
+            ApplySectionStyle(ws.Range("G4:L4"));
+            WriteMetricCard(ws, 5, 7, 6, 8, "Gutteile", gesamt.Gutteile, XLColor.FromHtml("#DCFCE7"));
+            WriteMetricCard(ws, 5, 9, 6, 10, "Schlechtteile", gesamt.Schlechtteile, XLColor.FromHtml("#FEE2E2"));
+            WriteMetricCard(ws, 5, 11, 6, 12, "Gesamt", gesamt.Gesamt, XLColor.FromHtml("#DBEAFE"));
+            WriteMetricCard(ws, 8, 7, 9, 8, "Schlecht extern", gesamt.SchlechtExtern, XLColor.FromHtml("#FFEDD5"));
+            WriteMetricCard(ws, 8, 9, 9, 10, "Schlecht intern", gesamt.SchlechtIntern, XLColor.FromHtml("#EDE9FE"));
+            WriteMetricCard(ws, 8, 11, 9, 12, "Einträge", request.Eintraege.Count, XLColor.FromHtml("#E0F2FE"));
+
+            ws.Range("A12:L12").Merge().Value = "Prozentwerte und Ziel";
+            ApplySectionStyle(ws.Range("A12:L12"));
+            WriteMetricCard(ws, 13, 1, 14, 2, "Gutteile %", CalculateQuote(gesamt.Gutteile, gesamt.Gesamt), XLColor.FromHtml("#DCFCE7"), isPercent: true);
+            WriteMetricCard(ws, 13, 3, 14, 4, "Schlechtteile %", CalculateQuote(gesamt.Schlechtteile, gesamt.Gesamt), XLColor.FromHtml("#FEE2E2"), isPercent: true);
+            WriteMetricCard(ws, 13, 5, 14, 6, "Schlecht extern %", CalculateQuote(gesamt.SchlechtExtern, gesamt.Gesamt), XLColor.FromHtml("#FFEDD5"), isPercent: true);
+            WriteMetricCard(ws, 13, 7, 14, 8, "Schlecht intern %", CalculateQuote(gesamt.SchlechtIntern, gesamt.Gesamt), XLColor.FromHtml("#EDE9FE"), isPercent: true);
+            WriteMetricCard(ws, 13, 9, 14, 10, "Ziel", zielauswertung.Ziel, XLColor.FromHtml("#E0F2FE"));
+            WriteMetricCard(ws, 13, 11, 14, 12, "Erfüllung %", zielauswertung.Erfuellung.HasValue ? (object)zielauswertung.Erfuellung.Value : "Kein Ziel", XLColor.FromHtml("#DBEAFE"), isPercent: zielauswertung.Erfuellung.HasValue, emptyText: "Kein Ziel");
+            WriteMetricCard(ws, 16, 1, 17, 2, "Offen", zielauswertung.Ziel > 0 ? zielauswertung.Offen : 0, XLColor.FromHtml("#FEF3C7"), emptyText: zielauswertung.Ziel > 0 ? null : "Kein Ziel");
+            WriteMetricCard(ws, 16, 3, 17, 4, "Über Ziel", zielauswertung.Ziel > 0 ? zielauswertung.UeberZiel : 0, XLColor.FromHtml("#D1FAE5"), emptyText: zielauswertung.Ziel > 0 ? null : "Kein Ziel");
+            WriteMetricCard(ws, 16, 5, 17, 8, "Status", GetZielStatusText(zielauswertung), XLColor.FromHtml("#F8FAFC"));
+
+            var row = 20;
+            ws.Range(row, 1, row, 12).Merge().Value = "Auffällige Mitarbeiter und Materialien";
+            ApplySectionStyle(ws.Range(row, 1, row, 12));
+            row++;
+
+            WriteHeaderRow(ws, row, new[]
+            {
+                "Mitarbeiter", "Personalnr.", "Artikel", "Dekor", "Gutteile", "Schlechtteile", "Schlechtteile %", "Schlecht extern", "Schlecht extern %", "Schlecht intern", "Schlecht intern %", "Top Fehler"
+            });
+            row++;
+
+            if (!auffaelligeKombinationen.Any())
+            {
+                ws.Range(row, 1, row, 12).Merge().Value = "Keine auswertbaren Kombinationen vorhanden.";
+                ApplyEmptyRowStyle(ws.Range(row, 1, row, 12));
+                row++;
+            }
+            else
+            {
+                foreach (var item in auffaelligeKombinationen)
+                {
+                    ws.Cell(row, 1).Value = item.Mitarbeiter;
+                    ws.Cell(row, 2).Value = item.Personalnummer;
+                    ws.Cell(row, 3).Value = item.Artikel;
+                    ws.Cell(row, 4).Value = item.Dekor;
+                    ws.Cell(row, 5).Value = item.Gutteile;
+                    ws.Cell(row, 6).Value = item.Schlechtteile;
+                    SetPercentCell(ws.Cell(row, 7), item.Ausschussquote);
+                    ws.Cell(row, 8).Value = item.SchlechtExtern;
+                    SetPercentCell(ws.Cell(row, 9), item.ExternQuote);
+                    ws.Cell(row, 10).Value = item.SchlechtIntern;
+                    SetPercentCell(ws.Cell(row, 11), item.InternQuote);
+                    ws.Cell(row, 12).Value = JoinTopFehler(item.TopFehler1, item.TopFehler2, item.TopFehler3);
+                    row++;
+                }
+            }
+
+            ws.Range(row, 1, row, 12).Merge().Value = "Fehlerarten nach Häufigkeit";
+            ApplySectionStyle(ws.Range(row, 1, row, 12));
+            row++;
+
+            WriteHeaderRow(ws, row, new[]
+            {
+                "Bereich", "Fehlerart", "Anzahl", "Schlechtteile % an Gesamt", "Anteil an allen Schlechtteilen"
+            }, 1, 5);
+            row++;
+
+            foreach (var fehler in fehlerarten)
+            {
+                ws.Cell(row, 1).Value = fehler.Bereich;
+                ws.Cell(row, 2).Value = fehler.Fehlerart;
+                ws.Cell(row, 3).Value = fehler.Anzahl;
+                SetPercentCell(ws.Cell(row, 4), fehler.AnteilGesamtmenge);
+                SetPercentCell(ws.Cell(row, 5), fehler.AnteilSchlechtteile);
+                row++;
+            }
+
+            row += 1;
+            ws.Range(row, 1, row, 12).Merge().Value = "Zielabgleich nach Material";
+            ApplySectionStyle(ws.Range(row, 1, row, 12));
+            row++;
+
+            WriteHeaderRow(ws, row, new[]
+            {
+                "Material", "Gutteile", "Schlechtteile", "Schlechtteile %", "Schlecht extern", "Schlecht intern", "Gesamt", "Ziel", "Erfüllung %", "Offen", "Über Ziel", "Status"
+            });
+            row++;
+
+            if (!zielauswertung.Details.Any())
+            {
+                ws.Range(row, 1, row, 12).Merge().Value = "Keine Zieldaten für den gewählten Zeitraum vorhanden.";
+                ApplyEmptyRowStyle(ws.Range(row, 1, row, 12));
+                row++;
+            }
+            else
+            {
+                foreach (var detail in zielauswertung.Details)
+                {
+                    var detailRows = request.Eintraege
+                        .Where(item => string.Equals(NormalizeText(item.Artikel), NormalizeText(detail.Material), StringComparison.CurrentCultureIgnoreCase))
+                        .ToList();
+                    var detailSummary = SummarizeResults(detailRows);
+
+                    ws.Cell(row, 1).Value = detail.Material;
+                    ws.Cell(row, 2).Value = detail.Gutteile;
+                    ws.Cell(row, 3).Value = detail.Schlechtteile;
+                    SetPercentCell(ws.Cell(row, 4), CalculateQuote(detail.Schlechtteile, detail.Gesamt));
+                    ws.Cell(row, 5).Value = detailSummary.SchlechtExtern;
+                    ws.Cell(row, 6).Value = detailSummary.SchlechtIntern;
+                    ws.Cell(row, 7).Value = detail.Gesamt;
+                    ws.Cell(row, 8).Value = detail.Ziel;
+
+                    if (detail.Erfuellung.HasValue)
+                    {
+                        SetPercentCell(ws.Cell(row, 9), detail.Erfuellung.Value);
+                    }
+                    else
+                    {
+                        ws.Cell(row, 9).Value = "Kein Ziel";
+                    }
+
+                    ws.Cell(row, 10).Value = detail.Offen;
+                    ws.Cell(row, 11).Value = detail.UeberZiel;
+                    ws.Cell(row, 12).Value = detail.Ziel <= 0 ? "Kein Ziel" : detail.Offen > 0 ? "Offen" : "Über Ziel";
+                    row++;
+                }
+            }
+
+            FinalizeWorksheet(ws, 12, false);
+        }
+
+        private static void BuildMitarbeiterWorksheetReadable(XLWorkbook workbook, IReadOnlyList<MitarbeiterExportRow> rows)
+        {
+            var ws = workbook.Worksheets.Add("Mitarbeitervergleich");
+            ws.Range("A1:R1").Merge().Value = "Mitarbeitervergleich je Material";
+            ApplyTitleStyle(ws.Range("A1:R1"), XLColor.FromHtml("#0F766E"));
+            ws.Range("A2:R2").Merge().Value = "Vergleich pro Mitarbeiter und Material mit klaren Schlechtteile-Werten und Prozenten.";
+            ApplySubtitleStyle(ws.Range("A2:R2"));
+
+            const int headerRow = 4;
+            WriteHeaderRow(ws, headerRow, new[]
+            {
+                "Mitarbeiter", "Personalnr.", "Kunde", "Projekt", "Artikel", "Dekor", "Einträge", "Chargen", "Charge-Beispiele",
+                "Gutteile", "Schlecht extern", "Schlecht intern", "Schlechtteile", "Gesamt", "Schlechtteile %", "Gutteile %", "Schlecht extern %", "Schlecht intern %"
+            });
+
+            var row = headerRow + 1;
+            foreach (var item in rows)
+            {
+                ws.Cell(row, 1).Value = item.Mitarbeiter;
+                ws.Cell(row, 2).Value = item.Personalnummer;
+                ws.Cell(row, 3).Value = item.Kunde;
+                ws.Cell(row, 4).Value = item.Projekt;
+                ws.Cell(row, 5).Value = item.Artikel;
+                ws.Cell(row, 6).Value = item.Dekor;
+                ws.Cell(row, 7).Value = item.Eintraege;
+                ws.Cell(row, 8).Value = item.Chargen;
+                ws.Cell(row, 9).Value = item.ChargeBeispiele;
+                ws.Cell(row, 10).Value = item.Gutteile;
+                ws.Cell(row, 11).Value = item.SchlechtExtern;
+                ws.Cell(row, 12).Value = item.SchlechtIntern;
+                ws.Cell(row, 13).Value = item.Schlechtteile;
+                ws.Cell(row, 14).Value = item.Gesamt;
+                SetPercentCell(ws.Cell(row, 15), item.Ausschussquote);
+                SetPercentCell(ws.Cell(row, 16), item.Gutquote);
+                SetPercentCell(ws.Cell(row, 17), item.ExternQuote);
+                SetPercentCell(ws.Cell(row, 18), item.InternQuote);
+                row++;
+            }
+
+            if (rows.Any())
+            {
+                var topHeaderRow = row + 2;
+                ws.Range(topHeaderRow, 1, topHeaderRow, 6).Merge().Value = "Wichtigste Fehler je Zeile";
+                ApplySectionStyle(ws.Range(topHeaderRow, 1, topHeaderRow, 6));
+                WriteHeaderRow(ws, topHeaderRow + 1, new[] { "Mitarbeiter", "Artikel", "Dekor", "Top Fehler 1", "Top Fehler 2", "Top Fehler 3" }, 1, 6);
+
+                var topRow = topHeaderRow + 2;
+                foreach (var item in rows)
+                {
+                    ws.Cell(topRow, 1).Value = item.Mitarbeiter;
+                    ws.Cell(topRow, 2).Value = item.Artikel;
+                    ws.Cell(topRow, 3).Value = item.Dekor;
+                    ws.Cell(topRow, 4).Value = item.TopFehler1;
+                    ws.Cell(topRow, 5).Value = item.TopFehler2;
+                    ws.Cell(topRow, 6).Value = item.TopFehler3;
+                    topRow++;
+                }
+            }
+
+            FinalizeWorksheet(ws, 18, false, freezeRow: headerRow);
+        }
+
+        private static void BuildMaterialWorksheetReadable(XLWorkbook workbook, IReadOnlyList<MaterialExportRow> rows)
+        {
+            var ws = workbook.Worksheets.Add("Materialvergleich");
+            ws.Range("A1:Q1").Merge().Value = "Materialvergleich für QS";
+            ApplyTitleStyle(ws.Range("A1:Q1"), XLColor.FromHtml("#B45309"));
+            ws.Range("A2:Q2").Merge().Value = "Zeigt pro Material, wie stark die Schlechtteile-Werte zwischen Mitarbeitern auseinanderliegen.";
+            ApplySubtitleStyle(ws.Range("A2:Q2"));
+
+            const int headerRow = 4;
+            WriteHeaderRow(ws, headerRow, new[]
+            {
+                "Kunde", "Projekt", "Artikel", "Dekor", "Mitarbeitende", "Einträge", "Gutteile", "Schlecht extern", "Schlecht intern",
+                "Schlechtteile", "Gesamt", "Schlechtteile %", "Schlecht extern %", "Schlecht intern %", "Beste Schlechtteile %", "Schlechteste Schlechtteile %", "Abweichung %", "Auffälliger Mitarbeiter", "Häufigster Fehler"
+            }, 1, 19);
+
+            var row = headerRow + 1;
+            foreach (var item in rows)
+            {
+                ws.Cell(row, 1).Value = item.Kunde;
+                ws.Cell(row, 2).Value = item.Projekt;
+                ws.Cell(row, 3).Value = item.Artikel;
+                ws.Cell(row, 4).Value = item.Dekor;
+                ws.Cell(row, 5).Value = item.Mitarbeitende;
+                ws.Cell(row, 6).Value = item.Eintraege;
+                ws.Cell(row, 7).Value = item.Gutteile;
+                ws.Cell(row, 8).Value = item.SchlechtExtern;
+                ws.Cell(row, 9).Value = item.SchlechtIntern;
+                ws.Cell(row, 10).Value = item.Schlechtteile;
+                ws.Cell(row, 11).Value = item.Gesamt;
+                SetPercentCell(ws.Cell(row, 12), item.Ausschussquote);
+                SetPercentCell(ws.Cell(row, 13), item.ExternQuote);
+                SetPercentCell(ws.Cell(row, 14), item.InternQuote);
+                SetPercentCell(ws.Cell(row, 15), item.BesteQuote);
+                SetPercentCell(ws.Cell(row, 16), item.SchlechtesteQuote);
+                SetPercentCell(ws.Cell(row, 17), item.Quotenspanne);
+                ws.Cell(row, 18).Value = item.AuffaelligerMitarbeiter;
+                ws.Cell(row, 19).Value = item.HaeufigsterFehler;
+                row++;
+            }
+
+            FinalizeWorksheet(ws, 19, false, freezeRow: headerRow);
+        }
+
+        private static void BuildEintraegeWorksheetReadable(XLWorkbook workbook, IReadOnlyList<FehlerRow> rows)
+        {
+            var ws = workbook.Worksheets.Add("Einzelne Einträge");
+            ws.Range("A1:AF1").Merge().Value = "Einzelne Einträge";
+            ApplyTitleStyle(ws.Range("A1:AF1"), XLColor.FromHtml("#7C3AED"));
+            ws.Range("A2:AF2").Merge().Value = "Rohdaten mit allen Schlechtteile-Werten und klaren Prozentspalten.";
+            ApplySubtitleStyle(ws.Range("A2:AF2"));
+
+            const int headerRow = 4;
+            WriteHeaderRow(ws, headerRow, new[]
+            {
+                "Datum", "Charge", "Kunde", "Projekt", "Artikel", "Dekor", "Personalnr.", "Mitarbeiter", "Gutteile",
+                "Fusseln", "Nadelstiche", "Pickel", "Dekorfehler", "Farbfehler", "Flecken", "Nebel", "Vertiefung",
+                "Ölflecken", "Tiefziehfehler", "Fräsfehler", "Knicke", "Kratzer", "Schlecht extern", "Schlecht intern",
+                "Schlechtteile", "Gesamt", "Schlechtteile %", "Schlecht extern %", "Schlecht intern %", "Gutteile %", "Hauptfehler", "Bemerkungen"
+            }, 1, 32);
+
+            var row = headerRow + 1;
+            foreach (var item in rows)
+            {
+                ws.Cell(row, 1).Value = item.FSKdate;
+                ws.Cell(row, 1).Style.DateFormat.Format = "dd.MM.yyyy";
+                ws.Cell(row, 2).Value = item.Charge;
+                ws.Cell(row, 3).Value = item.Kunde;
+                ws.Cell(row, 4).Value = item.Projekt;
+                ws.Cell(row, 5).Value = item.Artikel;
+                ws.Cell(row, 6).Value = item.Dekor;
+                ws.Cell(row, 7).Value = item.Personalnummer;
+                ws.Cell(row, 8).Value = item.PersonalName;
+                ws.Cell(row, 9).Value = item.Gutteile;
+                ws.Cell(row, 10).Value = item.Fusseln;
+                ws.Cell(row, 11).Value = item.Nadelstiche;
+                ws.Cell(row, 12).Value = item.Pickel;
+                ws.Cell(row, 13).Value = item.Dekorfehler;
+                ws.Cell(row, 14).Value = item.Farbfehler;
+                ws.Cell(row, 15).Value = item.Flecken;
+                ws.Cell(row, 16).Value = item.Nebel;
+                ws.Cell(row, 17).Value = item.Vertiefung;
+                ws.Cell(row, 18).Value = item.Oelflecken;
+                ws.Cell(row, 19).Value = item.Tiefziehfehler;
+                ws.Cell(row, 20).Value = item.Fraesfehler;
+                ws.Cell(row, 21).Value = item.Knicke;
+                ws.Cell(row, 22).Value = item.Kratzer;
+                ws.Cell(row, 23).Value = item.SchlechtExtern;
+                ws.Cell(row, 24).Value = item.SchlechtIntern;
+                ws.Cell(row, 25).Value = item.Schlechtteile;
+                ws.Cell(row, 26).Value = item.Gesamt;
+                SetPercentCell(ws.Cell(row, 27), CalculateQuote(item.Schlechtteile, item.Gesamt));
+                SetPercentCell(ws.Cell(row, 28), CalculateQuote(item.SchlechtExtern, item.Gesamt));
+                SetPercentCell(ws.Cell(row, 29), CalculateQuote(item.SchlechtIntern, item.Gesamt));
+                SetPercentCell(ws.Cell(row, 30), CalculateQuote(item.Gutteile, item.Gesamt));
+                ws.Cell(row, 31).Value = GetTopFehlerLabels(item, 1).FirstOrDefault() ?? "-";
+                ws.Cell(row, 32).Value = item.Bemerkungen;
+                row++;
+            }
+
+            ws.Column(32).Style.Alignment.WrapText = true;
+            FinalizeWorksheet(ws, 32, false, freezeRow: headerRow);
+        }
+
+        private static string GetZielStatusText(FehleranalyseZielAuswertung zielauswertung)
+        {
+            if (zielauswertung.Ziel <= 0)
+            {
+                return "Kein Ziel vorhanden";
+            }
+
+            if (zielauswertung.Offen > 0)
+            {
+                return $"{zielauswertung.Offen.ToString("N0", ExportCulture)} Gutteile bis zum Ziel";
+            }
+
+            return $"{zielauswertung.UeberZiel.ToString("N0", ExportCulture)} Gutteile über Ziel";
+        }
+
         private static List<FehlerartExportRow> CreateFehlerartRows(FehlerAnalyseResult result)
         {
             return FehlerartenDefinitionen
@@ -995,6 +1338,75 @@ namespace QIN_Production_Web.Data
             ws.Range(row, 1, row, 4).Style.Border.BottomBorderColor = XLColor.FromHtml("#D6DEE8");
         }
 
+        private static void WriteFilterRow(IXLWorksheet ws, int row, string label, string? value, int startColumn, int endColumn)
+        {
+            WriteFilterRowExtended(ws, row, label, value, startColumn, endColumn);
+        }
+
+        private static void WriteFilterRowExtended(IXLWorksheet ws, int row, string label, string? value, int startColumn, int endColumn)
+        {
+            ws.Cell(row, startColumn).Value = label;
+            ws.Cell(row, startColumn).Style.Font.Bold = true;
+            ws.Cell(row, startColumn).Style.Font.FontColor = XLColor.FromHtml("#334155");
+
+            ws.Range(row, startColumn + 1, row, endColumn).Merge().Value = string.IsNullOrWhiteSpace(value) ? "Alle" : value;
+            ws.Range(row, startColumn, row, endColumn).Style.Fill.BackgroundColor = XLColor.White;
+            ws.Range(row, startColumn, row, endColumn).Style.Border.BottomBorder = XLBorderStyleValues.Thin;
+            ws.Range(row, startColumn, row, endColumn).Style.Border.BottomBorderColor = XLColor.FromHtml("#D6DEE8");
+        }
+
+        private static void WriteMetricCard(
+            IXLWorksheet ws,
+            int firstRow,
+            int firstColumn,
+            int lastRow,
+            int lastColumn,
+            string label,
+            object value,
+            XLColor backgroundColor,
+            bool isPercent = false,
+            string? emptyText = null)
+        {
+            var labelRange = ws.Range(firstRow, firstColumn, firstRow, lastColumn);
+            labelRange.Merge().Value = label;
+            labelRange.Style.Font.Bold = true;
+            labelRange.Style.Font.FontColor = XLColor.FromHtml("#334155");
+            labelRange.Style.Fill.BackgroundColor = backgroundColor;
+            labelRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+            var valueRange = ws.Range(firstRow + 1, firstColumn, lastRow, lastColumn);
+            valueRange.Merge();
+            valueRange.Style.Fill.BackgroundColor = backgroundColor;
+            valueRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            valueRange.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            valueRange.Style.Font.FontSize = 16;
+            valueRange.Style.Font.Bold = true;
+            valueRange.Style.Font.FontColor = XLColor.FromHtml("#0F172A");
+
+            var valueCell = ws.Cell(firstRow + 1, firstColumn);
+            if (isPercent && value is double percentValue)
+            {
+                SetPercentCell(valueCell, percentValue);
+            }
+            else if (!isPercent && value is int intValue)
+            {
+                valueCell.Value = intValue;
+            }
+            else if (!isPercent && value is double doubleValue)
+            {
+                valueCell.Value = doubleValue;
+            }
+            else
+            {
+                valueCell.Value = emptyText ?? value?.ToString() ?? string.Empty;
+            }
+
+            if (emptyText != null && value is int numericValue && numericValue == 0)
+            {
+                valueCell.Value = emptyText;
+            }
+        }
+
         private static void WriteMetricRow(
             IXLWorksheet ws,
             int row,
@@ -1061,30 +1473,33 @@ namespace QIN_Production_Web.Data
             range.Style.Fill.BackgroundColor = XLColor.FromHtml("#1F2937");
             range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
             range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            range.Style.Alignment.WrapText = true;
         }
 
         private static void SetPercentCell(IXLCell cell, double value)
         {
             cell.Value = value;
-            cell.Style.NumberFormat.Format = "0.0%";
+            cell.Style.NumberFormat.Format = "0.00%";
         }
 
         private static void ApplyTitleStyle(IXLRange range, XLColor color)
         {
             range.Style.Font.Bold = true;
             range.Style.Font.FontColor = XLColor.White;
-            range.Style.Font.FontSize = 16;
+            range.Style.Font.FontSize = 18;
             range.Style.Fill.BackgroundColor = color;
-            range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
             range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            range.Style.Alignment.Indent = 1;
         }
 
         private static void ApplySubtitleStyle(IXLRange range)
         {
-            range.Style.Font.FontColor = XLColor.FromHtml("#475569");
-            range.Style.Fill.BackgroundColor = XLColor.FromHtml("#EFF6FF");
-            range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+            range.Style.Font.FontColor = XLColor.FromHtml("#334155");
+            range.Style.Fill.BackgroundColor = XLColor.FromHtml("#F8FAFC");
+            range.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
             range.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+            range.Style.Alignment.Indent = 1;
         }
 
         private static void ApplySectionStyle(IXLRange range)
@@ -1128,15 +1543,6 @@ namespace QIN_Production_Web.Data
             {
                 ws.Column(30).Width = 42d;
             }
-
-            if (landscape)
-            {
-                ws.PageSetup.PageOrientation = XLPageOrientation.Landscape;
-            }
-
-            ws.PageSetup.PagesWide = 1;
-            ws.PageSetup.PagesTall = 0;
-            ws.PageSetup.CenterHorizontally = true;
         }
 
         private async Task<List<FehleranalyseSchichtplanZielRow>> GetSchichtplanZielRowsAsync(DateTime von, DateTime bis)
