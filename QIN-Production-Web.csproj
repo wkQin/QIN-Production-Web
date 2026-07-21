@@ -7,14 +7,18 @@
     <RootNamespace>QIN_Production_Web</RootNamespace>
     <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
-    <DefaultItemExcludes>$(DefaultItemExcludes);publish_output\**;build_verify_tmp*\**</DefaultItemExcludes>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish_output\**;build_verify_tmp*\**;obj_verify_*\**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Remove="build_verify_tmp*\**" />
+    <Compile Remove="obj_verify_*\**" />
     <Content Remove="build_verify_tmp*\**" />
+    <Content Remove="obj_verify_*\**" />
     <EmbeddedResource Remove="build_verify_tmp*\**" />
+    <EmbeddedResource Remove="obj_verify_*\**" />
     <None Remove="build_verify_tmp*\**" />
+    <None Remove="obj_verify_*\**" />
   </ItemGroup>
 
   <ItemGroup>

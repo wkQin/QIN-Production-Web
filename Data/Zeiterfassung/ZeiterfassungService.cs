@@ -20,7 +20,13 @@ namespace QIN_Production_Web.Data.Zeiterfassung
         {
             if (string.IsNullOrWhiteSpace(anmeldename)) return false;
 
-            const string sql = @"SELECT Zeiterfassung_Verwalten FROM dbo.LoginDaten WHERE Benutzer = @u;";
+            const string sql = @"
+SELECT CASE
+    WHEN ISNULL(Admin, 0) = 1 OR ISNULL(Zeiterfassung_Verwalten, 0) = 1 THEN 1
+    ELSE 0
+END
+FROM dbo.LoginDaten
+WHERE Benutzer = @u;";
             await using var con = new SqlConnection(SqlManager.connectionString);
             await using var cmd = new SqlCommand(sql, con);
             cmd.Parameters.Add("@u", SqlDbType.NVarChar).Value = anmeldename;
@@ -44,6 +50,36 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             {
                 list.Add(new ZeiterfassungUserItem { Benutzer = r.GetString(0) });
             }
+            return list;
+        }
+
+        public async Task<List<Booking>> LoadBookingsForDayAsync(string benutzer, DateOnly day)
+        {
+            var list = new List<Booking>();
+            var start = day.ToDateTime(TimeOnly.MinValue);
+            var end = start.AddDays(1);
+
+            const string sql = @"
+                SELECT Id, Zeitstempel, Aktion, Manuel, Homeoffice, Bemerkung
+                FROM dbo.Zeiterfassung
+                WHERE Benutzername = @user
+                  AND Zeitstempel >= @start
+                  AND Zeitstempel < @end
+                ORDER BY Zeitstempel DESC;";
+
+            await using var con = new SqlConnection(SqlManager.connectionString);
+            await using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.Add("@user", SqlDbType.NVarChar).Value = benutzer;
+            cmd.Parameters.Add("@start", SqlDbType.DateTime2).Value = start;
+            cmd.Parameters.Add("@end", SqlDbType.DateTime2).Value = end;
+
+            await con.OpenAsync();
+            await using var r = await cmd.ExecuteReaderAsync();
+            while (await r.ReadAsync())
+            {
+                list.Add(ReadBooking(r));
+            }
+
             return list;
         }
 
@@ -121,29 +157,7 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             await using var r = await cmd.ExecuteReaderAsync();
             while (await r.ReadAsync())
             {
-                var id = r.GetInt32(0);
-                var ts = r.GetDateTime(1);
-                string actionRaw = r.GetString(2);
-
-                bool isManual = false;
-                if (!r.IsDBNull(3))
-                {
-                    object o = r.GetValue(3);
-                    if (o is bool b) isManual = b;
-                    else isManual = Convert.ToInt32(o) != 0;
-                }
-
-                bool isHomeOffice = false;
-                if (!r.IsDBNull(4))
-                {
-                    object o = r.GetValue(4);
-                    if (o is bool b) isHomeOffice = b;
-                    else isHomeOffice = Convert.ToInt32(o) != 0;
-                }
-
-                string? note = r.IsDBNull(5) ? null : r.GetString(5);
-
-                list.Add(new Booking(id, ts, ParseAction(actionRaw), isManual, isHomeOffice, note));
+                list.Add(ReadBooking(r));
             }
 
             return list;
@@ -164,8 +178,8 @@ namespace QIN_Production_Web.Data.Zeiterfassung
         public async Task InsertManualBookingAsync(string benutzer, DateTime timestamp, BookingAction action, bool homeoffice, string note)
         {
             const string sql = @"
-            INSERT INTO dbo.Zeiterfassung (ChipId, Benutzername, Zeitstempel, Aktion, Geraetename, Homeoffice, Bemerkung)
-            VALUES (@chipid, @user, @ts, @aktion, @geraetename, @homeoffice, @note);";
+            INSERT INTO dbo.Zeiterfassung (ChipId, Benutzername, Zeitstempel, Aktion, Geraetename, Manuel, Homeoffice, Bemerkung)
+            VALUES (@chipid, @user, @ts, @aktion, @geraetename, @manuel, @homeoffice, @note);";
 
             await using var con = new SqlConnection(SqlManager.connectionString);
             await using var cmd = new SqlCommand(sql, con);
@@ -175,6 +189,7 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             cmd.Parameters.Add("@ts", SqlDbType.DateTime2).Value = timestamp;
             cmd.Parameters.Add("@aktion", SqlDbType.NVarChar).Value = action == BookingAction.Kommen ? "KOMMEN" : "GEHEN";
             cmd.Parameters.Add("@geraetename", SqlDbType.NVarChar).Value = "QIN-Production-Web";
+            cmd.Parameters.Add("@manuel", SqlDbType.Bit).Value = true;
             cmd.Parameters.Add("@homeoffice", SqlDbType.Bit).Value = homeoffice;
             cmd.Parameters.Add("@note", SqlDbType.NVarChar).Value = (object?)note ?? DBNull.Value;
 
@@ -219,6 +234,32 @@ namespace QIN_Production_Web.Data.Zeiterfassung
 
             await con.OpenAsync();
             await cmd.ExecuteNonQueryAsync();
+        }
+
+        private static Booking ReadBooking(SqlDataReader r)
+        {
+            var id = r.GetInt32(0);
+            var ts = r.GetDateTime(1);
+            string actionRaw = r.GetString(2);
+
+            bool isManual = false;
+            if (!r.IsDBNull(3))
+            {
+                object manualValue = r.GetValue(3);
+                if (manualValue is bool manualBool) isManual = manualBool;
+                else isManual = Convert.ToInt32(manualValue) != 0;
+            }
+
+            bool isHomeOffice = false;
+            if (!r.IsDBNull(4))
+            {
+                object homeOfficeValue = r.GetValue(4);
+                if (homeOfficeValue is bool homeOfficeBool) isHomeOffice = homeOfficeBool;
+                else isHomeOffice = Convert.ToInt32(homeOfficeValue) != 0;
+            }
+
+            string? note = r.IsDBNull(5) ? null : r.GetString(5);
+            return new Booking(id, ts, ParseAction(actionRaw), isManual, isHomeOffice, note);
         }
     }
 }

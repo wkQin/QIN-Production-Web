@@ -7,6 +7,16 @@ namespace QIN_Production_Web.Data
         public string? Name { get; set; }
         public string? Rechte { get; set; }
         public string? Personalnummer { get; set; }
+        public bool IsAdmin { get; set; }
+
+        public string PrimaryRole =>
+            IsAdmin || string.Equals(Rechte, "Admin", StringComparison.OrdinalIgnoreCase)
+                ? "Admin"
+                : Rechte ?? string.Empty;
+
+        public bool CanAccessAdministration =>
+            string.Equals(PrimaryRole, "Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(PrimaryRole, "Verwaltung", StringComparison.OrdinalIgnoreCase);
     }
 
     public class LoginService
@@ -20,7 +30,7 @@ namespace QIN_Production_Web.Data
                 {
                     await connection.OpenAsync();
                     string query = @"
-                        SELECT Anmeldename, Password, Rechte, Personalnummer, Benutzer
+                        SELECT Anmeldename, Password, Rechte, Personalnummer, Benutzer, ISNULL(Admin, 0) AS Admin
                         FROM LoginDaten
                         WHERE (Anmeldename = @Username OR Personalnummer = @Username)
                           AND Password = @Password";
@@ -40,7 +50,8 @@ namespace QIN_Production_Web.Data
                                 {
                                     Name = reader["Benutzer"] != DBNull.Value ? reader["Benutzer"].ToString() : string.Empty,
                                     Rechte = reader["Rechte"] != DBNull.Value ? reader["Rechte"].ToString() : string.Empty,
-                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty
+                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty,
+                                    IsAdmin = ReadBool(reader["Admin"])
                                 };
                             }
                         }
@@ -74,7 +85,7 @@ namespace QIN_Production_Web.Data
                 {
                     await connection.OpenAsync();
                     string query = @"
-                        SELECT Anmeldename, Password, Rechte, Personalnummer, Benutzer
+                        SELECT Anmeldename, Password, Rechte, Personalnummer, Benutzer, ISNULL(Admin, 0) AS Admin
                         FROM LoginDaten
                         WHERE Anmeldename = @Username";
 
@@ -92,7 +103,8 @@ namespace QIN_Production_Web.Data
                                 {
                                     Name = reader["Benutzer"] != DBNull.Value ? reader["Benutzer"].ToString() : string.Empty,
                                     Rechte = reader["Rechte"] != DBNull.Value ? reader["Rechte"].ToString() : string.Empty,
-                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty
+                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty,
+                                    IsAdmin = ReadBool(reader["Admin"])
                                 };
                             }
                         }
@@ -128,10 +140,10 @@ namespace QIN_Production_Web.Data
                     await connection.OpenAsync();
                     // FAST LOGINS ARE RESTRICTED TO VERWALTUNG AND ADMIN!
                     string query = @"
-                        SELECT Anmeldename, Rechte, Personalnummer, Benutzer
+                        SELECT Anmeldename, Rechte, Personalnummer, Benutzer, ISNULL(Admin, 0) AS Admin
                         FROM LoginDaten
                         WHERE LTRIM(RTRIM(Personalnummer)) = @Personalnummer
-                          AND Rechte IN ('Admin', 'Verwaltung')
+                          AND (Rechte IN ('Admin', 'Verwaltung') OR ISNULL(Admin, 0) = 1)
                           AND LTRIM(RTRIM(Personalnummer)) <> '106'";
 
                     UserSession? user = null;
@@ -148,7 +160,8 @@ namespace QIN_Production_Web.Data
                                 {
                                     Name = reader["Benutzer"] != DBNull.Value ? reader["Benutzer"].ToString() : string.Empty,
                                     Rechte = reader["Rechte"] != DBNull.Value ? reader["Rechte"].ToString() : string.Empty,
-                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty
+                                    Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty,
+                                    IsAdmin = ReadBool(reader["Admin"])
                                 };
                             }
                         }
@@ -183,7 +196,7 @@ namespace QIN_Production_Web.Data
                     await connection.OpenAsync();
                     // Letzte 15 Minuten als "Online" werten
                     string query = @"
-                        SELECT Benutzer, Rechte, Personalnummer 
+                        SELECT Benutzer, Rechte, Personalnummer, ISNULL(Admin, 0) AS Admin
                         FROM LoginDaten 
                         WHERE LastSeen >= DATEADD(minute, -15, SYSDATETIME())
                         ORDER BY LastSeen DESC";
@@ -197,7 +210,8 @@ namespace QIN_Production_Web.Data
                             {
                                 Name = reader["Benutzer"] != DBNull.Value ? reader["Benutzer"].ToString() : string.Empty,
                                 Rechte = reader["Rechte"] != DBNull.Value ? reader["Rechte"].ToString() : string.Empty,
-                                Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty
+                                Personalnummer = reader["Personalnummer"] != DBNull.Value ? reader["Personalnummer"].ToString() : string.Empty,
+                                IsAdmin = ReadBool(reader["Admin"])
                             });
                         }
                     }
@@ -208,6 +222,16 @@ namespace QIN_Production_Web.Data
                 Console.WriteLine("GetOnlineUsers Error: " + ex.Message);
             }
             return users;
+        }
+
+        private static bool ReadBool(object value)
+        {
+            if (value == DBNull.Value)
+            {
+                return false;
+            }
+
+            return value is bool direct ? direct : Convert.ToInt32(value) != 0;
         }
     }
 }

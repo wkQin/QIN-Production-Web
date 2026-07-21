@@ -4,6 +4,9 @@ Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es g
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
 ## Update 3.3.1
+- Einstellungen: Admins haben jetzt einen eigenen Administrations-Tab, in dem alle Benutzer direkt in einer Tabelle bearbeitet werden können.
+- Einstellungen: Im Administrations-Tab können Admins jetzt Passwörter pro Benutzer neu setzen oder auf die Personalnummer zurücksetzen.
+- Einstellungen und Datenbank: `dbo.LoginDaten` hat jetzt die neue Bool-Spalte `Admin`; zusätzlich können Admins im selben Bereich manuelle Zeiten direkt in `dbo.Zeiterfassung` eintragen.
 - Fehleranalyse: Die neue QS-Excel zeigt in Übersicht, Mitarbeitervergleich, Materialvergleich und Einzel-Einträgen jetzt klarere Begriffe wie Schlechtteile, Schlecht extern und Schlecht intern sowie durchgängige Prozentspalten.
 - Fehleranalyse: Der Export ist in Gesamt und Einzelne Einträge jetzt über kompakte Buttons erreichbar, ohne den oberen Gesamtbereich nach unten zu drücken.
 - Endkontrolle Sauberraum: Nach jedem Speichern wird die Tagesquote der Schlechtteile pro Artikel aus `dbo.Table1` neu berechnet und bei Überschreitung der Materialtoleranz automatisch per QS-Mail gemeldet; fehlt die Toleranz, nutzt das System sichtbar den Standardwert `15 %`.

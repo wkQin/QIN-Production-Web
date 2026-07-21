@@ -1,7 +1,10 @@
 @page "/einstellungen"
 @using Microsoft.AspNetCore.Components.Authorization
 @using QIN_Production_Web.Data
+@using QIN_Production_Web.Data.Zeiterfassung
 @inject AlertService AlertService
+@inject AdminManagementService AdminManagementService
+@inject ZeiterfassungService ZeiterfassungService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JS
 @attribute [Authorize]
@@ -9,209 +12,1002 @@
 
 <PageTitle>Einstellungen - QIN-FORM</PageTitle>
 
-<div class="dashboard-header mb-4 d-flex justify-content-between align-items-center">
+<div class="dashboard-header settings-header mb-4 d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3">
     <div>
-        <h2 class="mb-0 text-white fw-bold"><i class="fa-solid fa-gear text-secondary me-2"></i> Einstellungen</h2>
-        <p class="text-secondary">Persönliche und systemweite Konfigurationen.</p>
+        <h2 class="mb-2 text-white fw-bold"><i class="fa-solid fa-gear text-info me-2"></i> Einstellungen</h2>
+        <p class="text-secondary mb-0">Profileinstellungen, Mitteilungen und Verwaltungsbereiche an einem Ort.</p>
+    </div>
+    <div class="settings-header-badges">
+        <span class="settings-badge">@UserName</span>
+        @if (IsCurrentUserAdmin)
+        {
+            <span class="settings-badge settings-badge-admin">Admin</span>
+        }
+        else if (CanSendSystemAlerts)
+        {
+            <span class="settings-badge settings-badge-admin">Verwaltung</span>
+        }
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Allgemein -->
-    <div class="col-md-6">
-        <div class="content-card h-100">
-            <div class="card-header-flex">
-                <h4><i class="fa-solid fa-user me-2"></i> Profil</h4>
-            </div>
-            <div class="card-body">
-                <p class="text-secondary mb-4">Eingeloggt als: <strong class="text-white fs-5">@UserName</strong></p>
-                
-                <hr class="border-secondary mb-4"/>
-                
-                <h5 class="text-white mb-3"><i class="fa-solid fa-paintbrush me-2 text-info"></i> Aussehen & Barrierefreiheit</h5>
-                <p class="text-secondary small mb-3">Passe das Design und die Schriftgröße für diesen Browser individuell an.</p>
-                
-                <div class="mb-3">
-                    <label class="form-label text-secondary fw-bold">Erscheinungsbild</label>
-                    <select class="form-select bg-dark text-white border-secondary rounded-3" @bind="currentTheme">
-                        <option value="dark">🌙 Dark Mode (Standard)</option>
-                        <option value="light">☀️ Light Mode</option>
-                    </select>
-                </div>
+<div class="settings-tabbar mb-4">
+    <button type="button"
+            class="settings-tab @(ActiveTab == SettingsTab.Profile ? "active" : string.Empty)"
+            @onclick='() => ActiveTab = SettingsTab.Profile'>
+        <span class="settings-tab-title"><i class="fa-solid fa-user"></i><span>Profil</span></span>
+        <span class="settings-tab-text">Design und persönliche Anzeige</span>
+    </button>
 
-                <div class="mb-4 pb-2">
-                    <label class="form-label text-secondary fw-bold d-flex justify-content-between">
-                        <span>Schriftgröße</span>
-                        <span class="text-info">@(currentFontSize)%</span>
-                    </label>
-                    <input type="range" class="form-range" min="80" max="150" step="10" @bind="currentFontSize" @bind:event="oninput" />
-                    <div class="d-flex justify-content-between text-secondary small px-1">
-                        <span>Klein</span>
-                        <span>Normal</span>
-                        <span>Sehr groß</span>
+    @if (CanSendSystemAlerts)
+    {
+        <button type="button"
+                class="settings-tab @(ActiveTab == SettingsTab.Alerts ? "active" : string.Empty)"
+                @onclick='() => ActiveTab = SettingsTab.Alerts'>
+            <span class="settings-tab-title"><i class="fa-solid fa-bullhorn"></i><span>Ankündigungen</span></span>
+            <span class="settings-tab-text">Systemmeldungen verfassen</span>
+        </button>
+    }
+
+    @if (IsCurrentUserAdmin)
+    {
+        <button type="button"
+                class="settings-tab @(ActiveTab == SettingsTab.UserManagement ? "active" : string.Empty)"
+                @onclick='() => ActiveTab = SettingsTab.UserManagement'>
+            <span class="settings-tab-title"><i class="fa-solid fa-users-gear"></i><span>Benutzerverwaltung</span></span>
+            <span class="settings-tab-text">Benutzer auswählen, bearbeiten, anlegen und löschen</span>
+        </button>
+
+        <button type="button"
+                class="settings-tab @(ActiveTab == SettingsTab.TimeManagement ? "active" : string.Empty)"
+                @onclick='() => ActiveTab = SettingsTab.TimeManagement'>
+            <span class="settings-tab-title"><i class="fa-solid fa-clock-rotate-left"></i><span>Zeiterfassungsverwaltung</span></span>
+            <span class="settings-tab-text">Zeiten nachtragen und prüfen</span>
+        </button>
+    }
+</div>
+
+@if (ActiveTab == SettingsTab.Profile)
+{
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="content-card settings-panel h-100">
+                <div class="card-header-flex">
+                    <h4><i class="fa-solid fa-id-badge me-2 text-info"></i> Konto</h4>
+                </div>
+                <div class="card-body">
+                    <div class="settings-profile-block">
+                        <span class="settings-profile-label">Angemeldet als</span>
+                        <strong class="settings-profile-value">@UserName</strong>
+                    </div>
+                    <div class="settings-profile-block">
+                        <span class="settings-profile-label">Rolle</span>
+                        <strong class="settings-profile-value">@(IsCurrentUserAdmin ? "Admin" : CanSendSystemAlerts ? "Verwaltung" : "Benutzer")</strong>
+                    </div>
+                    <div class="settings-profile-note">
+                        <i class="fa-solid fa-circle-info me-2"></i>
+                        Änderungen an Rechten und Passwörtern findest du in den jeweiligen Verwaltungstabs.
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <div class="d-flex gap-3">
-                    <button class="btn btn-primary fw-bold" @onclick="ApplySettings"><i class="fa-solid fa-check me-2"></i> Speichern</button>
-                    <button class="btn btn-outline-secondary fw-bold" @onclick="ResetSettings"><i class="fa-solid fa-rotate-left me-2"></i> Zurücksetzen</button>
+        <div class="col-xl-8">
+            <div class="content-card settings-panel h-100">
+                <div class="card-header-flex">
+                    <h4><i class="fa-solid fa-paintbrush me-2 text-info"></i> Anzeige</h4>
                 </div>
-                
-                @if(settingsSaved)
-                {
-                    <div class="text-success mt-2 small"><i class="fa-solid fa-check-circle me-1"></i> Einstellungen angewendet!</div>
-                }
+                <div class="card-body">
+                    <p class="settings-section-copy">Passe das Erscheinungsbild für diesen Browser an. Die Änderungen gelten sofort nach dem Speichern.</p>
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label settings-label">Erscheinungsbild</label>
+                            <select class="form-select settings-input" @bind="CurrentTheme">
+                                <option value="dark">Dark Mode</option>
+                                <option value="light">Light Mode</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label settings-label d-flex justify-content-between">
+                                <span>Schriftgröße</span>
+                                <span class="text-info fw-semibold">@(CurrentFontSize)%</span>
+                            </label>
+                            <input type="range" class="form-range" min="80" max="150" step="10" @bind="CurrentFontSize" @bind:event="oninput" />
+                            <div class="d-flex justify-content-between settings-range-legend">
+                                <span>Klein</span>
+                                <span>Normal</span>
+                                <span>Groß</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-3 mt-4">
+                        <button class="btn btn-primary fw-bold" @onclick="ApplySettings"><i class="fa-solid fa-check me-2"></i> Speichern</button>
+                        <button class="btn btn-outline-light fw-bold" @onclick="ResetSettings"><i class="fa-solid fa-rotate-left me-2"></i> Zurücksetzen</button>
+                    </div>
+
+                    @if (SettingsSaved)
+                    {
+                        <div class="settings-inline-message success"><i class="fa-solid fa-check-circle me-2"></i> Einstellungen wurden übernommen.</div>
+                    }
+                </div>
             </div>
         </div>
     </div>
+}
+else if (ActiveTab == SettingsTab.Alerts && CanSendSystemAlerts)
+{
+    <div class="content-card settings-panel">
+        <div class="card-header-flex">
+            <div>
+                <h4><i class="fa-solid fa-bullhorn me-2 text-info"></i> System-Ankündigung</h4>
+                <p class="settings-section-copy mb-0">Schreibe eine klare Mitteilung für alle Nutzer. Die Nachricht erscheint direkt im System.</p>
+            </div>
+        </div>
+        <div class="card-body">
+            @if (IsAlertSuccess)
+            {
+                <div class="settings-inline-message success mb-4"><i class="fa-solid fa-check-circle me-2"></i> Ankündigung wurde erfolgreich gesendet.</div>
+            }
 
-    <!-- Verwaltung Nur: Ankündigungen erstellen -->
-    <AuthorizeView Roles="Admin, Verwaltung">
-        <Authorized Context="AuthContext">
-            <div class="col-md-6">
-                <div class="content-card h-100" style="border: 1px solid var(--accent-primary);">
-                    <div class="card-header-flex">
-                        <h4 class="text-primary"><i class="fa-solid fa-bullhorn me-2"></i> Neue System-Ankündigung schreiben</h4>
+            <EditForm Model="@NewAlert" OnValidSubmit="SendAlert">
+                <DataAnnotationsValidator />
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <label class="form-label settings-label">Titel</label>
+                        <InputText @bind-Value="NewAlert.Title" class="form-control settings-input" placeholder="Zum Beispiel Wartung oder Update" required />
                     </div>
-                    <div class="card-body">
-                        <p class="text-secondary small mb-4">
-                            Sende eine Nachricht an alle Nutzer des Systems. Diese wird sofort auf dem Dashboard und als Push-Benachrichtigung für alle zugänglich sein.
-                        </p>
-                        
-                        @if (isAlertSuccess)
+                    <div class="col-lg-7">
+                        <label class="form-label settings-label">Nachricht</label>
+                        <InputTextArea @bind-Value="NewAlert.Message" class="form-control settings-input settings-textarea" rows="8" placeholder="Schreibe hier die vollständige Mitteilung..." required />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <button type="submit" class="btn btn-primary fw-bold px-4" disabled="@IsSubmittingAlert">
+                        @if (IsSubmittingAlert)
                         {
-                            <div class="alert alert-success d-flex align-items-center p-3 mb-4 rounded-3 text-white border-0" style="background: rgba(25, 135, 84, 0.2); border-left: 4px solid var(--bs-success) !important;" role="alert">
-                                <i class="fa-solid fa-circle-check fs-4 me-3 text-success"></i>
-                                <div>Ankündigung wurde erfolgreich an alle Benutzer gesendet!</div>
-                            </div>
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Wird gesendet...</span>
                         }
-                        
-                        <EditForm Model="@newAlert" OnValidSubmit="SendAlert">
-                            <DataAnnotationsValidator />
+                        else
+                        {
+                            <span><i class="fa-solid fa-paper-plane me-2"></i>Mitteilung senden</span>
+                        }
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+else if (ActiveTab == SettingsTab.UserManagement && IsCurrentUserAdmin)
+{
+    <div class="row g-4">
+        <div class="col-xl-4">
+            <div class="content-card settings-panel h-100">
+                <div class="card-header-flex align-items-start">
+                    <div>
+                        <h4><i class="fa-solid fa-user-pen me-2 text-info"></i> Benutzer auswählen</h4>
+                        <p class="settings-section-copy mb-0">Suche einen Benutzer und bearbeite ihn rechts im Einzel-Editor.</p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-3">
+                        <div>
+                            <label class="form-label settings-label">Suche</label>
+                            <input class="form-control settings-input" @bind="UserSearchText" placeholder="Name, Login oder Personalnummer" />
+                        </div>
 
-                            <div class="mb-3">
-                                <label class="form-label text-secondary fw-bold">Titel der Ankündigung</label>
-                                <InputText @bind-Value="newAlert.Title" class="form-control bg-dark text-white border-secondary rounded-3" placeholder="Z. B. Wichtiges Update oder Server-Wartung" required />
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label text-secondary fw-bold">Nachricht</label>
-                                <InputTextArea @bind-Value="newAlert.Message" class="form-control bg-dark text-white border-secondary rounded-3" rows="4" placeholder="Schreibe hier die vollständige Mitteilung..." required />
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3 py-2" disabled="@isSubmitting">
-                                @if(isSubmitting)
+                        <div>
+                            <label class="form-label settings-label">Benutzer</label>
+                            <select class="form-select settings-input settings-picker-list" size="12" @onchange="OnSelectedUserChanged">
+                                @foreach (var editor in FilteredUserEditors)
                                 {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Wird gesendet...</span>
+                                    <option value="@GetEditorKey(editor)" selected="@(SelectedUserEditor == editor)">
+                                        @editor.Record.Benutzer (@editor.Record.Anmeldename)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary fw-semibold" @onclick="StartCreateUser">
+                                <i class="fa-solid fa-user-plus me-2"></i>Neuen Benutzer anlegen
+                            </button>
+                            <button class="btn btn-outline-light fw-semibold" @onclick="ReloadAdminDataAsync" disabled="@IsLoadingAdminData">
+                                @if (IsLoadingAdminData)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span><span>Lädt...</span>
                                 }
                                 else
                                 {
-                                    <i class="fa-solid fa-paper-plane me-2"></i> <span>Mitteilung sofort senden</span>
+                                    <span><i class="fa-solid fa-rotate me-2"></i>Benutzer neu laden</span>
                                 }
                             </button>
-                        </EditForm>
+                        </div>
+
+                        <div class="settings-toolbar-note">
+                            <i class="fa-solid fa-key me-2"></i>
+                            Passwort-Reset setzt das Passwort auf Personalnummer, sonst auf Anmeldename.
+                        </div>
                     </div>
                 </div>
             </div>
-        </Authorized>
-    </AuthorizeView>
-</div>
+        </div>
 
-<style>
-    .form-control:focus {
-        background-color: #2b3035 !important;
-        border-color: var(--accent-primary) !important;
-        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
-    }
-</style>
+        <div class="col-xl-8">
+            <div class="content-card settings-panel h-100">
+                <div class="card-header-flex align-items-start">
+                    <div>
+                        <h4><i class="fa-solid fa-users-gear me-2 text-info"></i> Benutzereditor</h4>
+                        <p class="settings-section-copy mb-0">
+                            @if (SelectedUserEditor?.IsNew == true)
+                            {
+                                <span>Neuen Benutzer anlegen und bei Bedarf direkt Passwort und Rechte vergeben.</span>
+                            }
+                            else if (SelectedUserEditor != null)
+                            {
+                                <span>Bearbeite den ausgewählten Benutzer gezielt ohne überladene Tabellenansicht.</span>
+                            }
+                            else
+                            {
+                                <span>Wähle links einen Benutzer aus oder lege einen neuen an.</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrWhiteSpace(AdminLoadError))
+                    {
+                        <div class="alert alert-danger mb-3">@AdminLoadError</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(UserManagementStatusMessage))
+                    {
+                        <div class="settings-inline-message @(UserManagementIsError ? "error" : "success") mb-4">
+                            <i class="fa-solid @(UserManagementIsError ? "fa-circle-exclamation" : "fa-check-circle") me-2"></i>
+                            @UserManagementStatusMessage
+                        </div>
+                    }
+
+                    @if (SelectedUserEditor == null)
+                    {
+                        <div class="settings-empty-state">Kein Benutzer ausgewählt.</div>
+                    }
+                    else
+                    {
+                        <div class="settings-editor-grid">
+                            <div>
+                                <label class="form-label settings-label">Benutzername</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.Benutzer" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Anmeldename</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.Anmeldename" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Personalnummer</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.Personalnummer" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">ChipHex</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.ChipHex" placeholder="Chip-ID in Hex" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Rolle / Bereich</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.Rechte" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Wochenminuten</label>
+                                <input class="form-control settings-input" type="number" min="0" @bind="SelectedUserEditor.Record.WochenMinuten" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Arbeitstage pro Woche</label>
+                                <input class="form-control settings-input" type="number" min="0" @bind="SelectedUserEditor.Record.ArbeitstageProWoche" />
+                            </div>
+                            <div>
+                                <label class="form-label settings-label">Tägliche Arbeitszeit</label>
+                                <input class="form-control settings-input" type="number" min="0" @bind="SelectedUserEditor.Record.TaglicheArbeitszeit" />
+                            </div>
+                            <div class="settings-editor-span-2">
+                                <label class="form-label settings-label">Nicht-Arbeitstage</label>
+                                <input class="form-control settings-input" @bind="SelectedUserEditor.Record.NichtArbeitstage" placeholder="z. B. Freitag oder Freitag;Samstag" />
+                            </div>
+                            <div class="settings-editor-span-2">
+                                <label class="form-label settings-label">Passwort</label>
+                                <input class="form-control settings-input" type="text" @bind="SelectedUserEditor.PasswordInput" placeholder="Bei neuem Benutzer direkt setzen oder später ändern" />
+                            </div>
+                        </div>
+
+                        <div class="settings-toggle-grid settings-toggle-grid-editor mt-4">
+                            <label class="settings-check">
+                                <input class="form-check-input" type="checkbox" @bind="SelectedUserEditor.Record.Admin" />
+                                <span>Adminrechte</span>
+                            </label>
+                            <label class="settings-check">
+                                <input class="form-check-input" type="checkbox" @bind="SelectedUserEditor.Record.ZeiterfassungVerwalten" />
+                                <span>Zeiterfassung verwalten</span>
+                            </label>
+                        </div>
+
+                        @if (!SelectedUserEditor.IsNew)
+                        {
+                            <div class="settings-row-meta mt-4">Zuletzt online: @FormatLastSeen(SelectedUserEditor.Record.LastSeen)</div>
+                        }
+
+                        <div class="d-flex flex-wrap gap-3 mt-4">
+                            <button class="btn btn-primary fw-bold" @onclick="SaveSelectedUserAsync" disabled="@SelectedUserEditor.IsBusy">
+                                <i class="fa-solid fa-floppy-disk me-2"></i>@(SelectedUserEditor.IsNew ? "Benutzer anlegen" : "Änderungen speichern")
+                            </button>
+
+                            @if (!SelectedUserEditor.IsNew)
+                            {
+                                <button class="btn btn-outline-info fw-bold" @onclick="ResetPasswordForSelectedUserAsync" disabled="@SelectedUserEditor.IsBusy">
+                                    <i class="fa-solid fa-key me-2"></i>Passwort auf PN zurücksetzen
+                                </button>
+                            }
+
+                            @if (SelectedUserEditor.IsNew)
+                            {
+                                <button class="btn btn-outline-light fw-bold" @onclick="CancelCreateUser" disabled="@SelectedUserEditor.IsBusy">
+                                    <i class="fa-solid fa-xmark me-2"></i>Abbrechen
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-outline-danger fw-bold" @onclick="BeginDeleteSelectedUser" disabled="@SelectedUserEditor.IsBusy">
+                                    <i class="fa-solid fa-trash me-2"></i>Benutzer löschen
+                                </button>
+                            }
+                        </div>
+
+                        @if (!SelectedUserEditor.IsNew && DeleteConfirmationStage > 0)
+                        {
+                            <div class="settings-danger-zone mt-4">
+                                @if (DeleteConfirmationStage == 1)
+                                {
+                                    <div class="fw-bold mb-2">Erste Sicherheitsabfrage: Soll dieser Benutzer wirklich gelöscht werden?</div>
+                                    <div class="text-secondary mb-3">Benutzer: @SelectedUserEditor.Record.Benutzer</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-warning fw-bold" @onclick="AdvanceDeleteSelectedUserConfirmation">Ja, weiter</button>
+                                        <button class="btn btn-outline-light fw-bold" @onclick="CancelDeleteSelectedUser">Abbrechen</button>
+                                    </div>
+                                }
+                                else if (DeleteConfirmationStage == 2)
+                                {
+                                    <div class="fw-bold mb-2">Zweite Sicherheitsabfrage: Dies löscht den Benutzer endgültig aus `LoginDaten`.</div>
+                                    <div class="text-secondary mb-3">Bitte nur fortfahren, wenn du dir absolut sicher bist.</div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button class="btn btn-danger fw-bold" @onclick="DeleteSelectedUserAsync">Endgültig löschen</button>
+                                        <button class="btn btn-outline-light fw-bold" @onclick="CancelDeleteSelectedUser">Abbrechen</button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (ActiveTab == SettingsTab.TimeManagement && IsCurrentUserAdmin)
+{
+    <div class="d-grid gap-4">
+        <div class="content-card settings-panel">
+            <div class="card-header-flex align-items-start">
+                <div>
+                    <h4><i class="fa-solid fa-clock-rotate-left me-2 text-info"></i> Zeiterfassungsverwaltung</h4>
+                    <p class="settings-section-copy mb-0">Trage manuelle Buchungen sauber nach und prüfe den Tagesverlauf eines Benutzers direkt darunter.</p>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (UserEditors.Count == 0)
+                {
+                    <div class="settings-empty-state">Für Zeiteinträge müssen erst Benutzerdaten geladen werden.</div>
+                }
+                else
+                {
+                    <div class="settings-form-grid">
+                        <div>
+                            <label class="form-label settings-label">Benutzer</label>
+                            <select class="form-select settings-input" @bind="SelectedTimeUser" @bind:after="LoadAdminDayBookingsAsync">
+                                @foreach (var editor in UserEditors.OrderBy(e => e.Record.Benutzer))
+                                {
+                                    <option value="@editor.Record.Benutzer">@editor.Record.Benutzer</option>
+                                }
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-label settings-label">Datum</label>
+                            <input type="date" class="form-control settings-input" @bind="AdminManualDate" @bind:after="LoadAdminDayBookingsAsync" />
+                        </div>
+                        <div>
+                            <label class="form-label settings-label">Uhrzeit</label>
+                            <input type="time" class="form-control settings-input" @bind="AdminManualTime" />
+                        </div>
+                        <div>
+                            <label class="form-label settings-label">Aktion</label>
+                            <select class="form-select settings-input" @bind="AdminManualAction">
+                                @foreach (BookingAction action in BookingActions)
+                                {
+                                    <option value="@action">@action</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="settings-form-span-2">
+                            <label class="form-label settings-label">Bemerkung</label>
+                            <input class="form-control settings-input" @bind="AdminManualNote" placeholder="Optionaler Hinweis" />
+                        </div>
+                        <div class="settings-save-card">
+                            <label class="settings-check mb-3">
+                                <input class="form-check-input" type="checkbox" id="admin-homeoffice" @bind="AdminManualHomeOffice" />
+                                <span>Homeoffice</span>
+                            </label>
+                            <button class="btn btn-primary w-100 fw-semibold" @onclick="SaveAdminTimeEntryAsync" disabled="@IsSavingTimeEntry">
+                                @if (IsSavingTimeEntry)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span><span>Speichert...</span>
+                                }
+                                else
+                                {
+                                    <span><i class="fa-solid fa-floppy-disk me-2"></i>Buchung speichern</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(TimeEntryStatusMessage))
+                    {
+                        <div class="settings-inline-message @(TimeEntryIsError ? "error" : "success") mt-4">
+                            <i class="fa-solid @(TimeEntryIsError ? "fa-circle-exclamation" : "fa-check-circle") me-2"></i>
+                            @TimeEntryStatusMessage
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <div class="content-card settings-panel">
+            <div class="card-header-flex align-items-start">
+                <div>
+                    <h4><i class="fa-solid fa-list-check me-2 text-info"></i> Tagesbuchungen</h4>
+                    <p class="settings-section-copy mb-0">Aktuelle Buchungen für @SelectedTimeUser am @AdminManualDate.ToString("dd.MM.yyyy").</p>
+                </div>
+                <button class="btn btn-outline-light fw-semibold" @onclick="LoadAdminDayBookingsAsync" disabled="@IsLoadingAdminBookings">
+                    <i class="fa-solid fa-rotate me-2"></i>Aktualisieren
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive settings-admin-table">
+                    <table class="table settings-table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Uhrzeit</th>
+                                <th>Aktion</th>
+                                <th>Quelle</th>
+                                <th>Homeoffice</th>
+                                <th>Bemerkung</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (AdminDayBookings.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="6" class="settings-empty-row">Keine Buchungen für den gewählten Tag.</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var booking in AdminDayBookings)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@booking.Timestamp.ToString("HH:mm")</td>
+                                        <td>@(booking.Action == BookingAction.Kommen ? "KOMMEN" : "GEHEN")</td>
+                                        <td>@(booking.IsManual ? "Manuell-Web" : "Terminal")</td>
+                                        <td>@(booking.IsHomeOffice ? "Ja" : "Nein")</td>
+                                        <td>@(string.IsNullOrWhiteSpace(booking.Note) ? "—" : booking.Note)</td>
+                                        <td class="text-end">
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAdminBookingAsync(booking.Id)" disabled="@IsSavingTimeEntry">Löschen</button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
+    private enum SettingsTab
+    {
+        Profile,
+        Alerts,
+        UserManagement,
+        TimeManagement
+    }
+
+    private sealed class AdminUserEditor
+    {
+        public required AdminUserRecord Record { get; init; }
+        public bool IsNew { get; set; }
+        public bool IsBusy { get; set; }
+        public string PasswordInput { get; set; } = "";
+    }
+
     private string UserName = "";
-    private SystemAlert newAlert = new();
-    private bool isSubmitting = false;
-    private bool isAlertSuccess = false;
-    
-    // UI Settings
-    private string currentTheme = "dark";
-    private int currentFontSize = 100;
-    private bool settingsSaved = false;
+    private bool IsCurrentUserAdmin;
+    private bool CanSendSystemAlerts;
+    private SettingsTab ActiveTab = SettingsTab.Profile;
+
+    private SystemAlert NewAlert = new();
+    private bool IsSubmittingAlert;
+    private bool IsAlertSuccess;
+
+    private string CurrentTheme = "dark";
+    private int CurrentFontSize = 100;
+    private bool SettingsSaved;
+
+    private bool IsLoadingAdminData;
+    private string AdminLoadError = "";
+    private string UserSearchText = "";
+    private string UserManagementStatusMessage = "";
+    private bool UserManagementIsError;
+    private int DeleteConfirmationStage;
+    private List<AdminUserEditor> UserEditors = new();
+    private AdminUserEditor? SelectedUserEditor;
+
+    private string SelectedTimeUser = "";
+    private DateTime AdminManualDate = DateTime.Today;
+    private TimeOnly AdminManualTime = TimeOnly.FromDateTime(DateTime.Now);
+    private BookingAction AdminManualAction = BookingAction.Kommen;
+    private Array BookingActions = Enum.GetValues(typeof(BookingAction));
+    private bool AdminManualHomeOffice;
+    private string AdminManualNote = "";
+    private bool IsSavingTimeEntry;
+    private bool IsLoadingAdminBookings;
+    private bool TimeEntryIsError;
+    private string TimeEntryStatusMessage = "";
+    private List<Booking> AdminDayBookings = new();
+
+    private List<AdminUserEditor> FilteredUserEditors =>
+        string.IsNullOrWhiteSpace(UserSearchText)
+            ? UserEditors.OrderBy(editor => editor.Record.Benutzer).ToList()
+            : UserEditors
+                .Where(editor =>
+                    editor.Record.Benutzer.Contains(UserSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    editor.Record.Anmeldename.Contains(UserSearchText, StringComparison.OrdinalIgnoreCase) ||
+                    editor.Record.Personalnummer.Contains(UserSearchText, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(editor => editor.Record.Benutzer)
+                .ToList();
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        UserName = authState.User?.Identity?.Name ?? "Unbekannt";
+        var user = authState.User;
+
+        UserName = user.Identity?.Name ?? "Unbekannt";
+        IsCurrentUserAdmin = user.IsInRole("Admin");
+        CanSendSystemAlerts = user.IsInRole("Admin") || user.IsInRole("Verwaltung");
+
+        if (IsCurrentUserAdmin)
+        {
+            await ReloadAdminDataAsync();
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (!firstRender)
         {
-            try 
-            {
-                var theme = await JS.InvokeAsync<string>("localStorage.getItem", "qin_theme");
-                if (!string.IsNullOrEmpty(theme)) currentTheme = theme;
+            return;
+        }
 
-                var fs = await JS.InvokeAsync<string>("localStorage.getItem", "qin_fontsize");
-                if (int.TryParse(fs, out int parsedFs)) currentFontSize = parsedFs;
-                
-                StateHasChanged();
+        try
+        {
+            var theme = await JS.InvokeAsync<string>("localStorage.getItem", "qin_theme");
+            if (!string.IsNullOrEmpty(theme))
+            {
+                CurrentTheme = theme;
             }
-            catch { /* Ignore pre-render errors if any */ }
+
+            var fontSize = await JS.InvokeAsync<string>("localStorage.getItem", "qin_fontsize");
+            if (int.TryParse(fontSize, out var parsedFontSize))
+            {
+                CurrentFontSize = parsedFontSize;
+            }
+
+            StateHasChanged();
+        }
+        catch
+        {
         }
     }
 
     private async Task ApplySettings()
     {
-        await JS.InvokeVoidAsync("updateClientSettings", currentTheme, currentFontSize.ToString());
-        settingsSaved = true;
-        
-        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
-            InvokeAsync(() => {
-                settingsSaved = false;
-                StateHasChanged();
-            });
-        }), null, 3000, System.Threading.Timeout.Infinite);
+        await JS.InvokeVoidAsync("updateClientSettings", CurrentTheme, CurrentFontSize.ToString());
+        await ShowSettingsSavedAsync();
     }
 
     private async Task ResetSettings()
     {
-        currentTheme = "dark";
-        currentFontSize = 100;
+        CurrentTheme = "dark";
+        CurrentFontSize = 100;
         await JS.InvokeVoidAsync("resetClientSettings");
-        settingsSaved = true;
-        
-        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
-            InvokeAsync(() => {
-                settingsSaved = false;
-                StateHasChanged();
-            });
-        }), null, 3000, System.Threading.Timeout.Infinite);
+        await ShowSettingsSavedAsync();
+    }
+
+    private async Task ShowSettingsSavedAsync()
+    {
+        SettingsSaved = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        SettingsSaved = false;
+        StateHasChanged();
     }
 
     private async Task SendAlert()
     {
-        if (string.IsNullOrWhiteSpace(newAlert.Title) || string.IsNullOrWhiteSpace(newAlert.Message))
+        if (string.IsNullOrWhiteSpace(NewAlert.Title) || string.IsNullOrWhiteSpace(NewAlert.Message))
+        {
             return;
+        }
 
-        isSubmitting = true;
-        isAlertSuccess = false;
+        IsSubmittingAlert = true;
+        IsAlertSuccess = false;
 
-        newAlert.CreatedBy = UserName;
+        NewAlert.CreatedBy = UserName;
+        await AlertService.CreateAlertAsync(NewAlert);
 
-        await AlertService.CreateAlertAsync(newAlert);
-        
-        // Reset form
-        newAlert = new SystemAlert();
-        isSubmitting = false;
-        isAlertSuccess = true;
-        
-        // Timer to hide success message automatically
-        var timer = new System.Threading.Timer(new System.Threading.TimerCallback(_ => {
-            InvokeAsync(() => {
-                isAlertSuccess = false;
-                StateHasChanged();
-            });
-        }), null, 4000, System.Threading.Timeout.Infinite);
+        NewAlert = new SystemAlert();
+        IsSubmittingAlert = false;
+        IsAlertSuccess = true;
+        StateHasChanged();
+
+        await Task.Delay(4000);
+        IsAlertSuccess = false;
+        StateHasChanged();
     }
+
+    private async Task ReloadAdminDataAsync()
+    {
+        await ReloadAdminDataAsync(SelectedUserEditor?.Record.OriginalBenutzer, SelectedUserEditor?.Record.Benutzer);
+    }
+
+    private async Task ReloadAdminDataAsync(string? selectOriginalUser, string? selectUserName)
+    {
+        if (!IsCurrentUserAdmin)
+        {
+            return;
+        }
+
+        IsLoadingAdminData = true;
+        AdminLoadError = "";
+
+        try
+        {
+            await AdminManagementService.EnsureSchemaAsync();
+            var users = await AdminManagementService.LoadUsersAsync();
+            UserEditors = users.Select(user => new AdminUserEditor { Record = user }).ToList();
+
+            SelectedUserEditor =
+                UserEditors.FirstOrDefault(editor => !string.IsNullOrWhiteSpace(selectOriginalUser) && editor.Record.OriginalBenutzer == selectOriginalUser)
+                ?? UserEditors.FirstOrDefault(editor => !string.IsNullOrWhiteSpace(selectUserName) && editor.Record.Benutzer == selectUserName)
+                ?? UserEditors.FirstOrDefault();
+
+            if (string.IsNullOrWhiteSpace(SelectedTimeUser) || !UserEditors.Any(x => x.Record.Benutzer == SelectedTimeUser))
+            {
+                SelectedTimeUser = UserEditors.FirstOrDefault()?.Record.Benutzer ?? string.Empty;
+            }
+
+            DeleteConfirmationStage = 0;
+            await LoadAdminDayBookingsAsync();
+        }
+        catch (Exception ex)
+        {
+            AdminLoadError = $"Benutzerdaten konnten nicht geladen werden: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingAdminData = false;
+        }
+    }
+
+    private void OnSelectedUserChanged(ChangeEventArgs args)
+    {
+        var key = args.Value?.ToString() ?? string.Empty;
+        SelectedUserEditor = UserEditors.FirstOrDefault(editor => GetEditorKey(editor) == key);
+        DeleteConfirmationStage = 0;
+        UserManagementStatusMessage = "";
+    }
+
+    private void StartCreateUser()
+    {
+        SelectedUserEditor = new AdminUserEditor
+        {
+            IsNew = true,
+            Record = new AdminUserRecord
+            {
+                Benutzer = "",
+                Anmeldename = "",
+                Personalnummer = "",
+                ChipHex = "",
+                Rechte = "Benutzer",
+                WochenMinuten = 2250,
+                ArbeitstageProWoche = 5,
+                TaglicheArbeitszeit = 450,
+                NichtArbeitstage = ""
+            }
+        };
+
+        DeleteConfirmationStage = 0;
+        UserManagementStatusMessage = "";
+    }
+
+    private void CancelCreateUser()
+    {
+        SelectedUserEditor = UserEditors.FirstOrDefault();
+        DeleteConfirmationStage = 0;
+        UserManagementStatusMessage = "";
+    }
+
+    private async Task SaveSelectedUserAsync()
+    {
+        if (SelectedUserEditor == null)
+        {
+            return;
+        }
+
+        SelectedUserEditor.IsBusy = true;
+        UserManagementStatusMessage = "";
+        UserManagementIsError = false;
+
+        try
+        {
+            if (SelectedUserEditor.IsNew)
+            {
+                var createResult = await AdminManagementService.CreateUserAsync(SelectedUserEditor.Record, SelectedUserEditor.PasswordInput);
+                UserManagementIsError = !createResult.Success;
+                UserManagementStatusMessage = createResult.Message;
+
+                if (createResult.Success)
+                {
+                    await ReloadAdminDataAsync(null, SelectedUserEditor.Record.Benutzer);
+                }
+
+                return;
+            }
+
+            var saved = await AdminManagementService.UpdateUserAsync(SelectedUserEditor.Record);
+            if (!saved)
+            {
+                UserManagementIsError = true;
+                UserManagementStatusMessage = "Benutzer konnte nicht gespeichert werden.";
+                return;
+            }
+
+            SelectedUserEditor.Record.OriginalBenutzer = SelectedUserEditor.Record.Benutzer;
+
+            if (!string.IsNullOrWhiteSpace(SelectedUserEditor.PasswordInput))
+            {
+                var passwordSaved = await AdminManagementService.UpdatePasswordAsync(SelectedUserEditor.Record.OriginalBenutzer, SelectedUserEditor.PasswordInput);
+                if (!passwordSaved)
+                {
+                    UserManagementIsError = true;
+                    UserManagementStatusMessage = "Benutzerdaten wurden gespeichert, aber das Passwort konnte nicht aktualisiert werden.";
+                    return;
+                }
+
+                SelectedUserEditor.PasswordInput = "";
+            }
+
+            UserManagementIsError = false;
+            UserManagementStatusMessage = "Benutzer wurde gespeichert.";
+            await ReloadAdminDataAsync(SelectedUserEditor.Record.OriginalBenutzer, SelectedUserEditor.Record.Benutzer);
+        }
+        catch (Exception ex)
+        {
+            UserManagementIsError = true;
+            UserManagementStatusMessage = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            SelectedUserEditor.IsBusy = false;
+        }
+    }
+
+    private async Task ResetPasswordForSelectedUserAsync()
+    {
+        if (SelectedUserEditor == null || SelectedUserEditor.IsNew)
+        {
+            return;
+        }
+
+        SelectedUserEditor.IsBusy = true;
+        UserManagementStatusMessage = "";
+
+        try
+        {
+            var result = await AdminManagementService.ResetPasswordToPersonalnummerAsync(SelectedUserEditor.Record);
+            UserManagementIsError = !result.Success;
+            UserManagementStatusMessage = result.Success
+                ? $"Passwort wurde auf '{result.Password}' zurückgesetzt."
+                : "Kein Rücksetz-Wert vorhanden. Bitte Personalnummer oder Anmeldename prüfen.";
+        }
+        catch (Exception ex)
+        {
+            UserManagementIsError = true;
+            UserManagementStatusMessage = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            SelectedUserEditor.IsBusy = false;
+        }
+    }
+
+    private void BeginDeleteSelectedUser()
+    {
+        if (SelectedUserEditor == null || SelectedUserEditor.IsNew)
+        {
+            return;
+        }
+
+        DeleteConfirmationStage = 1;
+        UserManagementStatusMessage = "";
+    }
+
+    private void AdvanceDeleteSelectedUserConfirmation()
+    {
+        if (DeleteConfirmationStage == 1)
+        {
+            DeleteConfirmationStage = 2;
+        }
+    }
+
+    private void CancelDeleteSelectedUser()
+    {
+        DeleteConfirmationStage = 0;
+    }
+
+    private async Task DeleteSelectedUserAsync()
+    {
+        if (SelectedUserEditor == null || SelectedUserEditor.IsNew || DeleteConfirmationStage != 2)
+        {
+            return;
+        }
+
+        SelectedUserEditor.IsBusy = true;
+        UserManagementStatusMessage = "";
+
+        try
+        {
+            var result = await AdminManagementService.DeleteUserAsync(SelectedUserEditor.Record.OriginalBenutzer);
+            UserManagementIsError = !result.Success;
+            UserManagementStatusMessage = result.Message;
+            DeleteConfirmationStage = 0;
+
+            if (result.Success)
+            {
+                await ReloadAdminDataAsync(null, null);
+            }
+        }
+        catch (Exception ex)
+        {
+            UserManagementIsError = true;
+            UserManagementStatusMessage = $"Fehler: {ex.Message}";
+        }
+        finally
+        {
+            if (SelectedUserEditor != null)
+            {
+                SelectedUserEditor.IsBusy = false;
+            }
+        }
+    }
+
+    private async Task SaveAdminTimeEntryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedTimeUser))
+        {
+            TimeEntryIsError = true;
+            TimeEntryStatusMessage = "Bitte zuerst einen Benutzer auswählen.";
+            return;
+        }
+
+        IsSavingTimeEntry = true;
+        TimeEntryStatusMessage = "";
+
+        try
+        {
+            var timestamp = new DateTime(
+                AdminManualDate.Year,
+                AdminManualDate.Month,
+                AdminManualDate.Day,
+                AdminManualTime.Hour,
+                AdminManualTime.Minute,
+                0);
+
+            await ZeiterfassungService.InsertManualBookingAsync(
+                SelectedTimeUser,
+                timestamp,
+                AdminManualAction,
+                AdminManualHomeOffice,
+                AdminManualNote);
+
+            AdminManualNote = "";
+            AdminManualHomeOffice = false;
+            TimeEntryIsError = false;
+            TimeEntryStatusMessage = "Manuelle Buchung wurde gespeichert.";
+            await LoadAdminDayBookingsAsync();
+        }
+        catch (Exception ex)
+        {
+            TimeEntryIsError = true;
+            TimeEntryStatusMessage = $"Buchung konnte nicht gespeichert werden: {ex.Message}";
+        }
+        finally
+        {
+            IsSavingTimeEntry = false;
+        }
+    }
+
+    private async Task DeleteAdminBookingAsync(int bookingId)
+    {
+        IsSavingTimeEntry = true;
+        try
+        {
+            await ZeiterfassungService.DeleteBookingAsync(bookingId);
+            TimeEntryIsError = false;
+            TimeEntryStatusMessage = "Buchung wurde gelöscht.";
+            await LoadAdminDayBookingsAsync();
+        }
+        catch (Exception ex)
+        {
+            TimeEntryIsError = true;
+            TimeEntryStatusMessage = $"Buchung konnte nicht gelöscht werden: {ex.Message}";
+        }
+        finally
+        {
+            IsSavingTimeEntry = false;
+        }
+    }
+
+    private async Task LoadAdminDayBookingsAsync()
+    {
+        if (!IsCurrentUserAdmin || string.IsNullOrWhiteSpace(SelectedTimeUser))
+        {
+            AdminDayBookings.Clear();
+            return;
+        }
+
+        IsLoadingAdminBookings = true;
+
+        try
+        {
+            AdminDayBookings = await ZeiterfassungService.LoadBookingsForDayAsync(
+                SelectedTimeUser,
+                DateOnly.FromDateTime(AdminManualDate));
+        }
+        catch (Exception ex)
+        {
+            TimeEntryIsError = true;
+            TimeEntryStatusMessage = $"Buchungen konnten nicht geladen werden: {ex.Message}";
+        }
+        finally
+        {
+            IsLoadingAdminBookings = false;
+        }
+    }
+
+    private static string GetEditorKey(AdminUserEditor editor) =>
+        editor.IsNew ? "__new__" : editor.Record.OriginalBenutzer;
+
+    private static string FormatLastSeen(DateTime? value) =>
+        value.HasValue ? value.Value.ToString("dd.MM.yyyy HH:mm") : "—";
 }

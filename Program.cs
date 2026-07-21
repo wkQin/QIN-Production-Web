@@ -34,6 +34,7 @@ builder.Services.AddSingleton<LoginTokenCache>();
 
 builder.Services.AddScoped<LoginService>();
 builder.Services.AddScoped<UserService>();
+builder.Services.AddScoped<AdminManagementService>();
 builder.Services.AddScoped<AlertService>();
 builder.Services.AddScoped<EndkontrolleService>();
 builder.Services.AddScoped<FehleranalyseService>();
@@ -52,6 +53,12 @@ builder.Services.AddScoped<QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungSe
 builder.Services.AddScoped<QIN_Production_Web.Data.Zeiterfassung.ZeiterfassungExcelExportService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var adminManagementService = scope.ServiceProvider.GetRequiredService<AdminManagementService>();
+    await adminManagementService.EnsureSchemaAsync();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
@@ -81,9 +88,19 @@ app.MapGet("/api/auth/process", async (HttpContext context, LoginTokenCache cach
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Name, session.Name ?? ""),
-            new Claim(ClaimTypes.Role, session.Rechte ?? ""),
             new Claim("UserId", session.Personalnummer ?? "")
         };
+
+        if (session.IsAdmin || string.Equals(session.Rechte, "Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
+
+        if (!string.IsNullOrWhiteSpace(session.Rechte))
+        {
+            claims.Add(new Claim(ClaimTypes.Role, session.Rechte));
+        }
+
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         
@@ -94,7 +111,7 @@ app.MapGet("/api/auth/process", async (HttpContext context, LoginTokenCache cach
         };
 
         await context.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
-        return Results.Redirect(session.Rechte == "Admin" || session.Rechte == "Verwaltung" ? "/verwaltung/aktivitaeten" : "/");
+        return Results.Redirect(session.CanAccessAdministration ? "/verwaltung/aktivitaeten" : "/");
     }
     return Results.Redirect("/login?error=InvalidToken");
 });
