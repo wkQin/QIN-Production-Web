@@ -160,6 +160,33 @@
             }
         };
 
+        window.layoutScrollState = {
+            capture: () => {
+                const element = document.querySelector('.content-scrollable');
+                if (element instanceof Element) {
+                    return element.scrollTop;
+                }
+
+                return window.scrollY || document.documentElement.scrollTop || 0;
+            },
+
+            restore: (scrollTop) => {
+                const targetTop = typeof scrollTop === 'number' && !Number.isNaN(scrollTop) ? scrollTop : 0;
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const element = document.querySelector('.content-scrollable');
+                        if (element instanceof Element) {
+                            element.scrollTop = targetTop;
+                            return;
+                        }
+
+                        window.scrollTo(0, targetTop);
+                    });
+                });
+            }
+        };
+
         window.scrollToChildInContainer = (containerId, childId) => {
             const container = document.getElementById(containerId);
             const child = document.getElementById(childId);

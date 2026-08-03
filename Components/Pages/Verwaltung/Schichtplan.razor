@@ -448,6 +448,7 @@
     private DragItem? CurrentDrag { get; set; }
     private DotNetObjectReference<Schichtplan>? ThemeReference { get; set; }
     private string? ThemeSubscriptionId { get; set; }
+    private double? PendingScrollTop { get; set; }
 
     private string LastUpdatedDisplay =>
         ViewModel.Board.LastUpdatedAt.HasValue
@@ -543,6 +544,13 @@
         }
 
         await JS.InvokeVoidAsync("schichtplanUserPool.activate");
+
+        if (PendingScrollTop.HasValue)
+        {
+            var scrollTop = PendingScrollTop.Value;
+            PendingScrollTop = null;
+            await JS.InvokeVoidAsync("layoutScrollState.restore", scrollTop);
+        }
     }
 
     [JSInvokable]
@@ -611,7 +619,7 @@
         {
             IsCopyingPreviousDay = true;
             var copiedEntries = await SchichtplanService.CopyPlanAsync(sourceDate, targetDate, CurrentUserName);
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus($"Schichtplan vom {sourceDate:dd.MM.yyyy} wurde mit {copiedEntries} Karten übernommen.", true);
         }
         catch (Exception ex)
@@ -640,7 +648,7 @@
         {
             IsClearingPlan = true;
             var deletedEntries = await SchichtplanService.ClearPlanAsync(targetDate, CurrentUserName);
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus(
                 deletedEntries > 0
                     ? $"Schichtplan vom {targetDate:dd.MM.yyyy} wurde komplett gel\u00F6scht. {deletedEntries} Karten wurden entfernt."
@@ -662,7 +670,7 @@
         if (DateTime.TryParse(args.Value?.ToString(), out var parsedDate))
         {
             SelectedDate = parsedDate.Date;
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
         }
     }
 
@@ -672,8 +680,24 @@
         return Task.CompletedTask;
     }
 
-    private async Task LoadAsync()
+    private async Task LoadAsync(bool preserveScrollPosition = true)
     {
+        if (preserveScrollPosition && ThemeReference is not null)
+        {
+            try
+            {
+                PendingScrollTop = await JS.InvokeAsync<double>("layoutScrollState.capture");
+            }
+            catch (JSDisconnectedException)
+            {
+                PendingScrollTop = null;
+            }
+        }
+        else
+        {
+            PendingScrollTop = null;
+        }
+
         IsLoading = true;
         LoadError = null;
 
@@ -792,7 +816,7 @@
 
             if (draggedItem.Type == "user" || draggedItem.Type == "material")
             {
-                await LoadAsync();
+                await LoadAsync(preserveScrollPosition: true);
             }
         }
         catch (Exception ex)
@@ -811,7 +835,7 @@
         try
         {
             await SchichtplanService.RemoveUserAsync(assignmentId, CurrentUserName);
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus("Benutzer wurde entfernt.", true);
         }
         catch (Exception ex)
@@ -825,7 +849,7 @@
         try
         {
             await SchichtplanService.ClearMaterialAsync(SelectedDate, workplaceId, shift, materialSlot, CurrentUserName);
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus($"Material {materialSlot} wurde entfernt.", true);
         }
         catch (Exception ex)
@@ -839,7 +863,7 @@
         try
         {
             await SchichtplanService.UpdateEntryDetailsAsync(SelectedDate, workplaceId, shift, faNr, bemerkung, CurrentUserName);
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus("Kartendetails wurden gespeichert.", true);
         }
         catch (Exception ex)
@@ -860,7 +884,7 @@
             }
 
             NewManualUserName = string.Empty;
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             SetStatus($"Benutzer '{created.DisplayName}' steht jetzt oben in der Liste.", true);
         }
         catch (Exception ex)
@@ -969,7 +993,7 @@
                 return;
             }
 
-            await LoadAsync();
+            await LoadAsync(preserveScrollPosition: true);
             CloseMaterialEditDialog();
             SetStatus($"Material '{updated.Material}' wurde aktualisiert.", true);
         }

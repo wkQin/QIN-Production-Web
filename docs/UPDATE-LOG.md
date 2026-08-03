@@ -3,7 +3,10 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
-## Update 3.3.1
+## Update 3.3.2
+- Schichtplan: Nach Benutzer-, Material- und Kartendetails-Änderungen bleibt der Scrollstand der Verwaltungsansicht jetzt erhalten, damit die Seite beim Aktualisieren nicht mehr unerwartet nach oben springt.
+- Zeiterfassung: Die manuelle Uhrzeit-Eingabe in der Verwaltung nutzt jetzt fest das 24-Stunden-Format `HH:mm`, damit Remote-Browser keine AM/PM-Anzeige mehr erzwingen.
+- Fehleranalyse: Im Tab `Einzelne Einträge` gibt es jetzt unter der Rohdaten-Tabelle zusätzlich eine kombinierte Übersicht aus Benutzer und Material mit den zugehörigen Gesamtwerten.
 - Einstellungen: Admins haben jetzt einen eigenen Administrations-Tab, in dem alle Benutzer direkt in einer Tabelle bearbeitet werden können.
 - Einstellungen: Im Administrations-Tab können Admins jetzt Passwörter pro Benutzer neu setzen oder auf die Personalnummer zurücksetzen.
 - Einstellungen und Datenbank: `dbo.LoginDaten` hat jetzt die neue Bool-Spalte `Admin`; zusätzlich können Admins im selben Bereich manuelle Zeiten direkt in `dbo.Zeiterfassung` eintragen.

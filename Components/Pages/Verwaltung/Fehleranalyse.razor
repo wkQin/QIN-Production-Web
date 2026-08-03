@@ -374,6 +374,55 @@
                                 </tbody>
                             </table>
                         </div>
+
+                        <div class="mt-4">
+                            <h5 class="fehleranalyse-section-title">
+                                <i class="fa-solid fa-layer-group text-primary me-2"></i>Benutzer und Material kombiniert
+                            </h5>
+
+                            <div class="modern-table-container qin-table-shell">
+                                <table class="modern-table qin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Benutzer</th>
+                                            <th>Material</th>
+                                            <th class="text-end">Einträge</th>
+                                            <th class="text-end text-success">Gut</th>
+                                            <th class="text-end text-danger">Schlecht extern</th>
+                                            <th class="text-end text-danger">Schlecht intern</th>
+                                            <th class="text-end text-danger">Schlechtteile</th>
+                                            <th class="text-end text-primary">Gesamt</th>
+                                            <th class="text-end">Schlecht %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (!MitarbeiterMaterialKombinationen.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="9" class="qin-empty-state">Keine kombinierten Werte vorhanden.</td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var item in MitarbeiterMaterialKombinationen)
+                                            {
+                                                <tr>
+                                                    <td class="fw-semibold text-info">@item.Mitarbeiter</td>
+                                                    <td title="@BuildMaterialTooltip(item)">@BuildMaterialLabel(item)</td>
+                                                    <td class="text-end">@FormatQuantity(item.Eintraege)</td>
+                                                    <td class="text-end text-success fw-bold">@FormatQuantity(item.Gutteile)</td>
+                                                    <td class="text-end">@FormatQuantity(item.SchlechtExtern)</td>
+                                                    <td class="text-end">@FormatQuantity(item.SchlechtIntern)</td>
+                                                    <td class="text-end text-danger fw-bold">@FormatQuantity(item.Schlechtteile)</td>
+                                                    <td class="text-end text-primary fw-bold">@FormatQuantity(item.Gesamt)</td>
+                                                    <td class="text-end">@FormatPercent(item.Ausschussquote)</td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="fehleranalyse-chart-pane @(ActiveTab == "bar" ? string.Empty : "d-none")">
@@ -444,6 +493,7 @@
     private List<string> DekorListe = new();
 
     private List<FehlerRow> Eintraege = new();
+    private List<FehleranalyseMitarbeiterMaterialRow> MitarbeiterMaterialKombinationen = new();
     private FehlerAnalyseResult GesamtResult = new();
     private FehleranalyseZielAuswertung ProduktionszielAuswertung = new();
     private List<ChargeItem> ExterneFehler = new();
@@ -646,6 +696,12 @@
             StartDatum,
             EndDatum);
 
+        MitarbeiterMaterialKombinationen = AnalyseService.GetMitarbeiterMaterialRows(Eintraege)
+            .OrderByDescending(item => item.Schlechtteile)
+            .ThenByDescending(item => item.Gesamt)
+            .ThenBy(item => item.Mitarbeiter, StringComparer.CurrentCultureIgnoreCase)
+            .ToList();
+
         GesamtResult = new FehlerAnalyseResult
         {
             Fusseln = Eintraege.Sum(x => x.Fusseln),
@@ -720,6 +776,7 @@
         EndDatum = now;
 
         Eintraege.Clear();
+        MitarbeiterMaterialKombinationen.Clear();
         GesamtResult = new();
         ProduktionszielAuswertung = new();
         ExterneFehler.Clear();
@@ -874,6 +931,37 @@
     }
 
     private static string FormatQuantity(int value) => value.ToString("N0", DeCulture);
+
+    private static string FormatPercent(double value) => value.ToString("P2", DeCulture);
+
+    private static string BuildMaterialLabel(FehleranalyseMitarbeiterMaterialRow item)
+    {
+        if (string.IsNullOrWhiteSpace(item.Artikel) || item.Artikel == "-")
+        {
+            return "-";
+        }
+
+        var artikel = item.Artikel.Trim();
+        if (!string.IsNullOrWhiteSpace(item.Projekt) && item.Projekt != "-")
+        {
+            var index = artikel.IndexOf(item.Projekt, StringComparison.CurrentCultureIgnoreCase);
+            if (index >= 0)
+            {
+                var material = artikel[index..].Trim();
+                if (!string.IsNullOrWhiteSpace(material))
+                {
+                    return material;
+                }
+            }
+        }
+
+        return artikel;
+    }
+
+    private static string BuildMaterialTooltip(FehleranalyseMitarbeiterMaterialRow item)
+    {
+        return $"Kunde: {item.Kunde} | Projekt: {item.Projekt} | Artikel: {item.Artikel} | Dekor: {item.Dekor}";
+    }
 
     private static string GetMaterialStatusText(FehleranalyseZielDetail detail)
     {

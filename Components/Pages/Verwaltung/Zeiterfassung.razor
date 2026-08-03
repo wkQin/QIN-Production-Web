@@ -107,7 +107,7 @@
                                 </div>
                                 <div class="col-md-auto pe-4">
                                     <label class="form-label text-secondary small mb-1">Uhrzeit</label>
-                                    <input type="time" class="form-control text-center" style="width: 100px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualTime" />
+                                    <input type="text" class="form-control text-center" style="width: 100px; background: var(--bg-card) !important; color: white !important; border: 1px solid var(--border-color) !important;" @bind="ManualTimeText" placeholder="HH:mm" inputmode="numeric" autocomplete="off" maxlength="5" pattern="[0-9]{2}:[0-9]{2}" title="Bitte Uhrzeit im Format HH:mm eingeben" />
                                 </div>
                                 <div class="col-md-auto pe-4">
                                     <label class="form-label text-secondary small mb-1">Aktion</label>
@@ -362,7 +362,7 @@
     // Manual Form
     private bool IsManualPanelOpen = false;
     private DateTime ManualDate = DateTime.Today;
-    private TimeOnly ManualTime = TimeOnly.FromDateTime(DateTime.Now);
+    private string ManualTimeText = DateTime.Now.ToString("HH:mm");
     private BookingAction ManualAction = BookingAction.Kommen;
     private Array ManualActions = Enum.GetValues(typeof(BookingAction));
     private bool ManualIsHomeOffice = false;
@@ -668,7 +668,14 @@
     {
         if (!CanManualBook || SelectedUser == null) return;
 
-        var ts = new DateTime(ManualDate.Year, ManualDate.Month, ManualDate.Day, ManualTime.Hour, ManualTime.Minute, 0);
+        if (!TryParseHHmm(ManualTimeText, out var manualTime))
+        {
+            await JS.InvokeVoidAsync("alert", "Bitte Uhrzeit im Format HH:mm eingeben.");
+            return;
+        }
+
+        ManualTimeText = $"{manualTime.Hours:00}:{manualTime.Minutes:00}";
+        var ts = new DateTime(ManualDate.Year, ManualDate.Month, ManualDate.Day, manualTime.Hours, manualTime.Minutes, 0);
         _scrollTargetId = GetDayElementId(ts);
 
         await ZeiterfassungService.InsertManualBookingAsync(SelectedUser.Benutzer, ts, ManualAction, ManualIsHomeOffice, ManualNote);
@@ -721,6 +728,7 @@
         if (parts.Length != 2) return false;
         if (!int.TryParse(parts[0], out int h)) return false;
         if (!int.TryParse(parts[1], out int m)) return false;
+        if (h >= 24) return false;
         if (h < 0 || m < 0 || m >= 60) return false;
         time = TimeSpan.FromMinutes(h * 60 + m);
         return true;

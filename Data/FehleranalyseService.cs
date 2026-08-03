@@ -76,6 +76,31 @@ namespace QIN_Production_Web.Data
         public FehleranalyseZielAuswertung ProduktionszielAuswertung { get; set; } = new();
     }
 
+    public sealed class FehleranalyseMitarbeiterMaterialRow
+    {
+        public string Mitarbeiter { get; init; } = "";
+        public string Personalnummer { get; init; } = "";
+        public string Kunde { get; init; } = "";
+        public string Projekt { get; init; } = "";
+        public string Artikel { get; init; } = "";
+        public string Dekor { get; init; } = "";
+        public int Eintraege { get; init; }
+        public int Chargen { get; init; }
+        public string ChargeBeispiele { get; init; } = "";
+        public int Gutteile { get; init; }
+        public int SchlechtExtern { get; init; }
+        public int SchlechtIntern { get; init; }
+        public int Schlechtteile { get; init; }
+        public int Gesamt { get; init; }
+        public double Ausschussquote { get; init; }
+        public double Gutquote { get; init; }
+        public double ExternQuote { get; init; }
+        public double InternQuote { get; init; }
+        public string TopFehler1 { get; init; } = "-";
+        public string TopFehler2 { get; init; } = "-";
+        public string TopFehler3 { get; init; } = "-";
+    }
+
     public class FehleranalyseZielDetail
     {
         public string Material { get; set; } = "";
@@ -132,31 +157,6 @@ namespace QIN_Production_Web.Data
             public int Anzahl { get; init; }
             public double AnteilGesamtmenge { get; init; }
             public double AnteilSchlechtteile { get; init; }
-        }
-
-        private sealed class MitarbeiterExportRow
-        {
-            public string Mitarbeiter { get; init; } = "";
-            public string Personalnummer { get; init; } = "";
-            public string Kunde { get; init; } = "";
-            public string Projekt { get; init; } = "";
-            public string Artikel { get; init; } = "";
-            public string Dekor { get; init; } = "";
-            public int Eintraege { get; init; }
-            public int Chargen { get; init; }
-            public string ChargeBeispiele { get; init; } = "";
-            public int Gutteile { get; init; }
-            public int SchlechtExtern { get; init; }
-            public int SchlechtIntern { get; init; }
-            public int Schlechtteile { get; init; }
-            public int Gesamt { get; init; }
-            public double Ausschussquote { get; init; }
-            public double Gutquote { get; init; }
-            public double ExternQuote { get; init; }
-            public double InternQuote { get; init; }
-            public string TopFehler1 { get; init; } = "-";
-            public string TopFehler2 { get; init; } = "-";
-            public string TopFehler3 { get; init; } = "-";
         }
 
         private sealed class MaterialExportRow
@@ -476,13 +476,18 @@ namespace QIN_Production_Web.Data
             }
         }
 
+        public List<FehleranalyseMitarbeiterMaterialRow> GetMitarbeiterMaterialRows(IReadOnlyCollection<FehlerRow>? rows)
+        {
+            return CreateMitarbeiterExportRows(rows ?? Array.Empty<FehlerRow>());
+        }
+
         private static void BuildOverviewWorksheet(
             XLWorkbook workbook,
             FehleranalyseExportRequest request,
             DateTime createdAt,
             FehlerAnalyseResult gesamt,
             IReadOnlyList<FehlerartExportRow> fehlerarten,
-            IReadOnlyList<MitarbeiterExportRow> auffaelligeKombinationen)
+            IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> auffaelligeKombinationen)
         {
             var ws = workbook.Worksheets.Add("QS-Übersicht");
             var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
@@ -613,7 +618,7 @@ namespace QIN_Production_Web.Data
             FinalizeWorksheet(ws, 10, true);
         }
 
-        private static void BuildMitarbeiterWorksheet(XLWorkbook workbook, IReadOnlyList<MitarbeiterExportRow> rows)
+        private static void BuildMitarbeiterWorksheet(XLWorkbook workbook, IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> rows)
         {
             var ws = workbook.Worksheets.Add("Mitarbeitervergleich");
             ws.Range("A1:R1").Merge().Value = "Mitarbeitervergleich je Material";
@@ -785,7 +790,7 @@ namespace QIN_Production_Web.Data
             DateTime createdAt,
             FehlerAnalyseResult gesamt,
             IReadOnlyList<FehlerartExportRow> fehlerarten,
-            IReadOnlyList<MitarbeiterExportRow> auffaelligeKombinationen)
+            IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> auffaelligeKombinationen)
         {
             var ws = workbook.Worksheets.Add("QS-Übersicht");
             var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
@@ -936,7 +941,7 @@ namespace QIN_Production_Web.Data
             FinalizeWorksheet(ws, 12, false);
         }
 
-        private static void BuildMitarbeiterWorksheetReadable(XLWorkbook workbook, IReadOnlyList<MitarbeiterExportRow> rows)
+        private static void BuildMitarbeiterWorksheetReadable(XLWorkbook workbook, IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> rows)
         {
             var ws = workbook.Worksheets.Add("Mitarbeitervergleich");
             ws.Range("A1:R1").Merge().Value = "Mitarbeitervergleich je Material";
@@ -1137,7 +1142,7 @@ namespace QIN_Production_Web.Data
                 .ToList();
         }
 
-        private static List<MitarbeiterExportRow> CreateMitarbeiterExportRows(IReadOnlyCollection<FehlerRow> rows)
+        private static List<FehleranalyseMitarbeiterMaterialRow> CreateMitarbeiterExportRows(IReadOnlyCollection<FehlerRow> rows)
         {
             return rows
                 .GroupBy(row => new
@@ -1159,7 +1164,7 @@ namespace QIN_Production_Web.Data
                         .Distinct(StringComparer.CurrentCultureIgnoreCase)
                         .ToList();
 
-                    return new MitarbeiterExportRow
+                    return new FehleranalyseMitarbeiterMaterialRow
                     {
                         Mitarbeiter = group.Key.Mitarbeiter,
                         Personalnummer = group.Key.Personalnummer,
@@ -1191,7 +1196,7 @@ namespace QIN_Production_Web.Data
                 .ToList();
         }
 
-        private static List<MaterialExportRow> CreateMaterialExportRows(IReadOnlyCollection<FehlerRow> rows, IReadOnlyCollection<MitarbeiterExportRow> mitarbeiterRows)
+        private static List<MaterialExportRow> CreateMaterialExportRows(IReadOnlyCollection<FehlerRow> rows, IReadOnlyCollection<FehleranalyseMitarbeiterMaterialRow> mitarbeiterRows)
         {
             return rows
                 .GroupBy(row => new
