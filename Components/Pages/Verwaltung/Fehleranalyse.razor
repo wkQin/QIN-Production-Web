@@ -320,7 +320,7 @@
                                         <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Vertiefung")'><span>Ver.</span><i class="@SortIcon("Vertiefung")"></i></th>
                                         <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Oelflecken")'><span>Öl</span><i class="@SortIcon("Oelflecken")"></i></th>
                                         <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Tiefziehfehler")'><span>Tie.</span><i class="@SortIcon("Tiefziehfehler")"></i></th>
-                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Fraesfehler")'><span>Frä.</span><i class="@SortIcon("Fraesfehler")"></i></th>
+                                        <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Fraesfehler")'><span>St./Frä.</span><i class="@SortIcon("Fraesfehler")"></i></th>
                                         <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Knicke")'><span>Kni.</span><i class="@SortIcon("Knicke")"></i></th>
                                         <th class="sortable-resizable-header text-center" @onclick='() => SortBy("Kratzer")'><span>Kra.</span><i class="@SortIcon("Kratzer")"></i></th>
                                         <th class="sortable-resizable-header text-success text-end" @onclick='() => SortBy("Gutteile")'><span>Gut</span><i class="@SortIcon("Gutteile")"></i></th>
@@ -746,7 +746,7 @@
         {
             new() { Karte = "Ölflecken", Anzahl = GesamtResult.Oelflecken, Prozent = (double)GesamtResult.Oelflecken / total },
             new() { Karte = "Tiefziehfehler", Anzahl = GesamtResult.Tiefziehfehler, Prozent = (double)GesamtResult.Tiefziehfehler / total },
-            new() { Karte = "Fräsfehler", Anzahl = GesamtResult.Fraesfehler, Prozent = (double)GesamtResult.Fraesfehler / total },
+            new() { Karte = "Stanz-/Fräsfehler", Anzahl = GesamtResult.Fraesfehler, Prozent = (double)GesamtResult.Fraesfehler / total },
             new() { Karte = "Knicke", Anzahl = GesamtResult.Knicke, Prozent = (double)GesamtResult.Knicke / total },
             new() { Karte = "Kratzer", Anzahl = GesamtResult.Kratzer, Prozent = (double)GesamtResult.Kratzer / total },
             new() { Karte = "Schlecht Intern", Anzahl = GesamtResult.SchlechtIntern, Prozent = (double)GesamtResult.SchlechtIntern / total }
@@ -805,8 +805,7 @@
             Kunde = SelectedKunde,
             Projekt = SelectedProjekt,
             Artikel = SelectedArtikel,
-            Dekor = SelectedDekor,
-            ProduktionszielAuswertung = ProduktionszielAuswertung
+            Dekor = SelectedDekor
         });
 
         IsLoading = false;

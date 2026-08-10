@@ -3,6 +3,9 @@
 Diese Datei sammelt kurz, was zuletzt geändert wurde und zu welchem Update es gehört.
 Vor neuen Update-Benachrichtigungen soll diese Datei gelesen werden.
 
+## Update 3.3.3
+- Fehleranalyse: `Fräsfehler` heißt in der Auswertung und im Excel-Export jetzt `Stanz-/Fräsfehler`; Ziel-, Erfüllungs-, Offen-, Über-Ziel- und Statusangaben wurden aus der Excel-Datei entfernt.
+
 ## Update 3.3.2
 - Schichtplan: Nach Benutzer-, Material- und Kartendetails-Änderungen bleibt der Scrollstand der Verwaltungsansicht jetzt erhalten, damit die Seite beim Aktualisieren nicht mehr unerwartet nach oben springt.
 - Zeiterfassung: Die manuelle Uhrzeit-Eingabe in der Verwaltung nutzt jetzt fest das 24-Stunden-Format `HH:mm`, damit Remote-Browser keine AM/PM-Anzeige mehr erzwingen.

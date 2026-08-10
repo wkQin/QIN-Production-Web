@@ -73,7 +73,6 @@ namespace QIN_Production_Web.Data
         public string Projekt { get; set; } = "";
         public string Artikel { get; set; } = "";
         public string Dekor { get; set; } = "";
-        public FehleranalyseZielAuswertung ProduktionszielAuswertung { get; set; } = new();
     }
 
     public sealed class FehleranalyseMitarbeiterMaterialRow
@@ -145,7 +144,7 @@ namespace QIN_Production_Web.Data
             ("Vertiefung", "Extern", row => row.Vertiefung),
             ("Ölflecken", "Intern", row => row.Oelflecken),
             ("Tiefziehfehler", "Intern", row => row.Tiefziehfehler),
-            ("Fräsfehler", "Intern", row => row.Fraesfehler),
+            ("Stanz-/Fräsfehler", "Intern", row => row.Fraesfehler),
             ("Knicke", "Intern", row => row.Knicke),
             ("Kratzer", "Intern", row => row.Kratzer)
         };
@@ -490,8 +489,6 @@ namespace QIN_Production_Web.Data
             IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> auffaelligeKombinationen)
         {
             var ws = workbook.Worksheets.Add("QS-Übersicht");
-            var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
-
             ws.Range("A1:L1").Merge().Value = "Fehleranalyse QS-Export";
             ApplyTitleStyle(ws.Range("A1:L1"), XLColor.FromHtml("#0F4C81"));
 
@@ -515,13 +512,11 @@ namespace QIN_Production_Web.Data
             WriteMetricCard(ws, 8, 7, 9, 8, "Schlecht extern", gesamt.SchlechtExtern, XLColor.FromHtml("#FFEDD5"));
             WriteMetricCard(ws, 8, 9, 9, 10, "Schlecht intern", gesamt.SchlechtIntern, XLColor.FromHtml("#EDE9FE"));
             WriteMetricCard(ws, 8, 11, 9, 12, "Einträge", request.Eintraege.Count, XLColor.FromHtml("#E0F2FE"));
-            ws.Range("A12:L12").Merge().Value = "Prozentwerte und Ziel";
+            ws.Range("A12:L12").Merge().Value = "Prozentwerte";
             WriteMetricRow(ws, 7, "Internquote", CalculateQuote(gesamt.SchlechtIntern, gesamt.Gesamt), "Schlecht extern", gesamt.SchlechtExtern, "Schlecht intern", gesamt.SchlechtIntern, true, percentFirst: true);
-            WriteMetricRow(ws, 8, "Ziel", zielauswertung.Ziel, "Erfüllung", zielauswertung.Erfuellung ?? 0d, zielauswertung.Erfuellung.HasValue ? "Offen" : "Status", zielauswertung.Erfuellung.HasValue ? (object)zielauswertung.Offen : "Kein Ziel", value2IsPercent: true);
-            WriteMetricRow(ws, 9, "Über Ziel", zielauswertung.UeberZiel, "Einträge", request.Eintraege.Count, "Druckhinweis", "Für QS-Übersicht im Querformat ausgelegt");
 
             var row = 12;
-            ws.Range(row, 1, row, 10).Merge().Value = "Auffällige Mitarbeiter-Material-Kombinationen";
+            ws.Range(row, 1, row, 10).Merge().Value = "QS-Vergleich nach Mitarbeiter und Material";
             ApplySectionStyle(ws.Range(row, 1, row, 10));
             row++;
 
@@ -572,47 +567,6 @@ namespace QIN_Production_Web.Data
                 SetPercentCell(ws.Cell(row, 4), fehler.AnteilGesamtmenge);
                 SetPercentCell(ws.Cell(row, 5), fehler.AnteilSchlechtteile);
                 row++;
-            }
-
-            row += 1;
-            ws.Range(row, 1, row, 10).Merge().Value = "Zielabgleich nach Material";
-            ApplySectionStyle(ws.Range(row, 1, row, 10));
-            row++;
-
-            string[] zielHeaders = { "Material", "Gutteile", "Schlechtteile", "Gesamt", "Ziel", "Ausschuss %", "Erfüllung", "Offen", "Über Ziel", "Status" };
-            WriteHeaderRow(ws, row, zielHeaders);
-            row++;
-
-            if (!zielauswertung.Details.Any())
-            {
-                ws.Range(row, 1, row, 10).Merge().Value = "Keine Zieldaten für den gewählten Zeitraum vorhanden.";
-                ApplyEmptyRowStyle(ws.Range(row, 1, row, 10));
-                row++;
-            }
-            else
-            {
-                foreach (var detail in zielauswertung.Details)
-                {
-                    ws.Cell(row, 1).Value = detail.Material;
-                    ws.Cell(row, 2).Value = detail.Gutteile;
-                    ws.Cell(row, 3).Value = detail.Schlechtteile;
-                    ws.Cell(row, 4).Value = detail.Gesamt;
-                    ws.Cell(row, 5).Value = detail.Ziel;
-                    SetPercentCell(ws.Cell(row, 6), CalculateQuote(detail.Schlechtteile, detail.Gesamt));
-                    if (detail.Erfuellung.HasValue)
-                    {
-                        SetPercentCell(ws.Cell(row, 7), detail.Erfuellung.Value);
-                    }
-                    else
-                    {
-                        ws.Cell(row, 7).Value = "-";
-                    }
-
-                    ws.Cell(row, 8).Value = detail.Offen;
-                    ws.Cell(row, 9).Value = detail.UeberZiel;
-                    ws.Cell(row, 10).Value = detail.Ziel <= 0 ? "Kein Ziel" : detail.Offen > 0 ? "Offen" : "Über Ziel";
-                    row++;
-                }
             }
 
             FinalizeWorksheet(ws, 10, true);
@@ -693,7 +647,7 @@ namespace QIN_Production_Web.Data
             string[] headers =
             {
                 "Kunde", "Projekt", "Artikel", "Dekor", "Mitarbeitende", "Einträge", "Gutteile", "Schlecht extern", "Schlecht intern",
-                "Schlechtteile", "Gesamt", "Ausschuss %", "Extern %", "Intern %", "Beste Quote", "Schlechteste Quote", "Quotenspanne", "Auffälliger Mitarbeiter", "Häufigster Fehler"
+                "Schlechtteile", "Gesamt", "Ausschuss %", "Extern %", "Intern %", "Beste Quote", "Schlechteste Quote", "Quotenspanne", "Mitarbeiter im Vergleich", "Häufigster Fehler"
             };
             WriteHeaderRow(ws, headerRow, headers, 1, 19);
 
@@ -738,7 +692,7 @@ namespace QIN_Production_Web.Data
             {
                 "Datum", "Charge", "Kunde", "Projekt", "Artikel", "Dekor", "Personalnr.", "Mitarbeiter", "Gutteile",
                 "Fusseln", "Nadelstiche", "Pickel", "Dekorfehler", "Farbfehler", "Flecken", "Nebel", "Vertiefung",
-                "Ölflecken", "Tiefziehfehler", "Fräsfehler", "Knicke", "Kratzer", "Schlecht extern", "Schlecht intern",
+                "Ölflecken", "Tiefziehfehler", "Stanz-/Fräsfehler", "Knicke", "Kratzer", "Schlecht extern", "Schlecht intern",
                 "Schlechtteile", "Gesamt", "Ausschuss %", "Gut %", "Hauptfehler", "Bemerkungen"
             };
             WriteHeaderRow(ws, headerRow, headers, 1, 30);
@@ -793,8 +747,6 @@ namespace QIN_Production_Web.Data
             IReadOnlyList<FehleranalyseMitarbeiterMaterialRow> auffaelligeKombinationen)
         {
             var ws = workbook.Worksheets.Add("QS-Übersicht");
-            var zielauswertung = request.ProduktionszielAuswertung ?? new FehleranalyseZielAuswertung();
-
             ws.Range("A1:L1").Merge().Value = "Fehleranalyse QS-Export";
             ApplyTitleStyle(ws.Range("A1:L1"), XLColor.FromHtml("#0F4C81"));
             ws.Range("A2:L2").Merge().Value = $"Erstellt am {createdAt:dd.MM.yyyy HH:mm}";
@@ -818,20 +770,15 @@ namespace QIN_Production_Web.Data
             WriteMetricCard(ws, 8, 9, 9, 10, "Schlecht intern", gesamt.SchlechtIntern, XLColor.FromHtml("#EDE9FE"));
             WriteMetricCard(ws, 8, 11, 9, 12, "Einträge", request.Eintraege.Count, XLColor.FromHtml("#E0F2FE"));
 
-            ws.Range("A12:L12").Merge().Value = "Prozentwerte und Ziel";
+            ws.Range("A12:L12").Merge().Value = "Prozentwerte";
             ApplySectionStyle(ws.Range("A12:L12"));
-            WriteMetricCard(ws, 13, 1, 14, 2, "Gutteile %", CalculateQuote(gesamt.Gutteile, gesamt.Gesamt), XLColor.FromHtml("#DCFCE7"), isPercent: true);
-            WriteMetricCard(ws, 13, 3, 14, 4, "Schlechtteile %", CalculateQuote(gesamt.Schlechtteile, gesamt.Gesamt), XLColor.FromHtml("#FEE2E2"), isPercent: true);
-            WriteMetricCard(ws, 13, 5, 14, 6, "Schlecht extern %", CalculateQuote(gesamt.SchlechtExtern, gesamt.Gesamt), XLColor.FromHtml("#FFEDD5"), isPercent: true);
-            WriteMetricCard(ws, 13, 7, 14, 8, "Schlecht intern %", CalculateQuote(gesamt.SchlechtIntern, gesamt.Gesamt), XLColor.FromHtml("#EDE9FE"), isPercent: true);
-            WriteMetricCard(ws, 13, 9, 14, 10, "Ziel", zielauswertung.Ziel, XLColor.FromHtml("#E0F2FE"));
-            WriteMetricCard(ws, 13, 11, 14, 12, "Erfüllung %", zielauswertung.Erfuellung.HasValue ? (object)zielauswertung.Erfuellung.Value : "Kein Ziel", XLColor.FromHtml("#DBEAFE"), isPercent: zielauswertung.Erfuellung.HasValue, emptyText: "Kein Ziel");
-            WriteMetricCard(ws, 16, 1, 17, 2, "Offen", zielauswertung.Ziel > 0 ? zielauswertung.Offen : 0, XLColor.FromHtml("#FEF3C7"), emptyText: zielauswertung.Ziel > 0 ? null : "Kein Ziel");
-            WriteMetricCard(ws, 16, 3, 17, 4, "Über Ziel", zielauswertung.Ziel > 0 ? zielauswertung.UeberZiel : 0, XLColor.FromHtml("#D1FAE5"), emptyText: zielauswertung.Ziel > 0 ? null : "Kein Ziel");
-            WriteMetricCard(ws, 16, 5, 17, 8, "Status", GetZielStatusText(zielauswertung), XLColor.FromHtml("#F8FAFC"));
+            WriteMetricCard(ws, 13, 1, 14, 3, "Gutteile %", CalculateQuote(gesamt.Gutteile, gesamt.Gesamt), XLColor.FromHtml("#DCFCE7"), isPercent: true);
+            WriteMetricCard(ws, 13, 4, 14, 6, "Schlechtteile %", CalculateQuote(gesamt.Schlechtteile, gesamt.Gesamt), XLColor.FromHtml("#FEE2E2"), isPercent: true);
+            WriteMetricCard(ws, 13, 7, 14, 9, "Schlecht extern %", CalculateQuote(gesamt.SchlechtExtern, gesamt.Gesamt), XLColor.FromHtml("#FFEDD5"), isPercent: true);
+            WriteMetricCard(ws, 13, 10, 14, 12, "Schlecht intern %", CalculateQuote(gesamt.SchlechtIntern, gesamt.Gesamt), XLColor.FromHtml("#EDE9FE"), isPercent: true);
 
-            var row = 20;
-            ws.Range(row, 1, row, 12).Merge().Value = "Auffällige Mitarbeiter und Materialien";
+            var row = 17;
+            ws.Range(row, 1, row, 12).Merge().Value = "QS-Vergleich nach Mitarbeiter und Material";
             ApplySectionStyle(ws.Range(row, 1, row, 12));
             row++;
 
@@ -885,57 +832,6 @@ namespace QIN_Production_Web.Data
                 SetPercentCell(ws.Cell(row, 4), fehler.AnteilGesamtmenge);
                 SetPercentCell(ws.Cell(row, 5), fehler.AnteilSchlechtteile);
                 row++;
-            }
-
-            row += 1;
-            ws.Range(row, 1, row, 12).Merge().Value = "Zielabgleich nach Material";
-            ApplySectionStyle(ws.Range(row, 1, row, 12));
-            row++;
-
-            WriteHeaderRow(ws, row, new[]
-            {
-                "Material", "Gutteile", "Schlechtteile", "Schlechtteile %", "Schlecht extern", "Schlecht intern", "Gesamt", "Ziel", "Erfüllung %", "Offen", "Über Ziel", "Status"
-            });
-            row++;
-
-            if (!zielauswertung.Details.Any())
-            {
-                ws.Range(row, 1, row, 12).Merge().Value = "Keine Zieldaten für den gewählten Zeitraum vorhanden.";
-                ApplyEmptyRowStyle(ws.Range(row, 1, row, 12));
-                row++;
-            }
-            else
-            {
-                foreach (var detail in zielauswertung.Details)
-                {
-                    var detailRows = request.Eintraege
-                        .Where(item => string.Equals(NormalizeText(item.Artikel), NormalizeText(detail.Material), StringComparison.CurrentCultureIgnoreCase))
-                        .ToList();
-                    var detailSummary = SummarizeResults(detailRows);
-
-                    ws.Cell(row, 1).Value = detail.Material;
-                    ws.Cell(row, 2).Value = detail.Gutteile;
-                    ws.Cell(row, 3).Value = detail.Schlechtteile;
-                    SetPercentCell(ws.Cell(row, 4), CalculateQuote(detail.Schlechtteile, detail.Gesamt));
-                    ws.Cell(row, 5).Value = detailSummary.SchlechtExtern;
-                    ws.Cell(row, 6).Value = detailSummary.SchlechtIntern;
-                    ws.Cell(row, 7).Value = detail.Gesamt;
-                    ws.Cell(row, 8).Value = detail.Ziel;
-
-                    if (detail.Erfuellung.HasValue)
-                    {
-                        SetPercentCell(ws.Cell(row, 9), detail.Erfuellung.Value);
-                    }
-                    else
-                    {
-                        ws.Cell(row, 9).Value = "Kein Ziel";
-                    }
-
-                    ws.Cell(row, 10).Value = detail.Offen;
-                    ws.Cell(row, 11).Value = detail.UeberZiel;
-                    ws.Cell(row, 12).Value = detail.Ziel <= 0 ? "Kein Ziel" : detail.Offen > 0 ? "Offen" : "Über Ziel";
-                    row++;
-                }
             }
 
             FinalizeWorksheet(ws, 12, false);
@@ -1015,7 +911,7 @@ namespace QIN_Production_Web.Data
             WriteHeaderRow(ws, headerRow, new[]
             {
                 "Kunde", "Projekt", "Artikel", "Dekor", "Mitarbeitende", "Einträge", "Gutteile", "Schlecht extern", "Schlecht intern",
-                "Schlechtteile", "Gesamt", "Schlechtteile %", "Schlecht extern %", "Schlecht intern %", "Beste Schlechtteile %", "Schlechteste Schlechtteile %", "Abweichung %", "Auffälliger Mitarbeiter", "Häufigster Fehler"
+                "Schlechtteile", "Gesamt", "Schlechtteile %", "Schlecht extern %", "Schlecht intern %", "Beste Schlechtteile %", "Schlechteste Schlechtteile %", "Abweichung %", "Mitarbeiter im Vergleich", "Häufigster Fehler"
             }, 1, 19);
 
             var row = headerRow + 1;
@@ -1059,7 +955,7 @@ namespace QIN_Production_Web.Data
             {
                 "Datum", "Charge", "Kunde", "Projekt", "Artikel", "Dekor", "Personalnr.", "Mitarbeiter", "Gutteile",
                 "Fusseln", "Nadelstiche", "Pickel", "Dekorfehler", "Farbfehler", "Flecken", "Nebel", "Vertiefung",
-                "Ölflecken", "Tiefziehfehler", "Fräsfehler", "Knicke", "Kratzer", "Schlecht extern", "Schlecht intern",
+                "Ölflecken", "Tiefziehfehler", "Stanz-/Fräsfehler", "Knicke", "Kratzer", "Schlecht extern", "Schlecht intern",
                 "Schlechtteile", "Gesamt", "Schlechtteile %", "Schlecht extern %", "Schlecht intern %", "Gutteile %", "Hauptfehler", "Bemerkungen"
             }, 1, 32);
 
@@ -1104,21 +1000,6 @@ namespace QIN_Production_Web.Data
 
             ws.Column(32).Style.Alignment.WrapText = true;
             FinalizeWorksheet(ws, 32, false, freezeRow: headerRow);
-        }
-
-        private static string GetZielStatusText(FehleranalyseZielAuswertung zielauswertung)
-        {
-            if (zielauswertung.Ziel <= 0)
-            {
-                return "Kein Ziel vorhanden";
-            }
-
-            if (zielauswertung.Offen > 0)
-            {
-                return $"{zielauswertung.Offen.ToString("N0", ExportCulture)} Gutteile bis zum Ziel";
-            }
-
-            return $"{zielauswertung.UeberZiel.ToString("N0", ExportCulture)} Gutteile über Ziel";
         }
 
         private static List<FehlerartExportRow> CreateFehlerartRows(FehlerAnalyseResult result)
