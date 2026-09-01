@@ -18,6 +18,7 @@ namespace QIN_Production_Web.Data.Zeiterfassung
 
         private static bool IsExcluded(string user)
         {
+            if (ZeiterfassungUserRules.IsExcludedSystemUser(user)) return true;
             if (ExcludedUsers.Contains(user)) return true;
             var normalized = string.Join(" ", user.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries));
             if (ExcludedUsers.Contains(normalized)) return true;
@@ -36,7 +37,7 @@ namespace QIN_Production_Web.Data.Zeiterfassung
 
         public byte[] ExportMonthForAllUsersAsBytes(int year, int month)
         {
-            var users = LoadUsersFromLoginDaten()
+            var users = LoadUsersForMonth(year, month)
                 .Where(u => !IsExcluded(u.Name.Trim()))
                 .OrderBy(u => FormatUserLastFirst(u.Name))
                 .ToList();
@@ -309,11 +310,40 @@ namespace QIN_Production_Web.Data.Zeiterfassung
             return name.Length > 31 ? name[..31] : name;
         }
 
-        private static List<(string Name, string Rechte)> LoadUsersFromLoginDaten()
+        private static List<(string Name, string Rechte)> LoadUsersForMonth(int year, int month)
         {
+            var start = new DateTime(year, month, 1);
+            var end = start.AddMonths(1);
             var list = new List<(string Name, string Rechte)>();
+
+            const string sql = @"
+                SELECT ld.Benutzer, ISNULL(ld.Rechte, N'') AS Rechte
+                FROM dbo.LoginDaten ld
+                WHERE NULLIF(LTRIM(RTRIM(ld.Benutzer)), N'') IS NOT NULL
+
+                UNION ALL
+
+                SELECT monthUsers.Benutzername, CAST(N'' AS nvarchar(255)) AS Rechte
+                FROM
+                (
+                    SELECT z.Benutzername
+                    FROM dbo.Zeiterfassung z
+                    WHERE z.Zeitstempel >= @start
+                      AND z.Zeitstempel < @end
+                      AND NULLIF(LTRIM(RTRIM(z.Benutzername)), N'') IS NOT NULL
+                    GROUP BY z.Benutzername
+                ) monthUsers
+                WHERE NOT EXISTS
+                (
+                    SELECT 1
+                    FROM dbo.LoginDaten ld
+                    WHERE ld.Benutzer = monthUsers.Benutzername
+                );";
+
             using var con = new SqlConnection(SqlManager.connectionString);
-            using var cmd = new SqlCommand("SELECT Benutzer, Rechte FROM dbo.LoginDaten", con);
+            using var cmd = new SqlCommand(sql, con);
+            cmd.Parameters.Add("@start", SqlDbType.DateTime2).Value = start;
+            cmd.Parameters.Add("@end", SqlDbType.DateTime2).Value = end;
             con.Open();
             using var r = cmd.ExecuteReader();
             while (r.Read())

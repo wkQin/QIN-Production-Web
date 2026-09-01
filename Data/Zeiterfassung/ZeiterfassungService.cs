@@ -48,7 +48,9 @@ WHERE Benutzer = @u;";
             await using var r = await cmd.ExecuteReaderAsync();
             while (await r.ReadAsync())
             {
-                list.Add(new ZeiterfassungUserItem { Benutzer = r.GetString(0) });
+                var user = r.GetString(0);
+                if (!ZeiterfassungUserRules.IsExcludedSystemUser(user))
+                    list.Add(new ZeiterfassungUserItem { Benutzer = user });
             }
             return list;
         }
