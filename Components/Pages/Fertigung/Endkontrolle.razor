@@ -115,7 +115,7 @@
                             <option value="">Bitte ausw&auml;hlen</option>
                             @foreach (var a in ArtikelListe)
                             {
-                                <option value="@a">@a</option>
+                                <option value="@a">@GetArtikelDisplayName(a)</option>
                             }
                         </select>
                     </div>
@@ -215,7 +215,7 @@
                                     <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Tiefziehfehler" />
                                 </div>
                                 <div class="error-row">
-                                    <span>Fr&auml;s- / Stanzfehler</span>
+                                    <span>Fr&auml;s- / Stanzfehler / Vliesabdr&uuml;cke</span>
                                     <input type="number" class="form-control text-center dark-input end-mini-input" @bind="NeuerEintrag.Fraesfehler" />
                                 </div>
                                 <div class="error-row">
@@ -496,6 +496,24 @@
                 window.endkontrolleDragScroll.init('endkontrolleScrollArea');
             ");
         }
+    }
+
+    private string GetArtikelDisplayName(string artikel)
+    {
+        var isGln = string.Equals(NeuerEintrag.Kunde?.Trim(), "GLN", StringComparison.OrdinalIgnoreCase);
+        var projekt = NeuerEintrag.Projekt?.Trim();
+        var isScania = string.Equals(projekt, "Scanina", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(projekt, "Scania", StringComparison.OrdinalIgnoreCase);
+
+        if (!isGln || !isScania)
+        {
+            return artikel;
+        }
+
+        // Translate the visible label only. Preserve the option value for existing data and matching.
+        if (string.Equals(artikel.Trim(), "Deckel Oben", StringComparison.OrdinalIgnoreCase)) return "Upper Lid";
+        if (string.Equals(artikel.Trim(), "Deckel Unten", StringComparison.OrdinalIgnoreCase)) return "Lower Lid";
+        return artikel;
     }
 
     private async Task OnKundeChanged(ChangeEventArgs e)
@@ -955,6 +973,66 @@
     .end-row-selected td {
         background: rgba(34, 197, 94, 0.12) !important;
         box-shadow: inset 0 1px 0 rgba(134, 239, 172, 0.12), inset 0 -1px 0 rgba(134, 239, 172, 0.12);
+    }
+
+    /* Small visual refinements, scoped to this page. */
+    .endkontrolle-page .end-header h2 {
+        font-size: 1.9rem;
+        letter-spacing: -0.035em;
+        line-height: 1.2;
+    }
+    .endkontrolle-page .end-header p { max-width: 68ch; line-height: 1.6; }
+    .endkontrolle-page .end-badge-room { font-size: 0.65rem; padding: 0.5rem 0.7rem; }
+    .endkontrolle-page .end-card {
+        border-radius: 14px;
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+    }
+    .endkontrolle-page .end-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 0.8rem;
+        background: rgba(148, 163, 184, 0.025);
+    }
+    .endkontrolle-page .end-card-header h4 { font-size: 1.1rem; letter-spacing: -0.015em; }
+    .endkontrolle-page .end-section-note { font-size: 0.78rem; font-weight: 400; }
+    .endkontrolle-page .end-progress-card { padding: 1rem 1.2rem; box-shadow: none; }
+    .endkontrolle-page .end-progress-empty { line-height: 1.6; }
+    .endkontrolle-page .end-label { font-size: 0.85rem; font-weight: 600; padding-left: 0; }
+    .endkontrolle-page .end-input,
+    .endkontrolle-page .end-mini-input { border-radius: 9px; transition: border-color 120ms, box-shadow 120ms; }
+    .endkontrolle-page .end-input:focus,
+    .endkontrolle-page .end-mini-input:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.15);
+    }
+    .endkontrolle-page .end-good-input { border-color: rgba(134, 239, 172, 0.3); }
+    .endkontrolle-page .error-box { border-radius: 12px; padding: 1rem; }
+    .endkontrolle-page .error-box h5 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+    .endkontrolle-page .error-row {
+        min-height: 58px;
+        padding: 0.45rem 0;
+        margin-bottom: 0;
+        gap: 0.75rem;
+        font-size: 0.92rem;
+        line-height: 1.45;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    }
+    .endkontrolle-page .error-row:last-child { border-bottom: 0; }
+    .endkontrolle-page .error-row > span { min-width: 0; overflow-wrap: break-word; }
+    .endkontrolle-page .end-mini-input { width: 80px; flex-basis: 80px; font-variant-numeric: tabular-nums; }
+    .endkontrolle-page .end-save-btn { border-radius: 9px; min-height: 46px; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.16); }
+    .endkontrolle-page .end-save-btn:focus-visible,
+    .endkontrolle-page .end-edit-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
+    .endkontrolle-page .end-table th { font-size: 0.75rem; padding: 0.9rem 0.85rem; }
+    .endkontrolle-page .end-table td { padding: 0.8rem 0.85rem; font-size: 0.85rem; }
+    .endkontrolle-page .end-table { font-variant-numeric: tabular-nums; }
+    .endkontrolle-page .drag-scroll-area { scrollbar-width: thin; scrollbar-color: #475569 #101722; }
+    @@media (max-width: 767.98px) {
+        .endkontrolle-page .end-header h2 { font-size: 1.6rem; }
+        .endkontrolle-page .end-card-header { align-items: flex-start; flex-wrap: wrap; }
+        .endkontrolle-page .end-progress-head { flex-wrap: wrap; }
+        .endkontrolle-page .end-mini-input { width: 76px; flex-basis: 76px; }
     }
 
     @@media (max-width: 767.98px) {
